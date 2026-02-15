@@ -114,7 +114,7 @@ export function registerPlayer(){
     }
   }).catch(function(){
     var statusEl=document.getElementById('onlineStatus');
-    if(statusEl)statusEl.textContent='Server offline. Start server with: npm run server';
+    if(statusEl)statusEl.textContent='Online PvP requires a server \u2014 play Dungeon or Ladder!';
   });
 }
 
@@ -130,7 +130,7 @@ export function uploadBuild(){
     }
   }).catch(function(){
     var statusEl=document.getElementById('onlineStatus');
-    if(statusEl)statusEl.textContent='Upload failed. Is the server running?';
+    if(statusEl)statusEl.textContent='Online PvP requires a server \u2014 play Dungeon or Ladder!';
   });
 }
 
@@ -145,7 +145,7 @@ export function refreshOpponents(){
     buildOnlineOpponents();
   }).catch(function(){
     var statusEl=document.getElementById('onlineStatus');
-    if(statusEl)statusEl.textContent='Server offline. Start server with: npm run server';
+    if(statusEl)statusEl.textContent='Online PvP requires a server \u2014 play Dungeon or Ladder!';
   });
 }
 
