@@ -12,6 +12,12 @@ export function getCustomTotalStats() {
   s.hp = Math.max(100, s.hp); s.baseDmg = Math.max(10, s.baseDmg); s.baseAS = Math.max(0.1, s.baseAS); s.def = Math.max(0, s.def); s.evasion = Math.max(0, Math.min(.8, s.evasion)); s.moveSpeed = Math.max(30, s.moveSpeed); return s;
 }
 
+export function getWeaponRangeType() {
+  var wk = state.customChar.equipment.weapon;
+  if (wk && ITEMS[wk] && ITEMS[wk].rangeType) return ITEMS[wk].rangeType;
+  return 'melee';
+}
+
 export function mkHero(classKey, side) {
   // Check for ladder-generated opponent
   if (side === 'right' && state._ladderGenConfig) {
@@ -62,7 +68,7 @@ export function mkHero(classKey, side) {
 export function mkFollower(owner) { return { alive: true, hp: owner.followerMaxHp, maxHp: owner.followerMaxHp, x: owner.x + owner.facing * 40, y: owner.y, moveSpeed: 140, attackRange: MELEE, goading: true, goadRange: 120, bobPhase: Math.random() * 6.28, hurtAnim: 0 } }
 
 export function mkCustomHero(side) {
-  var isLeft = side === 'left', s = getCustomTotalStats(), isMelee = state.customChar.rangeType === 'melee';
+  var isLeft = side === 'left', s = getCustomTotalStats(), isMelee = getWeaponRangeType() === 'melee';
   var h = { type: 'custom', customSprite: state.customChar.sprite, name: state.customChar.name, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side, x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1, maxHp: s.hp, hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, moveSpeedBonus: 0, attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300, atkCnt: 0, atkCd: 0, bleedStacks: [], shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0, state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0, totDmg: 0, totHeal: 0, blActive: false, blEnd: 0, blDmg: 0, markNext: false, followerAlive: false, follower: null, followerMaxHp: 450, arenaFollowers: [], ultActive: false, ultEnd: 0, shieldActive: false, shieldHp: 0, shieldEnd: 0, mana: s.mana || 0, maxMana: s.mana || 0, manaRegen: s.manaRegen || 0, charge: 0, maxCharge: 10, chargeDecayTimer: 0, castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0, spellRange: isMelee ? 200 : 400, ultStrikes: 0, ultStrikeTimer: 0, energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0, meleeRange: MELEE, throwRange: 200, stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5, envenomed: false, envenomedEnd: 0, deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0, smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120, resource: Math.max(s.mana || 0, s.energy || 0, 100), maxResource: Math.max(s.mana || 0, s.energy || 0, 100), resourceRegen: Math.max(s.manaRegen || 0, s.energyRegen || 0, 2), spells: {}, customSkillIds: [], customUltId: null };
   for (var i = 0; i < 2; i++) { if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) { h.spells['skill' + i] = { cd: 0, bcd: 3000, n: ALL_SKILLS[state.customChar.skills[i]].name }; h.customSkillIds.push({ idx: state.customChar.skills[i], key: 'skill' + i }) } }
   if (state.customChar.ultimate !== null && ALL_ULTS[state.customChar.ultimate]) { h.spells.ultimate = { cd: 0, bcd: Infinity, used: false, n: ALL_ULTS[state.customChar.ultimate].name }; h.customUltId = state.customChar.ultimate }
@@ -142,42 +148,3 @@ export function applyFollowerBuff(hero, collection, followerIdx) {
   }
 }
 
-export function getStashBonuses(playerNum) {
-  var stash = playerNum === 1 ? state.p1Stash : state.p2Stash;
-  var bonuses = { hp: 0, baseDmg: 0, baseAS: 0, def: 0, evasion: 0, moveSpeed: 0, lifesteal: 0, crit: 0, spellDmgBonus: 0, mana: 0 };
-  stash.forEach(function (it) { if (bonuses[it.stat] !== undefined) bonuses[it.stat] += it.val });
-  return bonuses;
-}
-
-export function applyStashToHero(hero, playerNum) {
-  var b = getStashBonuses(playerNum);
-  if (b.hp) { hero.maxHp += b.hp; hero.hp += b.hp }
-  if (b.baseDmg) hero.baseDmg += b.baseDmg;
-  if (b.baseAS) hero.baseAS += b.baseAS;
-  if (b.def) hero.def += b.def;
-  if (b.evasion) hero.evasion = Math.min(0.8, hero.evasion + b.evasion);
-  if (b.moveSpeed) hero.moveSpeed += b.moveSpeed;
-  if (b.lifesteal) hero._stashLifesteal = (hero._stashLifesteal || 0) + b.lifesteal;
-  if (b.crit) hero._stashCrit = (hero._stashCrit || 0) + b.crit;
-  if (b.spellDmgBonus) hero.spellDmgBonus = (hero.spellDmgBonus || 0) + b.spellDmgBonus;
-  if (b.mana) { hero.maxMana = (hero.maxMana || 0) + b.mana; hero.mana = (hero.mana || 0) + b.mana }
-}
-
-export function renderStashSummary(playerNum) {
-  var stash = playerNum === 1 ? state.p1Stash : state.p2Stash;
-  if (stash.length === 0) return '<span style="color:var(--parch-dk)">No items yet \u2014 run dungeons!</span>';
-  var b = getStashBonuses(playerNum);
-  var parts = [];
-  if (b.hp) parts.push('+' + b.hp + ' HP');
-  if (b.baseDmg) parts.push('+' + b.baseDmg + ' DMG');
-  if (b.baseAS) parts.push('+' + b.baseAS.toFixed(2) + ' AS');
-  if (b.def) parts.push('+' + b.def + ' DEF');
-  if (b.evasion) parts.push('+' + Math.round(b.evasion * 100) + '% EVA');
-  if (b.lifesteal) parts.push('+' + Math.round(b.lifesteal * 100) + '% LS');
-  if (b.crit) parts.push('+' + Math.round(b.crit * 100) + '% Crit');
-  if (b.spellDmgBonus) parts.push('+' + Math.round(b.spellDmgBonus * 100) + '% Spell');
-  if (b.moveSpeed) parts.push('+' + b.moveSpeed + ' Spd');
-  if (b.mana) parts.push('+' + b.mana + ' Mana');
-  var icons = stash.map(function (it) { return '<span title="' + it.name + ': ' + it.desc + '">' + it.icon + '</span>' }).join('');
-  return icons + ' <span style="color:#88ccaa">' + parts.join(' ') + '</span> <span style="color:var(--parch-dk)">(' + stash.length + ' items)</span>';
-}

@@ -2,7 +2,7 @@
 import { state } from '../gameState.js';
 import { AX, AW, MELEE } from '../constants.js';
 import { en, dst, effEv, isStunned, blN, addBl, addCh, getSdm, addLog } from '../combat/engine.js';
-import { spLightning, spFloat, spSparks, spFire, spPoison, spSmoke, spShadow, spStun, spDrips } from '../render/particles.js';
+import { spLightning, spLStrike, spFloat, spSparks, spFire, spPoison, spSmoke, spShadow, spStun, spDrips } from '../render/particles.js';
 import { mkFollower } from '../combat/hero.js';
 
 export const ALL_SKILLS=[

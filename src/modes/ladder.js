@@ -2,54 +2,164 @@
 import { state } from '../gameState.js';
 import { TK } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
-import { ITEMS } from '../data/items.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
-import { RARITY_COLORS, rollFollower } from '../data/followers.js';
+import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower } from '../data/followers.js';
 import { SFX } from '../sfx.js';
 import { addLog } from '../combat/engine.js';
 import { tick } from '../combat/engine.js';
-import { mkHero, getCustomTotalStats, applyStashToHero, renderStashSummary } from '../combat/hero.js';
-import { buildHUD, updateUI, buildCharTooltip, buildCustomTooltip } from '../render/ui.js';
+import { mkHero, getCustomTotalStats, mkArenaFollower, applyFollowerBuff } from '../combat/hero.js';
+import { buildHUD, updateUI, buildCustomTooltip, renderFollowerCards } from '../render/ui.js';
 import { startBattle, showWin, resetBattle } from './arena.js';
 
 var LADDER_SEQUENCE=['wizard','ranger','assassin','barbarian'];
 var LADDER_NAMES=['Draven','Zara','Krix','Moku','Thane','Vex','Nira','Bolt','Crag','Syla','Fenn','Hex','Jolt','Pyra','Onyx','Dusk','Blaze','Storm','Frost','Ash','Rune','Shade','Grim','Talon','Echo','Ember','Flux','Nova','Spike','Wisp'];
 
-export function setLadderPlayer(p){
-  state.ladderPlayer=p;
-  document.getElementById('ldP1Tab').classList.toggle('active',p===1);
-  document.getElementById('ldP2Tab').classList.toggle('active',p===2);
-  buildLadderPicker();
-}
-
 export function buildLadderPicker(){
   var cont=document.getElementById('ldClassPick');cont.innerHTML='';
-  var classes=['wizard','ranger','assassin','barbarian'];
-  classes.forEach(function(key){
-    var c=CLASSES[key];var card=document.createElement('div');
-    card.className='class-card '+(key==='wizard'?'wiz':key==='ranger'?'rgr':key==='assassin'?'asn':'bar')+(state.ladderClass===key?' selected':'');
-    card.innerHTML='<div class="cc-icon">'+c.icon+'</div><div class="cc-name '+(key==='wizard'?'wiz':key==='ranger'?'rgr':key==='assassin'?'asn':'bar')+'">'+c.name+'</div><div class="cc-stats">'+c.hp+'HP '+c.baseDmg+'dmg</div>'+buildCharTooltip(key);
-    card.onclick=function(){state.ladderClass=key;buildLadderPicker()};
-    cont.appendChild(card);
-  });
+  // Show hero gear summary (always custom character)
   var cs=getCustomTotalStats();
-  var cc=document.createElement('div');cc.className='class-card cst'+(state.ladderClass==='custom'?' selected':'');
-  cc.innerHTML='<div class="cc-icon">\u2692</div><div class="cc-name cst">'+state.customChar.name+'</div><div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg</div>'+buildCustomTooltip();
-  cc.onclick=function(){state.ladderClass='custom';buildLadderPicker()};
-  cont.appendChild(cc);
+  var gearHtml='';
+  EQ_SLOTS.forEach(function(slot){
+    var ik=state.customChar.equipment[slot.key];
+    var item=ik?ITEMS[ik]:null;
+    if(item){
+      var col=GEAR_RARITY_COLORS[item.rarity]||'#aaa';
+      gearHtml+='<span style="color:'+col+'" title="'+item.name+': '+item.desc+'">'+item.icon+'</span> ';
+    }
+  });
+  cont.innerHTML='<div class="class-card cst selected" style="cursor:default">'+
+    '<div class="cc-icon">\u2692</div>'+
+    '<div class="cc-name cst">'+state.customChar.name+'</div>'+
+    '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
+    '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
+    buildCustomTooltip()+
+  '</div>';
   var rec=document.getElementById('ladderRecord');
-  if(rec)rec.innerHTML='P1 Best: <span style="color:var(--gold-bright)">'+state.ladderBestP1+'W</span> | P2 Best: <span style="color:var(--gold-bright)">'+state.ladderBestP2+'W</span>'+
-    '<br><div style="margin-top:4px;font-size:.48rem">\u{1F392} P'+(state.ladderPlayer)+' Dungeon Items: '+renderStashSummary(state.ladderPlayer)+'</div>';
+  if(rec)rec.innerHTML='Best: <span style="color:var(--gold-bright)">'+state.ladderBest+'W</span>';
 }
 
 export function startLadder(){
   state.ladderRun={
-    wins:0,playerClass:state.ladderClass,active:true,
+    wins:0,active:true,
     currentOpponent:null,opponentIdx:0,
     history:[],_previewedNext:null,
     currentOppName:'',currentOppIcon:'',
+    // Follower assignments for this ladder run
+    fighterFollowers:[],
+    stakedFollower:null,
   };
-  ladderNextFight();
+  ladderShowFollowerPick();
+}
+
+function ladderShowFollowerPick(){
+  if(!state.ladderRun||!state.ladderRun.active)return;
+  // Reset assignments for this fight
+  state.ladderRun.fighterFollowers=[];
+  state.ladderRun.stakedFollower=null;
+
+  document.getElementById('ladderScreen').style.display='flex';
+  document.getElementById('ladderPickScreen').style.display='none';
+  document.getElementById('battleScreen').style.display='none';
+
+  var rc=document.getElementById('ladderScreen');
+  var existing=document.getElementById('ldInterContent');
+  if(existing)existing.remove();
+
+  var fightNum=state.ladderRun.wins+1;
+  var nextIdx=state.ladderRun.opponentIdx;
+  var oppPreview='';
+  if(nextIdx<LADDER_SEQUENCE.length){
+    var nk=LADDER_SEQUENCE[nextIdx];var nc=CLASSES[nk];
+    oppPreview='<div class="ld-next-preview">'+
+      '<div class="lnp-title">OPPONENT #'+fightNum+'</div>'+
+      '<div class="lnp-name" style="color:'+nc.color+'">'+nc.icon+' '+nc.name+'</div>'+
+      '<div class="lnp-stats">'+nc.hp+' HP | '+nc.baseDmg+' DMG | '+nc.baseAS+' AS | '+nc.def+' DEF</div>'+
+    '</div>';
+  } else {
+    var nextOpp=generateLadderOpponent(state.ladderRun.wins);
+    state.ladderRun._previewedNext=nextOpp;
+    oppPreview='<div class="ld-next-preview">'+
+      '<div class="lnp-title">CHALLENGER #'+(nextIdx-LADDER_SEQUENCE.length+1)+'</div>'+
+      '<div class="lnp-name" style="color:#ff88ff">\u2692 '+nextOpp.name+'</div>'+
+      '<div class="lnp-stats">'+nextOpp.hp+' HP | '+nextOpp.baseDmg+' DMG | '+nextOpp.baseAS+' AS | '+nextOpp.def+' DEF | '+Math.round(nextOpp.evasion*100)+'% EVA</div>'+
+    '</div>';
+  }
+
+  var hasFollowers=state.p1Collection.length>0;
+  var followerHtml='';
+  if(hasFollowers){
+    followerHtml='<div style="margin-top:8px">'+
+      '<div style="font-size:.5rem;color:var(--teal-glow);margin-bottom:4px">\u{1F47E} Fighters <span id="ldFighterCount" style="color:var(--parch-dk)">(0/3)</span></div>'+
+      '<div style="font-size:.42rem;color:var(--parch-dk);margin-bottom:4px">Click to assign fighters. They\'ll battle alongside you.</div>'+
+      '<div class="follower-collection" id="ldFighters"></div>'+
+      '<div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">\u{1F3B2} Wager <span style="color:var(--parch-dk)">(optional \u2014 lose it if you lose!)</span></div>'+
+      '<div class="follower-collection" id="ldStake"></div>'+
+    '</div>';
+  }
+
+  var screenHtml='<div class="ld-inter" id="ldInterContent">'+
+    '<div class="ld-title" style="color:#44ee88">\u2694 PREPARE FOR BATTLE</div>'+
+    oppPreview+followerHtml+
+    '<div class="dg-choices" style="margin-top:10px">'+
+      '<button class="dg-choice danger" onclick="ladderFight()">\u2694 FIGHT!</button>'+
+      '<button class="dg-choice gold-c" onclick="ladderQuit()">\u{1F3C3} Forfeit</button>'+
+    '</div>'+
+  '</div>';
+
+  rc.insertAdjacentHTML('beforeend',screenHtml);
+
+  if(hasFollowers){
+    updateLadderFollowerUI();
+  }
+}
+
+function updateLadderFollowerUI(){
+  var run=state.ladderRun;if(!run)return;
+  // Fighter cards
+  renderFollowerCards('ldFighters',state.p1Collection,function(f,i){
+    if(i===run.stakedFollower)return;
+    var fi=run.fighterFollowers.indexOf(i);
+    if(fi>=0){run.fighterFollowers.splice(fi,1)}
+    else{if(run.fighterFollowers.length>=3)return;run.fighterFollowers.push(i)}
+    updateLadderFollowerUI();
+  });
+  var fEl=document.getElementById('ldFighters');
+  if(fEl){
+    fEl.querySelectorAll('.follower-card').forEach(function(card,i){
+      if(run.fighterFollowers.indexOf(i)>=0)card.classList.add('selected');
+      if(i===run.stakedFollower)card.style.opacity='0.4';
+    });
+  }
+  var fcEl=document.getElementById('ldFighterCount');
+  if(fcEl)fcEl.textContent='('+run.fighterFollowers.length+'/3)';
+  // Wager cards (exclude fighters)
+  var wagerList=state.p1Collection.filter(function(f,i){return run.fighterFollowers.indexOf(i)<0});
+  renderFollowerCards('ldStake',wagerList,function(f){
+    var realIdx=state.p1Collection.indexOf(f);
+    if(run.stakedFollower===realIdx){run.stakedFollower=null}
+    else{run.stakedFollower=realIdx}
+    updateLadderFollowerUI();
+  });
+  var sEl=document.getElementById('ldStake');
+  if(sEl){
+    sEl.querySelectorAll('.follower-card').forEach(function(card,i){
+      var realIdx=state.p1Collection.indexOf(wagerList[i]);
+      if(realIdx===run.stakedFollower)card.classList.add('selected');
+    });
+  }
+}
+
+export function ladderFight(){
+  if(!state.ladderRun||!state.ladderRun.active)return;
+  var el=document.getElementById('ldInterContent');if(el)el.remove();
+  if(state.ladderRun._previewedNext){
+    state.ladderRun.currentOpponent={type:'generated',config:state.ladderRun._previewedNext};
+    state.ladderRun._previewedNext=null;
+    ladderLaunchBattle('_ladder_generated');
+  } else {
+    ladderNextFight();
+  }
 }
 
 function ladderNextFight(){
@@ -57,13 +167,12 @@ function ladderNextFight(){
   var idx=state.ladderRun.opponentIdx;
   if(idx<LADDER_SEQUENCE.length){
     var oppClass=LADDER_SEQUENCE[idx];
-    if(oppClass===state.ladderRun.playerClass&&idx<LADDER_SEQUENCE.length-1){state.ladderRun.opponentIdx++;ladderNextFight();return}
     state.ladderRun.currentOpponent={type:'class',classKey:oppClass};
-    ladderLaunchBattle(state.ladderRun.playerClass,oppClass);
+    ladderLaunchBattle(oppClass);
   } else {
     var opp=generateLadderOpponent(state.ladderRun.wins);
     state.ladderRun.currentOpponent={type:'generated',config:opp};
-    ladderLaunchBattle(state.ladderRun.playerClass,'_ladder_generated');
+    ladderLaunchBattle('_ladder_generated');
   }
 }
 
@@ -107,8 +216,8 @@ function generateLadderOpponent(wins){
   };
 }
 
-function ladderLaunchBattle(playerClass, oppClass){
-  state.p1Class=playerClass;
+function ladderLaunchBattle(oppClass){
+  state.p1Class='custom';
   if(oppClass==='_ladder_generated'){
     state._ladderGenConfig=state.ladderRun.currentOpponent.config;
     state.p2Class='custom';
@@ -141,6 +250,16 @@ function ladderLaunchBattle(playerClass, oppClass){
       playerMaxHp:state.h1.maxHp,
       oppHpLeft:playerWon?0:Math.round(state.h2.hp),
     });
+    // Handle staked follower loss
+    var stakeMsg='';
+    if(state.ladderRun.stakedFollower!==null){
+      if(!playerWon){
+        var lost=state.p1Collection.splice(state.ladderRun.stakedFollower,1)[0];
+        if(lost){stakeMsg='\nLost '+lost.name+'!'}
+      }
+      state.ladderRun.stakedFollower=null;
+    }
+    state.ladderRun.fighterFollowers=[];
     if(playerWon){
       state.ladderRun.wins++;state.ladderRun.opponentIdx++;
       var earnedFollower=null;
@@ -151,22 +270,41 @@ function ladderLaunchBattle(playerClass, oppClass){
         while((earnedFollower.rarity==='common'||earnedFollower.rarity==='uncommon')&&attempts<10){
           earnedFollower=rollFollower(flr);attempts++;
         }
-        (state.ladderPlayer===1?state.p1Collection:state.p2Collection).push(earnedFollower);
+        state.p1Collection.push(earnedFollower);
       }
-      ladderShowIntermission(true,earnedFollower);
+      ladderShowIntermission(true,earnedFollower,stakeMsg);
     } else {
-      if(state.ladderPlayer===1)state.ladderBestP1=Math.max(state.ladderBestP1,state.ladderRun.wins);
-      else state.ladderBestP2=Math.max(state.ladderBestP2,state.ladderRun.wins);
-      ladderShowIntermission(false,null);
+      state.ladderBest=Math.max(state.ladderBest,state.ladderRun.wins);
+      ladderShowIntermission(false,null,stakeMsg);
     }
   };
 
   startBattle();
-  applyStashToHero(state.h1,state.ladderPlayer);
+
+  // Apply staked follower buff to player + debuff to opponent
+  var run=state.ladderRun;
+  if(run.stakedFollower!==null){
+    applyFollowerBuff(state.h1,state.p1Collection,run.stakedFollower);
+    var wTmpl=FOLLOWER_TEMPLATES.find(function(t){return t.name===state.p1Collection[run.stakedFollower].name});
+    if(wTmpl&&wTmpl.wagerDebuff){
+      wTmpl.wagerDebuff.apply(state.h2);
+      addLog(0,'Wager: '+wTmpl.wagerDebuff.name+' ('+wTmpl.wagerDebuff.desc+') on '+state.h2.name,'poison');
+    }
+  }
+
+  // Spawn fighter followers
+  state.h1.arenaFollowers=[];
+  run.fighterFollowers.forEach(function(idx,i){
+    if(idx>=0&&idx<state.p1Collection.length){
+      var tmpl=FOLLOWER_TEMPLATES.find(function(t){return t.name===state.p1Collection[idx].name})||state.p1Collection[idx];
+      state.h1.arenaFollowers.push(mkArenaFollower(tmpl,state.h1,i,run.fighterFollowers.length));
+    }
+  });
+
   buildHUD(state.h1,'hudP1');
 }
 
-function ladderShowIntermission(won,earnedFollower){
+function ladderShowIntermission(won,earnedFollower,stakeMsg){
   if(state.intv){clearInterval(state.intv);state.intv=null}
   document.getElementById('battleScreen').style.display='none';
   document.getElementById('ladderScreen').style.display='flex';
@@ -203,26 +341,8 @@ function ladderShowIntermission(won,earnedFollower){
     '</div>';
   }
 
-  var previewHtml='';
-  if(won){
-    var nextIdx2=state.ladderRun.opponentIdx;
-    if(nextIdx2<LADDER_SEQUENCE.length){
-      var nk2=LADDER_SEQUENCE[nextIdx2];var nc=CLASSES[nk2];
-      previewHtml='<div class="ld-next-preview">'+
-        '<div class="lnp-title">NEXT OPPONENT</div>'+
-        '<div class="lnp-name" style="color:'+nc.color+'">'+nc.icon+' '+nc.name+'</div>'+
-        '<div class="lnp-stats">'+nc.hp+' HP | '+nc.baseDmg+' DMG | '+nc.baseAS+' AS | '+nc.def+' DEF</div>'+
-      '</div>';
-    } else {
-      var nextOpp=generateLadderOpponent(state.ladderRun.wins);
-      state.ladderRun._previewedNext=nextOpp;
-      previewHtml='<div class="ld-next-preview">'+
-        '<div class="lnp-title">NEXT CHALLENGER</div>'+
-        '<div class="lnp-name" style="color:#ff88ff">\u2692 '+nextOpp.name+'</div>'+
-        '<div class="lnp-stats">'+nextOpp.hp+' HP | '+nextOpp.baseDmg+' DMG | '+nextOpp.baseAS+' AS | '+nextOpp.def+' DEF | '+Math.round(nextOpp.evasion*100)+'% EVA</div>'+
-      '</div>';
-    }
-  }
+  var stakeHtml='';
+  if(stakeMsg)stakeHtml='<div style="font-size:.5rem;color:#ff4444;margin:4px 0">'+stakeMsg+'</div>';
 
   var rewardHtml='';
   if(earnedFollower){
@@ -236,11 +356,9 @@ function ladderShowIntermission(won,earnedFollower){
   if(won){titleHtml='\u{1F3C6} ROUND '+state.ladderRun.wins+' COMPLETE!';titleColor='#44ee88';}
   else{titleHtml='\u{1F480} LADDER OVER \u2014 '+state.ladderRun.wins+' WIN'+(state.ladderRun.wins!==1?'S':'');titleColor='#ff4444';}
 
-  var stashHtml='<div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">\u{1F392} Items: '+renderStashSummary(state.ladderPlayer)+'</div>';
-
   var screenHtml='<div class="ld-inter" id="ldInterContent">'+
     '<div class="ld-title" style="color:'+titleColor+'">'+titleHtml+'</div>'+
-    bracketHtml+statsHtml+stashHtml+rewardHtml+previewHtml+
+    bracketHtml+statsHtml+stakeHtml+rewardHtml+
     '<div class="dg-choices" style="margin-top:10px">';
   if(won){
     screenHtml+='<button class="dg-choice danger" onclick="ladderContinue()">\u2694 FIGHT NEXT</button>';
@@ -256,13 +374,8 @@ function ladderShowIntermission(won,earnedFollower){
 
 export function ladderContinue(){
   var el=document.getElementById('ldInterContent');if(el)el.remove();
-  if(state.ladderRun._previewedNext){
-    state.ladderRun.currentOpponent={type:'generated',config:state.ladderRun._previewedNext};
-    state.ladderRun._previewedNext=null;
-    ladderLaunchBattle(state.ladderRun.playerClass,'_ladder_generated');
-  } else {
-    ladderNextFight();
-  }
+  // Show follower pick before each fight
+  ladderShowFollowerPick();
 }
 
 export function ladderQuit(){

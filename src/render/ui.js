@@ -2,7 +2,7 @@ import { state } from '../gameState.js';
 import { CLASSES } from '../data/classes.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { blN, effAS, effEv, isStunned } from '../combat/engine.js';
-import { getCustomTotalStats } from '../combat/hero.js';
+import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
 
 export function buildHUD(h,id){
   const p=document.getElementById(id);
@@ -101,7 +101,7 @@ export function buildCustomTooltip(){
     '<div class="ct-row"><span>Atk Speed</span><span class="ct-val">'+cs.baseAS.toFixed(2)+'</span></div>'+
     '<div class="ct-row"><span>Defense</span><span class="ct-val">'+cs.def+'</span></div>'+
     '<div class="ct-row"><span>Evasion</span><span class="ct-val">'+Math.round(cs.evasion*100)+'%</span></div>'+
-    '<div class="ct-row"><span>Range</span><span class="ct-val">'+state.customChar.rangeType+'</span></div>'+
+    '<div class="ct-row"><span>Range</span><span class="ct-val">'+getWeaponRangeType()+'</span></div>'+
     '<div class="ct-divider"></div><div class="ct-section">Abilities</div>'+sn1+sn2+un+'</div>';
 }
 
@@ -110,13 +110,11 @@ export function renderFollowerCards(containerId,followers,clickHandler){
   el.innerHTML='';
   followers.forEach(function(f,i){
     var card=document.createElement('div');
-    var sel=f._selected||f.assignedP1||f.assignedP2||f.stakedP1||f.stakedP2;
+    var sel=f._selected||f.assignedP1||f.stakedP1;
     card.className='follower-card'+(sel?' selected':'');
     var badges='';
-    if(f.assignedP1)badges+='<div class="staked-badge" style="background:#227744">P1</div>';
-    if(f.assignedP2)badges+='<div class="staked-badge" style="background:#226688">P2</div>';
+    if(f.assignedP1)badges+='<div class="staked-badge" style="background:#227744">\u2694</div>';
     if(f.stakedP1)badges+='<div class="staked-badge" style="background:#aa2200;top:auto;bottom:-4px">BET</div>';
-    if(f.stakedP2)badges+='<div class="staked-badge" style="background:#aa2200;top:auto;bottom:-4px">BET</div>';
     var abilityLine=f.abilityName?'<div style="font-size:.42rem;color:#88ccaa;margin-top:1px">'+f.abilityName+': '+f.abilityDesc+'</div>':'';
     var wagerLine=f.wagerDebuffName?'<div style="font-size:.42rem;color:#cc8866;margin-top:1px">Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>':'';
     card.innerHTML='<div class="fc-icon">'+f.icon+'</div><div class="fc-name '+f.rarity+'">'+f.name+'</div><div class="fc-rarity '+f.rarity+'">'+f.rarity+'</div><div class="fc-stats">'+f.buffDesc+'</div>'+abilityLine+wagerLine+badges;
@@ -126,18 +124,14 @@ export function renderFollowerCards(containerId,followers,clickHandler){
 }
 
 export function updateFollowerDisplays(){
-  var p1nf=document.getElementById('p1NoFollowers');
-  var p2nf=document.getElementById('p2NoFollowers');
-  if(p1nf)p1nf.style.display=state.p1Collection.length?'none':'block';
-  if(p2nf)p2nf.style.display=state.p2Collection.length?'none':'block';
+  var nf=document.getElementById('p1NoFollowers');
+  if(nf)nf.style.display=state.p1Collection.length?'none':'block';
   renderFollowerCards('p1CollectionDisplay',state.p1Collection);
-  renderFollowerCards('p2CollectionDisplay',state.p2Collection);
   updateStakeUI();
 }
 
 export function updateStakeUI(){
   var p1FEl=document.getElementById('p1Fighters');
-  var p2FEl=document.getElementById('p2Fighters');
   if(!p1FEl)return;
   renderFollowerCards('p1Fighters',state.p1Collection,function(f){
     var idx=state.p1Collection.indexOf(f);
@@ -152,39 +146,15 @@ export function updateStakeUI(){
     if(i===state.p1StakedFollower)card.style.opacity='0.4';
   });
   document.getElementById('p1FighterCount').textContent='('+state.p1FighterFollowers.length+'/3)';
-  renderFollowerCards('p2Fighters',state.p2Collection,function(f){
-    var idx=state.p2Collection.indexOf(f);
-    if(idx===state.p2StakedFollower)return;
-    var fi=state.p2FighterFollowers.indexOf(idx);
-    if(fi>=0){state.p2FighterFollowers.splice(fi,1)}
-    else{if(state.p2FighterFollowers.length>=3)return;state.p2FighterFollowers.push(idx)}
-    updateStakeUI();
-  });
-  p2FEl.querySelectorAll('.follower-card').forEach(function(card,i){
-    if(state.p2FighterFollowers.indexOf(i)>=0)card.classList.add('selected');
-    if(i===state.p2StakedFollower)card.style.opacity='0.4';
-  });
-  document.getElementById('p2FighterCount').textContent='('+state.p2FighterFollowers.length+'/3)';
-  var p1WagerList=state.p1Collection.filter(function(f,i){return state.p1FighterFollowers.indexOf(i)<0});
-  renderFollowerCards('p1Stake',p1WagerList,function(f){
+  var wagerList=state.p1Collection.filter(function(f,i){return state.p1FighterFollowers.indexOf(i)<0});
+  renderFollowerCards('p1Stake',wagerList,function(f){
     var realIdx=state.p1Collection.indexOf(f);
     if(state.p1StakedFollower===realIdx){state.p1StakedFollower=null}
     else{state.p1StakedFollower=realIdx}
     updateStakeUI();
   });
   document.getElementById('p1Stake').querySelectorAll('.follower-card').forEach(function(card,i){
-    var realIdx=state.p1Collection.indexOf(p1WagerList[i]);
+    var realIdx=state.p1Collection.indexOf(wagerList[i]);
     if(realIdx===state.p1StakedFollower)card.classList.add('selected');
-  });
-  var p2WagerList=state.p2Collection.filter(function(f,i){return state.p2FighterFollowers.indexOf(i)<0});
-  renderFollowerCards('p2Stake',p2WagerList,function(f){
-    var realIdx=state.p2Collection.indexOf(f);
-    if(state.p2StakedFollower===realIdx){state.p2StakedFollower=null}
-    else{state.p2StakedFollower=realIdx}
-    updateStakeUI();
-  });
-  document.getElementById('p2Stake').querySelectorAll('.follower-card').forEach(function(card,i){
-    var realIdx=state.p2Collection.indexOf(p2WagerList[i]);
-    if(realIdx===state.p2StakedFollower)card.classList.add('selected');
   });
 }

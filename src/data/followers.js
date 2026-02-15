@@ -129,6 +129,7 @@ export function rollFollower(floor){
   return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
     combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
     abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
+    abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
     wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
     assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
 }

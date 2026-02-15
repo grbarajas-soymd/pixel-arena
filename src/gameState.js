@@ -2,6 +2,12 @@
 // Zero imports — breaks all circular dependency chains.
 // Every module imports this. All mutable globals live here.
 
+export var FIXED_BASE_STATS = {
+  hp: 3000, baseDmg: 20, baseAS: 0.3, def: 10, evasion: 0,
+  moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
+  energyRegen: 0, spellDmgBonus: 0
+};
+
 export const state = {
   // Battle speed & timing
   spd: 2,
@@ -19,7 +25,7 @@ export const state = {
   h2: null,
 
   // Class selection
-  p1Class: 'wizard',
+  p1Class: 'custom',
   p2Class: 'ranger',
 
   // Canvas (initialized in main.js)
@@ -40,38 +46,30 @@ export const state = {
     skills: [null, null],
     ultimate: null,
     baseStats: {
-      hp: 4500, baseDmg: 0, baseAS: 0, def: 0, evasion: 0,
-      moveSpeed: 110, mana: 0, manaRegen: 0, energy: 0,
+      hp: 3000, baseDmg: 20, baseAS: 0.3, def: 10, evasion: 0,
+      moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
       energyRegen: 0, spellDmgBonus: 0
     },
-    rangeType: 'ranged',
     sprite: 'wizard',
     editingSide: null
   },
 
-  // Follower collections
+  // Gear bag (unequipped gear the player owns)
+  gearBag: [],
+
+  // Follower collections (single-player)
   p1Collection: [],
-  p2Collection: [],
-  p1Stash: [],
-  p2Stash: [],
 
   // Follower assignments
   p1StakedFollower: null,
-  p2StakedFollower: null,
   p1FighterFollowers: [],
-  p2FighterFollowers: [],
 
   // Dungeon
-  dungeonPlayer: 1,
-  dgClass: 'wizard',
   dgRun: null,
 
   // Ladder
-  ladderPlayer: 1,
-  ladderClass: 'wizard',
   ladderRun: null,
-  ladderBestP1: 0,
-  ladderBestP2: 0,
+  ladderBest: 0,
   _ladderGenConfig: null,
   _showWinFn: null,
 };

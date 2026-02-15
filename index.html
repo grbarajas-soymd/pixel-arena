@@ -3,81 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pixel Arena — Autobattler</title>
+<title>Pixel Arena — Gear RPG</title>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="bg"></div>
-<div class="app">
-<div class="title">⚔ PIXEL ARENA ⚔</div>
-<p class="sub">Choose Your Champions</p>
 
-<div class="mode-tabs">
-  <button class="mode-tab active" id="tabArena" onclick="switchMode('arena')">⚔ ARENA</button>
-  <button class="mode-tab" id="tabDungeon" onclick="switchMode('dungeon')">🏰 DUNGEON</button>
-  <button class="mode-tab" id="tabLadder" onclick="switchMode('ladder')">🏆 LADDER</button>
-</div>
-
-<div id="selectorScreen">
-  <div class="sel-title">— Player 1 —</div>
-  <div class="sel-row" id="p1Cards"></div>
-  <div class="sel-title" style="margin-top:6px">— Player 2 —</div>
-  <div class="sel-row" id="p2Cards"></div>
-  <div class="stake-section" id="stakeSection">
-    <div class="sel-title" style="font-size:.55rem">👾 ASSIGN FOLLOWERS 👾</div>
-    <div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">Pick up to 3 fighters per side. Optionally wager 1 follower — loser forfeits it!</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div>
-        <div style="font-size:.5rem;color:var(--teal-glow);margin-bottom:4px">P1 Fighters <span id="p1FighterCount" style="color:var(--parch-dk)">(0/3)</span></div>
-        <div class="follower-collection" id="p1Fighters"></div>
-        <div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">P1 Wager <span style="color:var(--parch-dk)">(optional)</span></div>
-        <div class="follower-collection" id="p1Stake"></div>
+<div class="dropdown-overlay" id="archetypeOverlay" style="display:none;z-index:200">
+  <div class="dropdown-panel" style="max-width:500px;text-align:center">
+    <div class="dd-title" style="font-size:.7rem;margin-bottom:8px">Choose Your Path</div>
+    <div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:12px">This determines your starting gear and skills. You can change everything later.</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <div class="class-card bar" style="cursor:pointer;width:130px" onclick="pickArchetype('melee')">
+        <div class="cc-icon">&#128481;</div>
+        <div class="cc-name bar">Warrior</div>
+        <div class="cc-stats">Melee fighter</div>
+        <div style="font-size:.42rem;color:var(--parch-dk);margin-top:4px">Rusty Blade + Charge &amp; War Cry</div>
       </div>
-      <div>
-        <div style="font-size:.5rem;color:var(--fire-glow);margin-bottom:4px">P2 Fighters <span id="p2FighterCount" style="color:var(--parch-dk)">(0/3)</span></div>
-        <div class="follower-collection" id="p2Fighters"></div>
-        <div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">P2 Wager <span style="color:var(--parch-dk)">(optional)</span></div>
-        <div class="follower-collection" id="p2Stake"></div>
+      <div class="class-card rgr" style="cursor:pointer;width:130px" onclick="pickArchetype('ranged')">
+        <div class="cc-icon">&#127993;</div>
+        <div class="cc-name rgr">Archer</div>
+        <div class="cc-stats">Ranged attacker</div>
+        <div style="font-size:.42rem;color:var(--parch-dk);margin-top:4px">Wooden Bow + Mark &amp; Bloodlust</div>
+      </div>
+      <div class="class-card wiz" style="cursor:pointer;width:130px" onclick="pickArchetype('caster')">
+        <div class="cc-icon">&#129668;</div>
+        <div class="cc-name wiz">Mage</div>
+        <div class="cc-stats">Spell caster</div>
+        <div style="font-size:.42rem;color:var(--parch-dk);margin-top:4px">Worn Wand + Lightning &amp; Shield</div>
       </div>
     </div>
   </div>
-  <button class="go-btn" onclick="launchBattle()">⚔ BATTLE ⚔</button>
+</div>
+
+<div class="app">
+<div class="title">&#9876; PIXEL ARENA &#9876;</div>
+<p class="sub">Gear Up. Fight. Conquer.</p>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tabArena" onclick="switchMode('arena')">&#9876; ARENA</button>
+  <button class="mode-tab" id="tabDungeon" onclick="switchMode('dungeon')">&#127984; DUNGEON</button>
+  <button class="mode-tab" id="tabLadder" onclick="switchMode('ladder')">&#127942; LADDER</button>
+</div>
+
+<div id="selectorScreen">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px">
+    <div>
+      <div class="sel-title">&#9876; YOUR HERO</div>
+      <div id="heroCard"></div>
+    </div>
+    <div>
+      <div class="sel-title">&#8212; Choose Opponent &#8212;</div>
+      <div class="sel-row" id="opponentCards"></div>
+    </div>
+  </div>
+  <div class="stake-section" id="stakeSection">
+    <div class="sel-title" style="font-size:.55rem">&#128126; ASSIGN FOLLOWERS &#128126;</div>
+    <div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">Pick up to 3 fighters. Optionally wager 1 follower &#8212; lose the battle, lose it!</div>
+    <div>
+      <div style="font-size:.5rem;color:var(--teal-glow);margin-bottom:4px">Fighters <span id="p1FighterCount" style="color:var(--parch-dk)">(0/3)</span></div>
+      <div class="follower-collection" id="p1Fighters"></div>
+      <div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">Wager <span style="color:var(--parch-dk)">(optional)</span></div>
+      <div class="follower-collection" id="p1Stake"></div>
+    </div>
+  </div>
+  <button class="go-btn" onclick="launchBattle()">&#9876; BATTLE &#9876;</button>
+  <button class="btn btn-back" onclick="resetGame()" style="margin-top:12px;font-size:.42rem;opacity:0.6">&#128260; Reset Game</button>
 </div>
 
 <div id="dungeonScreen">
-  <div class="dg-header">🏰 THE DEPTHS 🏰</div>
-  <div class="dg-sub">Descend to find powerful followers</div>
+  <div class="dg-header">&#127984; THE DEPTHS &#127984;</div>
+  <div class="dg-sub">Descend to find powerful gear and followers</div>
   <div id="dungeonPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div class="sel-title">— Who is Delving? —</div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:2px">
-      <button class="mode-tab active" id="dgP1Tab" onclick="setDungeonPlayer(1)" style="font-size:.55rem;padding:6px 18px">P1 Dungeon</button>
-      <button class="mode-tab" id="dgP2Tab" onclick="setDungeonPlayer(2)" style="font-size:.55rem;padding:6px 18px">P2 Dungeon</button>
-    </div>
-    <div class="sel-title">— Choose Your Delver —</div>
+    <div class="sel-title">&#8212; Your Delver &#8212;</div>
     <div class="sel-row" id="dgClassPick"></div>
     <div style="font-size:.52rem;color:var(--parch-dk);text-align:center;max-width:400px;line-height:1.6">
-      Descend through randomized floors. Defeat monsters, find treasure, and capture followers. Your hero heals 30% between floors. Followers fight for you in Arena battles!
+      Descend through randomized floors. Defeat monsters, find treasure, and collect gear. Your hero heals 30% between floors. Gear persists forever!
     </div>
-    <button class="go-btn" onclick="startDungeon()" id="btnDungeon" style="font-size:.65rem;padding:10px 24px">🏰 DESCEND</button>
-    <button class="btn btn-back" onclick="switchMode('arena')">← BACK TO ARENA</button>
-    <div id="dgStashDisplay" style="width:100%;max-width:800px;margin-top:6px;font-size:.48rem;color:var(--parch-dk);text-align:center"></div>
-    <div style="width:100%;max-width:800px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div>
-        <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">📦 P1 FOLLOWERS</div>
-        <div class="follower-collection" id="p1CollectionDisplay"></div>
-        <div id="p1NoFollowers" class="no-followers">No followers yet!</div>
-      </div>
-      <div>
-        <div class="sel-title" style="font-size:.55rem;color:var(--fire-glow)">📦 P2 FOLLOWERS</div>
-        <div class="follower-collection" id="p2CollectionDisplay"></div>
-        <div id="p2NoFollowers" class="no-followers">No followers yet!</div>
-      </div>
+    <button class="go-btn" onclick="startDungeon()" id="btnDungeon" style="font-size:.65rem;padding:10px 24px">&#127984; DESCEND</button>
+    <button class="btn btn-back" onclick="switchMode('arena')">&#8592; BACK TO ARENA</button>
+    <div style="width:100%;max-width:800px;margin-top:8px">
+      <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128230; FOLLOWERS</div>
+      <div class="follower-collection" id="p1CollectionDisplay"></div>
+      <div id="p1NoFollowers" class="no-followers">No followers yet!</div>
     </div>
   </div>
   <div id="dungeonRunScreen" style="display:none">
     <div id="dgProgressBar" style="width:100%;max-width:700px;margin:0 auto 6px;padding:0 4px">
       <div style="display:flex;justify-content:space-between;font-size:.48rem;color:var(--parch-dk);margin-bottom:2px">
-        <span id="dgProgressLabel">Floor 1 — Room 1/3</span>
+        <span id="dgProgressLabel">Floor 1 &#8212; Room 1/3</span>
         <span id="dgProgressStats"></span>
       </div>
       <div style="height:10px;background:rgba(0,0,0,0.4);border:1px solid var(--panel-border);position:relative;overflow:hidden">
@@ -87,9 +101,9 @@
     </div>
     <div class="dg-main">
       <div class="dg-panel">
-        <div class="dg-panel-title">🗡 DELVER</div>
+        <div class="dg-panel-title">&#128481; DELVER</div>
         <div id="dgHeroInfo"></div>
-        <div class="dg-panel-title" style="margin-top:8px">📜 LOG</div>
+        <div class="dg-panel-title" style="margin-top:8px">&#128220; LOG</div>
         <div class="dg-log" id="dgLog"></div>
       </div>
       <div class="dg-panel dg-map">
@@ -97,14 +111,14 @@
         <div id="dgRoomContent"></div>
       </div>
       <div class="dg-panel">
-        <div class="dg-panel-title">🎒 ITEMS</div>
+        <div class="dg-panel-title">&#127890; ITEMS</div>
         <div id="dgInventory"></div>
-        <div class="dg-panel-title" style="margin-top:8px">👾 CAPTURED</div>
+        <div class="dg-panel-title" style="margin-top:8px">&#128126; CAPTURED</div>
         <div id="dgFollowers"></div>
       </div>
     </div>
     <div style="display:flex;gap:6px;justify-content:center;margin-top:8px">
-      <button class="btn btn-back" onclick="abandonDungeon()">☠ ABANDON RUN</button>
+      <button class="btn btn-back" onclick="abandonDungeon()">&#9760; ABANDON RUN</button>
     </div>
   </div>
 </div>
@@ -113,12 +127,16 @@
 <div id="customScreen">
   <div class="cs-header">&#9874; CHARACTER FORGE &#9874;</div>
   <div class="cs-layout">
-    <div class="cs-panel"><div class="cs-panel-title">&#9876; EQUIPMENT</div><div id="equipSlots"></div><div class="cs-panel-title" style="margin-top:8px">&#128202; BASE STATS</div><div id="statEditors"></div></div>
+    <div class="cs-panel">
+      <div class="cs-panel-title">&#9876; EQUIPMENT</div>
+      <div id="equipSlots"></div>
+      <div class="cs-panel-title" style="margin-top:8px">&#127890; GEAR BAG</div>
+      <div id="gearBagDisplay"></div>
+    </div>
     <div class="cs-panel" style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="cs-panel-title">PREVIEW</div><div class="cs-avatar"><canvas id="previewCanvas" width="160" height="180"></canvas></div><input class="cs-name-input" id="customName" placeholder="Hero Name" maxlength="12" value="Custom"><div id="customTotalStats" style="font-size:.5rem;color:var(--parch-dk);line-height:1.5;text-align:center;margin-top:3px"></div></div>
     <div class="cs-panel"><div class="cs-panel-title">&#10022; SKILLS (Pick 2)</div><div id="skillSlot1" class="skill-pick" onclick="openSkillPicker(0)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 1 - Click</div></div></div><div id="skillSlot2" class="skill-pick" onclick="openSkillPicker(1)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 2 - Click</div></div></div><div class="cs-panel-title" style="margin-top:8px">&#128128; ULTIMATE</div><div id="ultSlot" class="skill-pick" onclick="openSkillPicker(2)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Ultimate - Click</div></div></div>
-    <div class="cs-panel-title" style="margin-top:8px">&#9881; COMBAT</div>
-    <div class="stat-edit-row"><span class="stat-edit-label">Range</span><select id="customRangeType" class="stat-edit-val"><option value="melee">Melee</option><option value="ranged" selected>Ranged</option></select></div>
-    <div class="stat-edit-row"><span class="stat-edit-label">Sprite</span><select id="customSprite" class="stat-edit-val"><option value="wizard">Mage</option><option value="ranger">Archer</option><option value="assassin">Rogue</option><option value="barbarian">Warrior</option></select></div>
+    <div class="cs-panel-title" style="margin-top:8px">&#9881; CLASS</div>
+    <div class="stat-edit-row"><span class="stat-edit-label">Class</span><select id="customClass" class="stat-edit-val" onchange="applyClassDefaults()"><option value="wizard">Mage</option><option value="ranger">Archer</option><option value="assassin">Rogue</option><option value="barbarian">Warrior</option></select></div>
     </div>
   </div>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button class="go-btn" onclick="saveCustomAndBack()" style="font-size:.65rem;padding:10px 24px">&#10003; SAVE &amp; BACK</button><button class="btn btn-back" onclick="cancelCustom()">&#10005; CANCEL</button></div>
@@ -126,17 +144,13 @@
 <div class="dropdown-overlay" id="ddOverlay"><div class="dropdown-panel"><div class="dd-title" id="ddTitle">Select</div><div id="ddItems"></div><button class="dd-close" onclick="closeDD()">CLOSE</button></div></div>
 
 <div id="ladderScreen" style="display:none">
-  <div class="dg-header">🏆 THE LADDER 🏆</div>
-  <div class="dg-sub">Fight every class then face infinite challengers. Every 5 wins earns a follower!</div>
+  <div class="dg-header">&#127942; THE LADDER &#127942;</div>
+  <div class="dg-sub">Fight every class then face infinite challengers. Every 3 wins earns a follower!</div>
   <div id="ladderPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:2px">
-      <button class="mode-tab active" id="ldP1Tab" onclick="setLadderPlayer(1)" style="font-size:.55rem;padding:6px 18px">P1 Ladder</button>
-      <button class="mode-tab" id="ldP2Tab" onclick="setLadderPlayer(2)" style="font-size:.55rem;padding:6px 18px">P2 Ladder</button>
-    </div>
-    <div class="sel-title">— Choose Your Fighter —</div>
+    <div class="sel-title">&#8212; Your Fighter &#8212;</div>
     <div class="sel-row" id="ldClassPick"></div>
-    <button class="go-btn" onclick="startLadder()" id="btnLadder" style="font-size:.65rem;padding:10px 24px">🏆 BEGIN CLIMB</button>
-    <button class="btn btn-back" onclick="switchMode('arena')">← BACK</button>
+    <button class="go-btn" onclick="startLadder()" id="btnLadder" style="font-size:.65rem;padding:10px 24px">&#127942; BEGIN CLIMB</button>
+    <button class="btn btn-back" onclick="switchMode('arena')">&#8592; BACK</button>
     <div id="ladderRecord" style="font-size:.55rem;color:var(--parch-dk);margin-top:4px"></div>
   </div>
 </div>
@@ -151,8 +165,8 @@
     <button class="btn btn-spd on" onclick="setSpd(2,this)">2x</button>
     <button class="btn btn-spd" onclick="setSpd(5,this)">5x</button>
     <button class="btn btn-spd" onclick="setSpd(10,this)">10x</button>
-    <button class="btn btn-spd" id="btnSound" onclick="toggleSound(this)" title="Toggle Sound">🔊</button>
-    <button class="btn btn-spd" onclick="cycleBiome(this)" title="Change Arena">🌍</button>
+    <button class="btn btn-spd" id="btnSound" onclick="toggleSound(this)" title="Toggle Sound">&#128266;</button>
+    <button class="btn btn-spd" onclick="cycleBiome(this)" title="Change Arena">&#127757;</button>
   </div>
   <canvas id="arenaCanvas" width="1000" height="500"></canvas>
   <div class="hud">

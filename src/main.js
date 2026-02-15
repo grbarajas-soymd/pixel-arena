@@ -3,6 +3,7 @@
 
 import './styles.css';
 import { state } from './gameState.js';
+import { STARTER_LOADOUTS } from './data/items.js';
 
 // Persistence
 import { loadGame, setupAutoSave } from './persistence.js';
@@ -10,22 +11,22 @@ import { loadGame, setupAutoSave } from './persistence.js';
 // Mode modules
 import {
   buildSelector, launchBattle, backToSelect, startBattle, resetBattle,
-  showWin, setSpd, toggleSound, cycleBiome, switchMode, setDungeonPlayer
+  showWin, setSpd, toggleSound, cycleBiome, switchMode
 } from './modes/arena.js';
-import { setLadderPlayer, startLadder, ladderContinue, ladderQuit } from './modes/ladder.js';
+import { startLadder, ladderContinue, ladderQuit, ladderFight } from './modes/ladder.js';
 import {
   startDungeon, abandonDungeon, buildDungeonPicker,
   dgKeepFollower, dgSellFollower, dgUsePotion, dgFlee,
   dgTakeTreasure, dgTriggerTrap, dgDodgeTrap, dgRest, dgSkipRest,
   dgUseShrine, dgBuyItem, dgCombatRound, dgClassMove,
-  generateRoom, dgProceedToCapture, endDungeonRun, dgVictory,
-  _dgActualGenerateRoom
+  generateRoom, dgProceedToLoot, dgProceedToCapture, endDungeonRun, dgVictory,
+  _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear
 } from './modes/dungeon.js';
 
 // Custom character editor
 import {
   saveCustomAndBack, cancelCustom, openSkillPicker, closeDD,
-  updateStat, openCustomEditor
+  openCustomEditor, applyClassDefaults
 } from './custom.js';
 
 // Render
@@ -40,11 +41,40 @@ state.ctx = state.canvas.getContext('2d');
 state._showWinFn = showWin;
 
 // Load saved game data (collections, preferences, custom char)
-loadGame();
+var loaded = loadGame();
+
+// Force single-player custom character
+state.p1Class = 'custom';
+
+// On first load: show archetype picker
+if (!loaded) {
+  document.getElementById('archetypeOverlay').style.display = 'flex';
+}
 
 // Build initial UI
 buildSelector();
 updateFollowerDisplays();
+
+function pickArchetype(arch) {
+  var loadout = STARTER_LOADOUTS[arch];
+  if (!loadout) return;
+  state.customChar.equipment = Object.assign({}, loadout.equipment);
+  state.customChar.sprite = loadout.sprite;
+  state.customChar.skills = [loadout.skills[0], loadout.skills[1]];
+  state.customChar.ultimate = loadout.ultimate;
+  state.customChar.name = loadout.name;
+  document.getElementById('archetypeOverlay').style.display = 'none';
+  buildSelector();
+}
+window.pickArchetype = pickArchetype;
+
+function resetGame() {
+  if (confirm('Reset all progress? This deletes your gear, followers, and stats.')) {
+    localStorage.removeItem('pixel-arena-save');
+    location.reload();
+  }
+}
+window.resetGame = resetGame;
 
 // Start render loop
 render();
@@ -66,14 +96,13 @@ window.cancelCustom = cancelCustom;
 window.openSkillPicker = openSkillPicker;
 window.openCustomEditor = openCustomEditor;
 window.closeDD = closeDD;
-window.updateStat = updateStat;
-window.setDungeonPlayer = setDungeonPlayer;
+window.applyClassDefaults = applyClassDefaults;
 window.startDungeon = startDungeon;
 window.abandonDungeon = abandonDungeon;
-window.setLadderPlayer = setLadderPlayer;
 window.startLadder = startLadder;
 window.ladderContinue = ladderContinue;
 window.ladderQuit = ladderQuit;
+window.ladderFight = ladderFight;
 window.dgKeepFollower = dgKeepFollower;
 window.dgSellFollower = dgSellFollower;
 window.dgUsePotion = dgUsePotion;
@@ -85,10 +114,14 @@ window.dgRest = dgRest;
 window.dgSkipRest = dgSkipRest;
 window.dgUseShrine = dgUseShrine;
 window.dgBuyItem = dgBuyItem;
+window.dgBuyGear = dgBuyGear;
 window.dgCombatRound = dgCombatRound;
 window.dgClassMove = dgClassMove;
 window.generateRoom = generateRoom;
+window.dgProceedToLoot = dgProceedToLoot;
 window.dgProceedToCapture = dgProceedToCapture;
 window.endDungeonRun = endDungeonRun;
 window.dgVictory = dgVictory;
 window._dgActualGenerateRoom = _dgActualGenerateRoom;
+window.dgEquipGearDrop = dgEquipGearDrop;
+window.dgStashGearDrop = dgStashGearDrop;
