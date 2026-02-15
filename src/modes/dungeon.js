@@ -2,30 +2,30 @@
 import { state } from '../gameState.js';
 import { CLASSES } from '../data/classes.js';
 import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop } from '../data/items.js';
-import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower } from '../data/followers.js';
-import { addBl } from '../combat/engine.js';
 import { getCustomTotalStats } from '../combat/hero.js';
+import { initDgCombat } from './dgCombat.js';
 import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '../render/ui.js';
+import { drawSpritePreview } from '../render/sprites.js';
 
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
 
 var DG_MONSTERS=[
-  {name:'Goblin Scout',icon:'\u{1F47A}',hp:400,dmg:45,def:8,tier:1},
-  {name:'Cave Bat',icon:'\u{1F987}',hp:280,dmg:60,def:3,tier:1},
-  {name:'Slime',icon:'\u{1F7E2}',hp:550,dmg:35,def:12,tier:1},
-  {name:'Skeleton',icon:'\u{1F480}',hp:450,dmg:55,def:10,tier:1},
-  {name:'Orc Warrior',icon:'\u{1F479}',hp:800,dmg:85,def:22,tier:2},
-  {name:'Dark Mage',icon:'\u{1F9D9}',hp:600,dmg:115,def:12,tier:2},
-  {name:'Troll',icon:'\u{1F9CC}',hp:1100,dmg:75,def:30,tier:2},
-  {name:'Ghost',icon:'\u{1F47B}',hp:550,dmg:100,def:8,tier:2,evasion:0.2},
-  {name:'Minotaur',icon:'\u{1F402}',hp:1500,dmg:125,def:35,tier:3},
-  {name:'Lich',icon:'\u2620\uFE0F',hp:1000,dmg:155,def:18,tier:3},
-  {name:'Stone Golem',icon:'\u{1F5FF}',hp:2000,dmg:95,def:55,tier:3},
-  {name:'Wyvern',icon:'\u{1F409}',hp:1200,dmg:145,def:25,tier:3},
-  {name:'Dragon',icon:'\u{1F432}',hp:2800,dmg:185,def:45,tier:4},
-  {name:'Demon Lord',icon:'\u{1F608}',hp:2400,dmg:210,def:40,tier:4},
-  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:3500,dmg:165,def:50,tier:4},
+  {name:'Goblin Scout',icon:'\u{1F47A}',hp:350,dmg:35,def:5,tier:1},
+  {name:'Cave Bat',icon:'\u{1F987}',hp:220,dmg:45,def:2,tier:1},
+  {name:'Slime',icon:'\u{1F7E2}',hp:450,dmg:25,def:10,tier:1},
+  {name:'Skeleton',icon:'\u{1F480}',hp:380,dmg:40,def:8,tier:1},
+  {name:'Orc Warrior',icon:'\u{1F479}',hp:700,dmg:65,def:18,tier:2},
+  {name:'Dark Mage',icon:'\u{1F9D9}',hp:500,dmg:90,def:10,tier:2},
+  {name:'Troll',icon:'\u{1F9CC}',hp:900,dmg:55,def:25,tier:2},
+  {name:'Ghost',icon:'\u{1F47B}',hp:450,dmg:75,def:6,tier:2,evasion:0.2},
+  {name:'Minotaur',icon:'\u{1F402}',hp:1400,dmg:110,def:30,tier:3},
+  {name:'Lich',icon:'\u2620\uFE0F',hp:950,dmg:140,def:15,tier:3},
+  {name:'Stone Golem',icon:'\u{1F5FF}',hp:1800,dmg:85,def:50,tier:3},
+  {name:'Wyvern',icon:'\u{1F409}',hp:1100,dmg:130,def:22,tier:3},
+  {name:'Dragon',icon:'\u{1F432}',hp:2500,dmg:170,def:40,tier:4},
+  {name:'Demon Lord',icon:'\u{1F608}',hp:2200,dmg:190,def:35,tier:4},
+  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:3200,dmg:150,def:45,tier:4},
 ];
 
 export function buildDungeonPicker(){
@@ -42,23 +42,27 @@ export function buildDungeonPicker(){
     }
   });
   cont.innerHTML='<div class="class-card cst selected" style="cursor:default">'+
-    '<div class="cc-icon">\u2692</div>'+
+    '<canvas class="hero-preview-canvas" width="100" height="120" id="dgPreviewCanvas"></canvas>'+
     '<div class="cc-name cst">'+state.customChar.name+'</div>'+
     '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
     '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
     buildCustomTooltip()+
+    '<button class="dg-choice" style="margin-top:6px;font-size:.42rem;padding:3px 8px" onclick="showArchetypePicker()">Change Class</button>'+
   '</div>';
+  var pc=document.getElementById('dgPreviewCanvas');
+  if(pc)drawSpritePreview(pc,state.customChar.sprite);
 }
 
 export function startDungeon(){
   var cs=getCustomTotalStats();
   var heroName=state.customChar.name;
-  var heroHp=Math.round(cs.hp*0.7);
+  var heroHp=Math.round(cs.hp*0.85);
   var heroDmg=Math.round(cs.baseDmg);
   var heroAS=cs.baseAS;
   var heroDef=cs.def;
   var heroEva=cs.evasion;
-  var maxMana=100;
+  var maxMana=Math.max(100,cs.mana||0);
+  var manaRegen=Math.max(4,cs.manaRegen||0);
   var spellCost=35;
   state.dgRun={
     heroClass:'custom',heroName:heroName,
@@ -68,10 +72,9 @@ export function startDungeon(){
     items:[],followers:[],
     log:[],state:'exploring',
     combatEnemy:null,combatTurn:0,
-    potions:2,maxPotions:3,
+    potions:3,maxPotions:3,
     bonusDmg:0,bonusDef:0,bonusHp:0,bonusAS:0,
-    _spellUsed:false,
-    mana:maxMana,maxMana:maxMana,manaRegen:8,
+    mana:maxMana,maxMana:maxMana,manaRegen:manaRegen,
     spellCost:spellCost,
     roomHistory:[],
     totalKills:0,totalDmgDealt:0,totalDmgTaken:0,
@@ -339,88 +342,11 @@ export function _dgActualGenerateRoom(){
   dgUpdateProgress();updateDgUI();
 }
 
-function dgDmgEstimates(){
-  if(!state.dgRun||!state.dgRun.combatEnemy)return{youMin:0,youMax:0,themMin:0,themMax:0,youAvg:0,themAvg:0};
-  var r=state.dgRun,m=r.combatEnemy;
-  var rawHero=r.baseDmg+r.bonusDmg;
-  var heroMit=rawHero*(1-Math.min(m.def/300,0.8));
-  var youMin=Math.round(heroMit*0.85);var youMax=Math.round(heroMit*1.15);
-  var rawMon=m.dmg;
-  var monMit=rawMon*(1-Math.min((r.def+r.bonusDef)/300,0.8));
-  var themMin=Math.round(monMit*0.85);var themMax=Math.round(monMit*1.15);
-  return{youMin:youMin,youMax:youMax,themMin:themMin,themMax:themMax,youAvg:Math.round((youMin+youMax)/2),themAvg:Math.round((themMin+themMax)/2)};
-}
 
-function dgCombatButtons(){
-  var r=state.dgRun;
-  var est=dgDmgEstimates();
-  var evaPct=r.evasion?Math.round(r.evasion*100):0;
-  var monEva=r.combatEnemy&&r.combatEnemy.evasion?Math.round(r.combatEnemy.evasion*100):0;
-  var hits=Math.max(1,Math.round(r.baseAS+r.bonusAS));
-  var hitLabel=hits>1?' (\u00D7'+hits+')':'';
-  var classBtn='';
-  var canCast=r.mana>=r.spellCost;
-  var costLabel=' ('+r.spellCost+' mana)';
-  if(canCast){
-    var cSkillName=state.customChar.skills[0]!==null&&ALL_SKILLS[state.customChar.skills[0]]?ALL_SKILLS[state.customChar.skills[0]].name:'Power Surge';
-    var cSkillIcon=state.customChar.skills[0]!==null&&ALL_SKILLS[state.customChar.skills[0]]?ALL_SKILLS[state.customChar.skills[0]].icon:'\u2692';
-    classBtn='<button class="dg-choice" style="border-color:#ff88ff;color:#ff88ff" onclick="dgClassMove()">'+cSkillIcon+' '+cSkillName+' ('+Math.round(est.youAvg*2.2)+costLabel+')</button>';
-  }
-  return '<div class="dg-dmg-est">'+
-    '<span class="est-you">You deal: ~'+est.youMin+'\u2013'+est.youMax+hitLabel+(monEva?' ('+monEva+'% miss)':'')+'</span>'+
-    '<span class="est-them">They deal: ~'+est.themMin+'\u2013'+est.themMax+(evaPct?' ('+evaPct+'% dodge)':'')+'</span>'+
-  '</div>'+
-  '<div class="dg-choices" style="flex-wrap:wrap">'+
-    '<button class="dg-choice danger" onclick="dgCombatRound(\'normal\')">\u2694 Strike (~'+est.youAvg+hitLabel+')</button>'+
-    '<button class="dg-choice" style="border-color:#ff8844;color:#ff8844" onclick="dgCombatRound(\'heavy\')">\u{1F4A5} Heavy (\u00D71.5 dmg, take \u00D71.3)</button>'+
-    '<button class="dg-choice" style="border-color:#44aa88;color:#44aa88" onclick="dgCombatRound(\'defend\')">\u{1F6E1} Defend (take \u00D70.4, skip atk)</button>'+
-    (r.gold>=15?'<button class="dg-choice" style="border-color:#e8d060;color:#e8d060" onclick="dgCombatRound(\'power\')">\u2B50 Power (\u00D73, costs 15g)</button>':'')+
-    classBtn+
-    (r.potions>0?'<button class="dg-choice" onclick="dgUsePotion()">\u{1F9EA} Potion ('+r.potions+')</button>':'')+
-    '<button class="dg-choice gold-c" onclick="dgFlee()">\u{1F3C3} Flee</button>'+
-  '</div>';
-}
-
-export function dgClassMove(){
-  var r=state.dgRun;
-  if(!r||!r.combatEnemy||r.mana<r.spellCost)return;
-  r.mana-=r.spellCost;
-  var m=r.combatEnemy;
-  var est=dgDmgEstimates();
-  var dm=Math.round(est.youAvg*2.2*(0.9+Math.random()*0.2));
-  var cSkillName=state.customChar.skills[0]!==null&&ALL_SKILLS[state.customChar.skills[0]]?ALL_SKILLS[state.customChar.skills[0]].name:'Power Surge';
-  var cSkillIcon=state.customChar.skills[0]!==null&&ALL_SKILLS[state.customChar.skills[0]]?ALL_SKILLS[state.customChar.skills[0]].icon:'\u2692';
-  m.hp-=dm;
-  var bonusMsg='';
-  if(state.customChar.ultimate!==null){
-    var ultName=ALL_ULTS[state.customChar.ultimate]?ALL_ULTS[state.customChar.ultimate].name:'';
-    if(ultName.toLowerCase().indexOf('storm')>=0||ultName.toLowerCase().indexOf('thunder')>=0){
-      var extraDm=Math.round(dm*0.3);m.hp-=extraDm;bonusMsg=' + '+extraDm+' shock!';
-    } else if(ultName.toLowerCase().indexOf('berserk')>=0||ultName.toLowerCase().indexOf('rage')>=0){
-      var heal2=Math.round(dm*0.3);r.hp=Math.min(r.maxHp,r.hp+heal2);bonusMsg=' + healed '+heal2+'!';
-    } else if(ultName.toLowerCase().indexOf('rain')>=0||ultName.toLowerCase().indexOf('fire')>=0){
-      m._bleed=(m._bleed||0)+2;bonusMsg=' + 2 turn burn!';
-    } else if(ultName.toLowerCase().indexOf('death')>=0||ultName.toLowerCase().indexOf('mark')>=0){
-      var extraDm2=Math.round(dm*0.4);m.hp-=extraDm2;bonusMsg=' + '+extraDm2+' mark burst!';
-    } else {
-      var heal3=Math.round(dm*0.15);r.hp=Math.min(r.maxHp,r.hp+heal3);bonusMsg=' + healed '+heal3+'!';
-    }
-  }
-  dgLog(cSkillIcon+' '+cSkillName+'! '+dm+' damage!'+bonusMsg,'good');
-  if(m.hp>0){
-    var monDmg=m.dmg*(1-Math.min((r.def+r.bonusDef)/300,0.8));
-    if(Math.random()<r.evasion){dgLog('You dodged the counter!','good');monDmg=0}
-    else{monDmg=Math.round(monDmg*(0.85+Math.random()*0.3));r.hp-=monDmg;dgLog(m.name+' retaliates for '+monDmg+'!','bad')}
-  }
-  if(m.hp<=0){m.hp=0;dgCombatVictory();return}
-  updateMonsterBar();updateDgUI();
-  if(r.hp<=0){r.hp=0;dgDeath();return}
-  dgRefreshCombatUI();
-}
-
-function dgCombatVictory(){
+export function dgCombatVictory(){
   var r=state.dgRun;var m=r.combatEnemy;
-  var goldReward=Math.round((3+Math.random()*7)*r.floor);
+  var goldReward=Math.round((5+Math.random()*10)*r.floor);
+  if(r.room===3)goldReward=Math.round(goldReward*1.5);
   r.gold+=goldReward;r.totalKills++;
   var stats=r._lastCombatStats||{};
   var lastRoom=r.roomHistory[r.roomHistory.length-1];
@@ -439,13 +365,12 @@ function dgCombatVictory(){
     gearDropKey=rollGearDrop(r.floor);
   }
 
-  r.combatEnemy=null;r._spellUsed=false;
+  r.combatEnemy=null;
   var hpPct=Math.round(r.hp/r.maxHp*100);
   var hpCol=hpPct>30?'#44ee88':'#ff4444';
   var isBoss=r.room===3;
   var body='<span style="font-size:.6rem">'+(m.icon||'\u2694')+'</span> <b>'+m.name+'</b> slain!'+(isBoss?' <span style="color:#ff4444">(BOSS)</span>':'')+
     '<br><br>'+
-    '<span class="dg-im-stat" style="color:#44ee88">Turns: '+(stats.turns||'?')+'</span>'+
     '<span class="dg-im-stat" style="color:#ff8844">Dealt: '+(stats.dmgDealt||0)+'</span>'+
     '<span class="dg-im-stat" style="color:#ff4444">Taken: '+(stats.dmgTaken||0)+'</span>'+
     '<span class="dg-im-stat" style="color:var(--gold-bright)">+'+goldReward+'g</span>'+
@@ -494,7 +419,7 @@ function dgCombatVictory(){
       dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#44ee88',body,'\u27A1\uFE0F Continue','generateRoom()');
     }
   }
-  updateMonsterBar();dgUpdateProgress();updateDgUI();
+  dgUpdateProgress();updateDgUI();
 }
 
 export function dgProceedToLoot(){
@@ -509,69 +434,6 @@ export function dgProceedToCapture(){
   dgProceedToLoot();
 }
 
-function dgRefreshCombatUI(){
-  var rc=document.getElementById('dgRoomContent');
-  var room=rc.querySelector('.dg-room');
-  if(room){
-    var oldEst=room.querySelector('.dg-dmg-est');if(oldEst)oldEst.remove();
-    var oldBtns=room.querySelector('.dg-choices');if(oldBtns)oldBtns.remove();
-    room.insertAdjacentHTML('beforeend',dgCombatButtons());
-  }
-}
-
-export function dgCombatRound(mode){
-  var r=state.dgRun;
-  if(!r||!r.combatEnemy)return;
-  mode=mode||'normal';
-  var m=r.combatEnemy;
-  r.combatTurn++;
-  if(r._lastCombatStats)r._lastCombatStats.turns=r.combatTurn;
-  r.mana=Math.min(r.maxMana,r.mana+r.manaRegen);
-  if(m._bleed&&m._bleed>0){
-    var bleedDmg=Math.round((r.baseDmg+r.bonusDmg)*0.3);
-    m.hp-=bleedDmg;m._bleed--;
-    dgLog('\u{1F525} Burn deals '+bleedDmg+'! ('+m._bleed+' turns left)','good');
-  }
-  var hits=Math.max(1,Math.round(r.baseAS+r.bonusAS));
-  var dmgMult=mode==='heavy'?1.5:mode==='power'?3:mode==='defend'?0:1;
-  var totalHeroDmg=0;
-  if(mode==='power'){
-    if(r.gold<15){dgLog('Not enough gold!','bad');return}
-    r.gold-=15;
-  }
-  if(dmgMult>0){
-    for(var hit=0;hit<hits;hit++){
-      var heroDmg=r.baseDmg+r.bonusDmg;
-      var mitigated=heroDmg*(1-Math.min(m.def/300,0.8))*dmgMult;
-      if(m.evasion&&Math.random()<m.evasion){dgLog('Attack '+(hit+1)+' missed!','bad');continue}
-      var variance=0.85+Math.random()*0.3;
-      mitigated=Math.round(mitigated*variance);
-      m.hp-=mitigated;totalHeroDmg+=mitigated;
-    }
-    var modeLabel=mode==='heavy'?'Heavy Strike':'Power Strike';
-    if(mode==='normal')modeLabel=hits>1?hits+'\u00D7 Strike':'Strike';
-    dgLog(modeLabel+': '+totalHeroDmg+' total damage!','good');
-    if(r._lastCombatStats)r._lastCombatStats.dmgDealt+=totalHeroDmg;
-    r.totalDmgDealt+=totalHeroDmg;
-  } else {
-    dgLog('\u{1F6E1} You brace for impact...','info');
-  }
-  if(m.hp<=0){m.hp=0;dgCombatVictory();return}
-  var monDmgMult=mode==='defend'?0.4:mode==='heavy'?1.3:1;
-  var monDmg=m.dmg*(1-Math.min((r.def+r.bonusDef)/300,0.8))*monDmgMult;
-  if(Math.random()<r.evasion){dgLog('You dodged the attack!','good');monDmg=0}
-  else{
-    monDmg=Math.round(monDmg*(0.85+Math.random()*0.3));
-    r.hp-=monDmg;
-    if(r._lastCombatStats)r._lastCombatStats.dmgTaken+=monDmg;
-    r.totalDmgTaken+=monDmg;
-    var defLabel=mode==='defend'?' (defended!)':'';
-    dgLog(m.name+' hits for '+monDmg+defLabel+'!','bad');
-  }
-  updateMonsterBar();updateDgUI();
-  if(r.hp<=0){r.hp=0;dgDeath();return}
-  dgRefreshCombatUI();
-}
 
 function renderRoom(type){
   var rc=document.getElementById('dgRoomContent');
@@ -585,12 +447,11 @@ function renderRoom(type){
     monster.hp=Math.round(monster.hp*scale);monster.dmg=Math.round(monster.dmg*scale);monster.def=Math.round(monster.def*scale);
     if(isBoss){monster.hp=Math.round(monster.hp*1.8);monster.dmg=Math.round(monster.dmg*1.4);monster.name='\u2605 '+monster.name+' \u2605';monster.def=Math.round(monster.def*1.3)}
     monster._maxHp=monster.hp;
-    r.combatEnemy=monster;r.combatTurn=0;r._spellUsed=false;
+    r.combatEnemy=monster;r.combatTurn=0;
     r._lastCombatStats={turns:0,dmgDealt:0,dmgTaken:0,hpBefore:r.hp,monsterName:monster.name,monsterIcon:monster.icon};
-    var bossTag=isBoss?'<div style="font-size:.48rem;color:#ff4444;margin-bottom:2px">\u26A0 FLOOR BOSS \u26A0</div>':'';
-    rc.innerHTML='<div class="dg-room">'+bossTag+'<div class="dg-room-icon">'+monster.icon+'</div><div class="dg-room-title">'+monster.name+'</div><div class="dg-room-desc">HP: '+monster.hp+' | DMG: '+monster.dmg+' | DEF: '+monster.def+(monster.evasion?' | EVA: '+Math.round(monster.evasion*100)+'%':'')+'</div>'+
-      '<div id="monsterHpBar" style="width:200px;margin:4px 0"><div class="bar-track"><div class="bar-fill" id="monHpFill" style="width:100%;background:linear-gradient(90deg,#4a1a1a,#ff4444)"></div></div><div style="font-size:.48rem;color:var(--parch-dk);text-align:center" id="monHpText">'+monster.hp+'/'+monster.hp+'</div></div>'+
-      dgCombatButtons()+'</div>';
+    // Launch real-time combat
+    initDgCombat(monster);
+    return; // initDgCombat handles screen switch
   }
   else if(type==='treasure'){
     var gold=Math.round((5+Math.random()*10)*r.floor);
@@ -701,14 +562,6 @@ function renderRoom(type){
   updateDgUI();
 }
 
-function updateMonsterBar(){
-  if(!state.dgRun||!state.dgRun.combatEnemy)return;
-  var m=state.dgRun.combatEnemy;
-  var fill=document.getElementById('monHpFill');var txt=document.getElementById('monHpText');
-  if(fill)fill.style.width=Math.max(0,m.hp/m._maxHp*100)+'%';
-  if(txt)txt.textContent=Math.max(0,m.hp)+'/'+m._maxHp;
-}
-
 export function dgUsePotion(){
   var r=state.dgRun;
   if(!r||r.potions<=0)return;
@@ -717,13 +570,6 @@ export function dgUsePotion(){
   r.hp=Math.min(r.maxHp,r.hp+heal);
   dgLog('Used potion! Healed '+heal+' HP.','good');
   updateDgUI();
-  if(r.combatEnemy){
-    var m=r.combatEnemy;
-    var monDmg=m.dmg*(1-Math.min((r.def+r.bonusDef)/300,0.8));
-    if(Math.random()<r.evasion){dgLog('Dodged while drinking!','good')}
-    else{monDmg=Math.round(monDmg*(0.85+Math.random()*0.3));r.hp-=monDmg;dgLog(m.name+' hits you for '+monDmg+' while drinking!','bad')}
-    updateDgUI();if(r.hp<=0){r.hp=0;dgDeath()}
-  }
 }
 
 export function dgFlee(){
@@ -767,7 +613,7 @@ export function dgTakeTreasure(gold,hasItem,hasGear){
 
 export function dgTriggerTrap(dmg){
   var r=state.dgRun;
-  var reduced=Math.round(dmg*(1-Math.min((r.def+r.bonusDef)/300,0.5)));
+  var reduced=Math.round(dmg*(1-Math.min((r.def+r.bonusDef)/300,0.7)));
   r.hp-=reduced;dgLog('Took '+reduced+' trap damage!','bad');
   var lr=r.roomHistory[r.roomHistory.length-1];if(lr)lr.cleared=true;
   updateDgUI();if(r.hp<=0){r.hp=0;dgDeath();return}
@@ -848,7 +694,7 @@ function dgRefreshMerchant(){
   rc.innerHTML=sh;
 }
 
-function dgDeath(){
+export function dgDeath(){
   var r=state.dgRun;
   dgLog('\u2620 You have been slain on Floor '+r.floor+'!','bad');
   var kept=r.followers.slice(0,Math.ceil(r.followers.length/2));

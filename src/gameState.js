@@ -3,7 +3,7 @@
 // Every module imports this. All mutable globals live here.
 
 export var FIXED_BASE_STATS = {
-  hp: 3000, baseDmg: 20, baseAS: 0.3, def: 10, evasion: 0,
+  hp: 3500, baseDmg: 60, baseAS: 0.5, def: 15, evasion: 0,
   moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
   energyRegen: 0, spellDmgBonus: 0
 };
@@ -46,7 +46,7 @@ export const state = {
     skills: [null, null],
     ultimate: null,
     baseStats: {
-      hp: 3000, baseDmg: 20, baseAS: 0.3, def: 10, evasion: 0,
+      hp: 3500, baseDmg: 60, baseAS: 0.5, def: 15, evasion: 0,
       moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
       energyRegen: 0, spellDmgBonus: 0
     },

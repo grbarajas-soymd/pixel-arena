@@ -124,6 +124,113 @@ export function mkLadderHero(cfg, side) {
   return h;
 }
 
+// Monster sprite mapping by tier/type keywords
+var MONSTER_SPRITES = {
+  'Goblin': 'barbarian', 'Orc': 'barbarian', 'Troll': 'barbarian', 'Minotaur': 'barbarian',
+  'Skeleton': 'assassin', 'Ghost': 'assassin', 'Golem': 'assassin',
+  'Bat': 'ranger', 'Wyvern': 'ranger', 'Dragon': 'ranger', 'Wyrm': 'ranger',
+  'Mage': 'wizard', 'Lich': 'wizard', 'Demon': 'wizard',
+  'Slime': 'barbarian',
+};
+
+function getMonsterSprite(name) {
+  for (var key in MONSTER_SPRITES) {
+    if (name.indexOf(key) >= 0) return MONSTER_SPRITES[key];
+  }
+  return 'barbarian';
+}
+
+export function mkDungeonMonster(m, side) {
+  var isLeft = side === 'left';
+  var sprite = getMonsterSprite(m.name);
+  return {
+    type: 'custom', customSprite: sprite,
+    name: m.name, monsterIcon: m.icon,
+    color: '#ff4444', colorDark: '#6a1a1a', colorLight: '#ff8888', side: side,
+    x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,
+    maxHp: m.hp, hp: m.hp,
+    baseDmg: m.dmg, baseAS: 0.8 + (m.tier - 1) * 0.15,
+    def: m.def, evasion: m.evasion || 0,
+    moveSpeed: 70 + m.tier * 10, moveSpeedBonus: 0,
+    attackRange: 70, preferredRange: 50,
+    atkCnt: 0, atkCd: 0, bleedStacks: [],
+    shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0,
+    state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0,
+    totDmg: 0, totHeal: 0,
+    blActive: false, blEnd: 0, blDmg: 0, markNext: false,
+    followerAlive: false, follower: null, followerMaxHp: 0, arenaFollowers: [],
+    ultActive: false, ultEnd: 0,
+    shieldActive: false, shieldHp: 0, shieldEnd: 0,
+    mana: 0, maxMana: 0, manaRegen: 0,
+    charge: 0, maxCharge: 10, chargeDecayTimer: 0,
+    castSpeedBonus: 0, spellDmgBonus: 0, spellRange: 200,
+    ultStrikes: 0, ultStrikeTimer: 0,
+    energy: 0, maxEnergy: 0, energyRegen: 0,
+    meleeRange: MELEE, throwRange: 200,
+    stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5,
+    envenomed: false, envenomedEnd: 0,
+    deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0,
+    smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120,
+    resource: 0, maxResource: 0, resourceRegen: 0,
+    spells: {}, customSkillIds: [], customUltId: null,
+  };
+}
+
+export function mkDungeonHero(run, side) {
+  var isLeft = side === 'left';
+  var isMelee = getWeaponRangeType() === 'melee';
+  var s = getCustomTotalStats();
+  var h = {
+    type: 'custom', customSprite: state.customChar.sprite,
+    name: run.heroName, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side,
+    x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,
+    maxHp: run.maxHp, hp: run.hp,
+    baseDmg: run.baseDmg + run.bonusDmg,
+    baseAS: run.baseAS + run.bonusAS,
+    def: run.def + run.bonusDef,
+    evasion: run.evasion,
+    moveSpeed: s.moveSpeed + (run.moveSpeed || 0), moveSpeedBonus: 0,
+    attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300,
+    atkCnt: 0, atkCd: 0, bleedStacks: [],
+    shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0,
+    state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0,
+    totDmg: 0, totHeal: 0,
+    blActive: false, blEnd: 0, blDmg: 0, markNext: false,
+    followerAlive: false, follower: null, followerMaxHp: 450, arenaFollowers: [],
+    ultActive: false, ultEnd: 0,
+    shieldActive: false, shieldHp: 0, shieldEnd: 0,
+    mana: run.mana, maxMana: run.maxMana, manaRegen: run.manaRegen,
+    charge: 0, maxCharge: 10, chargeDecayTimer: 0,
+    castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0,
+    spellRange: isMelee ? 200 : 400,
+    ultStrikes: 0, ultStrikeTimer: 0,
+    energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0,
+    meleeRange: MELEE, throwRange: 200,
+    stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5,
+    envenomed: false, envenomedEnd: 0,
+    deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0,
+    smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120,
+    resource: Math.max(run.mana || 0, s.energy || 0, 100),
+    maxResource: Math.max(run.maxMana || 0, s.energy || 0, 100),
+    resourceRegen: Math.max(run.manaRegen || 0, s.energyRegen || 0, 2),
+    spells: {}, customSkillIds: [], customUltId: null,
+    _stashCrit: run._crit || 0,
+    _stashLifesteal: run._lifesteal || 0,
+  };
+  // Apply skills from customChar
+  for (var i = 0; i < 2; i++) {
+    if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) {
+      h.spells['skill' + i] = { cd: 0, bcd: ALL_SKILLS[state.customChar.skills[i]].bcd || 3000, n: ALL_SKILLS[state.customChar.skills[i]].name };
+      h.customSkillIds.push({ idx: state.customChar.skills[i], key: 'skill' + i });
+    }
+  }
+  if (state.customChar.ultimate !== null && ALL_ULTS[state.customChar.ultimate]) {
+    h.spells.ultimate = { cd: 0, bcd: Infinity, used: false, n: ALL_ULTS[state.customChar.ultimate].name };
+    h.customUltId = state.customChar.ultimate;
+  }
+  return h;
+}
+
 export function mkArenaFollower(template, owner, idx, total) {
   var isLeft = owner.side === 'left';
   var spacing = 45;

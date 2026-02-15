@@ -41,16 +41,20 @@
 <p class="sub">Gear Up. Fight. Conquer.</p>
 
 <div class="mode-tabs">
-  <button class="mode-tab active" id="tabArena" onclick="switchMode('arena')">&#9876; ARENA</button>
-  <button class="mode-tab" id="tabDungeon" onclick="switchMode('dungeon')">&#127984; DUNGEON</button>
+  <button class="mode-tab" id="tabArena" onclick="switchMode('arena')">&#9876; ARENA</button>
+  <button class="mode-tab active" id="tabDungeon" onclick="switchMode('dungeon')">&#127984; DUNGEON</button>
   <button class="mode-tab" id="tabLadder" onclick="switchMode('ladder')">&#127942; LADDER</button>
+  <button class="mode-tab reset-tab" onclick="resetGame()" title="Reset all progress">&#128260; RESET</button>
 </div>
 
 <div id="selectorScreen">
+  <div class="dg-header">&#9876; THE ARENA &#9876;</div>
+  <div class="dg-sub">Fight online opponents and wager followers</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px">
     <div>
-      <div class="sel-title">&#9876; YOUR HERO</div>
+      <div class="sel-title">&#8212; Your Hero &#8212;</div>
       <div id="heroCard"></div>
+      <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
       <div id="onlineControls" style="margin-top:8px;text-align:center"></div>
     </div>
     <div>
@@ -73,17 +77,17 @@
   <button class="btn btn-back" onclick="resetGame()" style="margin-top:12px;font-size:.42rem;opacity:0.6">&#128260; Reset Game</button>
 </div>
 
-<div id="dungeonScreen">
+<div id="dungeonScreen" style="display:flex">
   <div class="dg-header">&#127984; THE DEPTHS &#127984;</div>
   <div class="dg-sub">Descend to find powerful gear and followers</div>
   <div id="dungeonPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div class="sel-title">&#8212; Your Delver &#8212;</div>
+    <div class="sel-title">&#8212; Your Hero &#8212;</div>
     <div class="sel-row" id="dgClassPick"></div>
+    <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
     <div style="font-size:.52rem;color:var(--parch-dk);text-align:center;max-width:400px;line-height:1.6">
       Descend through randomized floors. Defeat monsters, find treasure, and collect gear. Your hero heals 30% between floors. Gear persists forever!
     </div>
-    <button class="go-btn" onclick="startDungeon()" id="btnDungeon" style="font-size:.65rem;padding:10px 24px">&#127984; DESCEND</button>
-    <button class="btn btn-back" onclick="switchMode('arena')">&#8592; BACK TO ARENA</button>
+    <button class="go-btn" onclick="startDungeon()" id="btnDungeon">&#127984; DESCEND</button>
     <div style="width:100%;max-width:800px;margin-top:8px">
       <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128230; FOLLOWERS</div>
       <div class="follower-collection" id="p1CollectionDisplay"></div>
@@ -149,11 +153,16 @@
   <div class="dg-header">&#127942; THE LADDER &#127942;</div>
   <div class="dg-sub">Fight every class then face infinite challengers. Every 3 wins earns a follower!</div>
   <div id="ladderPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div class="sel-title">&#8212; Your Fighter &#8212;</div>
+    <div class="sel-title">&#8212; Your Hero &#8212;</div>
     <div class="sel-row" id="ldClassPick"></div>
-    <button class="go-btn" onclick="startLadder()" id="btnLadder" style="font-size:.65rem;padding:10px 24px">&#127942; BEGIN CLIMB</button>
-    <button class="btn btn-back" onclick="switchMode('arena')">&#8592; BACK</button>
+    <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
     <div id="ladderRecord" style="font-size:.55rem;color:var(--parch-dk);margin-top:4px"></div>
+    <button class="go-btn" onclick="startLadder()" id="btnLadder">&#127942; BEGIN CLIMB</button>
+    <div style="width:100%;max-width:800px;margin-top:8px">
+      <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128230; FOLLOWERS</div>
+      <div class="follower-collection" id="ldCollectionDisplay"></div>
+      <div id="ldNoFollowers" class="no-followers">No followers yet!</div>
+    </div>
   </div>
 </div>
 

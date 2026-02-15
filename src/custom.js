@@ -3,7 +3,8 @@ import { state } from './gameState.js';
 import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from './data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from './data/skills.js';
 import { getCustomTotalStats, getWeaponRangeType } from './combat/hero.js';
-import { buildSelector } from './modes/arena.js';
+import { switchMode } from './modes/arena.js';
+import { drawSpritePreview } from './render/sprites.js';
 
 // Default skill loadouts per class
 var CLASS_DEFAULTS = {
@@ -56,14 +57,9 @@ export function updateTotalStats(){
 }
 
 export function drawPreview(){
-  var pc=document.getElementById('previewCanvas'),c=pc.getContext('2d');
-  c.clearRect(0,0,160,180);c.fillStyle='rgba(200,80,200,0.05)';c.fillRect(0,0,160,180);
-  var cx=80,cy=140;c.fillStyle='rgba(0,0,0,0.2)';c.fillRect(cx-16,cy+2,32,6);
-  function p(x,y,w,h,cl){c.fillStyle=cl;c.fillRect(Math.round(cx+x),Math.round(cy+y),w,h)}
-  p(-12,-20,24,18,'#6a2a6a');p(-10,-22,20,4,'#7a3a7a');p(-14,-18,4,10,'#5a1a5a');p(10,-18,4,10,'#5a1a5a');
-  p(-2,-14,4,4,'#cc44cc');p(-8,-36,16,14,'#d4b898');p(-5,-32,3,3,'#fff');p(2,-32,3,3,'#fff');
-  p(-4,-31,2,2,'#cc44cc');p(3,-31,2,2,'#cc44cc');p(-10,-42,20,8,'#5a1a5a');
-  p(-10,0,7,4,'#3a4a5a');p(3,0,7,4,'#3a4a5a');
+  var pc=document.getElementById('previewCanvas');
+  drawSpritePreview(pc,state.customChar.sprite);
+  var c=pc.getContext('2d');
   c.fillStyle='#ff88ff';c.font='bold 9px "Chakra Petch"';c.textAlign='center';
   c.fillText(state.customChar.name||'Custom',80,22);
 }
@@ -136,7 +132,24 @@ export function closeDD(){document.getElementById('ddOverlay').classList.remove(
 
 export function openCustomEditor(side){
   state.customChar.editingSide=side;
-  document.getElementById('selectorScreen').style.display='none';
+  // Track which screen we came from
+  state._customReturnScreen=null;
+  if(document.getElementById('selectorScreen').style.display!=='none'&&document.getElementById('selectorScreen').style.display!==''){
+    state._customReturnScreen='arena';
+    document.getElementById('selectorScreen').style.display='none';
+  } else if(document.getElementById('dungeonScreen').style.display!=='none'&&document.getElementById('dungeonScreen').style.display!==''){
+    state._customReturnScreen='dungeon';
+    document.getElementById('dungeonScreen').style.display='none';
+  } else if(document.getElementById('ladderScreen').style.display!=='none'&&document.getElementById('ladderScreen').style.display!==''){
+    state._customReturnScreen='ladder';
+    document.getElementById('ladderScreen').style.display='none';
+  } else {
+    // Fallback: hide all screens
+    state._customReturnScreen='dungeon';
+    document.getElementById('selectorScreen').style.display='none';
+    document.getElementById('dungeonScreen').style.display='none';
+    document.getElementById('ladderScreen').style.display='none';
+  }
   document.getElementById('customScreen').style.display='flex';
   document.getElementById('customName').value=state.customChar.name;
   document.getElementById('customClass').value=state.customChar.sprite;
@@ -148,11 +161,12 @@ export function saveCustomAndBack(){
   state.customChar.sprite=document.getElementById('customClass').value;
   state.p1Class='custom';
   document.getElementById('customScreen').style.display='none';
-  document.getElementById('selectorScreen').style.display='flex';
-  buildSelector();
+  var ret=state._customReturnScreen||'dungeon';
+  switchMode(ret);
 }
 
 export function cancelCustom(){
   document.getElementById('customScreen').style.display='none';
-  document.getElementById('selectorScreen').style.display='flex';
+  var ret=state._customReturnScreen||'dungeon';
+  switchMode(ret);
 }

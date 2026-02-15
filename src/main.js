@@ -19,7 +19,7 @@ import {
   startDungeon, abandonDungeon, buildDungeonPicker,
   dgKeepFollower, dgSellFollower, dgUsePotion, dgFlee,
   dgTakeTreasure, dgTriggerTrap, dgDodgeTrap, dgRest, dgSkipRest,
-  dgUseShrine, dgBuyItem, dgCombatRound, dgClassMove,
+  dgUseShrine, dgBuyItem,
   generateRoom, dgProceedToLoot, dgProceedToCapture, endDungeonRun, dgVictory,
   _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear
 } from './modes/dungeon.js';
@@ -52,8 +52,8 @@ if (!loaded) {
   document.getElementById('archetypeOverlay').style.display = 'flex';
 }
 
-// Build initial UI
-buildSelector();
+// Build initial UI — default mode is dungeon
+buildDungeonPicker();
 updateFollowerDisplays();
 
 function pickArchetype(arch) {
@@ -65,12 +65,18 @@ function pickArchetype(arch) {
   state.customChar.ultimate = loadout.ultimate;
   state.customChar.name = loadout.name;
   document.getElementById('archetypeOverlay').style.display = 'none';
-  buildSelector();
+  buildDungeonPicker();
 }
 window.pickArchetype = pickArchetype;
 
+function showArchetypePicker() {
+  document.getElementById('archetypeOverlay').style.display = 'flex';
+}
+window.showArchetypePicker = showArchetypePicker;
+
 function resetGame() {
   if (confirm('Reset all progress? This deletes your gear, followers, and stats.')) {
+    state._resetting = true;
     localStorage.removeItem('pixel-arena-save');
     location.reload();
   }
@@ -116,8 +122,6 @@ window.dgSkipRest = dgSkipRest;
 window.dgUseShrine = dgUseShrine;
 window.dgBuyItem = dgBuyItem;
 window.dgBuyGear = dgBuyGear;
-window.dgCombatRound = dgCombatRound;
-window.dgClassMove = dgClassMove;
 window.generateRoom = generateRoom;
 window.dgProceedToLoot = dgProceedToLoot;
 window.dgProceedToCapture = dgProceedToCapture;

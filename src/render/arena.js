@@ -43,6 +43,7 @@ function updAmbient(dt){
 export function render(){
   const ctx=state.ctx;
   if(!ctx)return;
+  if(state._dgCombatActive){requestAnimationFrame(render);return}
   ctx.clearRect(0,0,CW,CH);
   var b=getBiome();
   const skyG=ctx.createLinearGradient(0,0,0,CH);

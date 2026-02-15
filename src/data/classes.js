@@ -12,10 +12,10 @@ export const CLASSES = {
     hp: 4200, mana: 650, manaRegen: 5.5, baseDmg: 130, baseAS: 0.75, def: 45, evasion: 0,
     moveSpeed: 88, moveSpeedBonus: 0.08, castSpeedBonus: 0.12, spellDmgBonus: 0.08,
     attackRange: 320, spellRange: 430, preferredRange: 380,
-    chainDmg: 260, chainBcd: 5000, chainCost: 40, chainBounce: 0.5,
+    chainDmg: 260, chainBcd: 5000, chainCost: 35, chainBounce: 0.5,
     chainStun: 450, chainSlow: 0.12, chainSlowDur: 1500,
     boltDmg: 140, boltBcd: 2200, boltCost: 20,
-    shieldHp: 420, shieldBcd: 10000, shieldCost: 55, shieldDur: 5000, shieldReflect: 45,
+    shieldHp: 420, shieldBcd: 10000, shieldCost: 45, shieldDur: 5000, shieldReflect: 45,
     ultStrikes: 5, ultDmg: 200, ultDur: 2500, ultHeal: 0.42, ultThreshold: 0.25,
   },
   ranger: {

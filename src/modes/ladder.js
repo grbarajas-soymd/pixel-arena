@@ -11,6 +11,7 @@ import { tick } from '../combat/engine.js';
 import { mkHero, getCustomTotalStats, mkArenaFollower, applyFollowerBuff } from '../combat/hero.js';
 import { buildHUD, updateUI, buildCustomTooltip, buildDefeatSheet, renderFollowerCards } from '../render/ui.js';
 import { startBattle, showWin, resetBattle } from './arena.js';
+import { drawSpritePreview } from '../render/sprites.js';
 
 var LADDER_SEQUENCE=['wizard','ranger','assassin','barbarian'];
 var LADDER_NAMES=['Draven','Zara','Krix','Moku','Thane','Vex','Nira','Bolt','Crag','Syla','Fenn','Hex','Jolt','Pyra','Onyx','Dusk','Blaze','Storm','Frost','Ash','Rune','Shade','Grim','Talon','Echo','Ember','Flux','Nova','Spike','Wisp'];
@@ -29,14 +30,33 @@ export function buildLadderPicker(){
     }
   });
   cont.innerHTML='<div class="class-card cst selected" style="cursor:default">'+
-    '<div class="cc-icon">\u2692</div>'+
+    '<canvas class="hero-preview-canvas" width="100" height="120" id="ldPreviewCanvas"></canvas>'+
     '<div class="cc-name cst">'+state.customChar.name+'</div>'+
     '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
     '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
     buildCustomTooltip()+
+    '<button class="dg-choice" style="margin-top:6px;font-size:.42rem;padding:3px 8px" onclick="showArchetypePicker()">Change Class</button>'+
   '</div>';
+  var pc=document.getElementById('ldPreviewCanvas');
+  if(pc)drawSpritePreview(pc,state.customChar.sprite);
   var rec=document.getElementById('ladderRecord');
   if(rec)rec.innerHTML='Best: <span style="color:var(--gold-bright)">'+state.ladderBest+'W</span>';
+  // Update follower display
+  updateLadderFollowerDisplay();
+}
+
+function updateLadderFollowerDisplay(){
+  var col=state.p1Collection;
+  var cont=document.getElementById('ldCollectionDisplay');
+  var noEl=document.getElementById('ldNoFollowers');
+  if(!cont)return;
+  if(!col||col.length===0){
+    cont.innerHTML='';
+    if(noEl)noEl.style.display='block';
+    return;
+  }
+  if(noEl)noEl.style.display='none';
+  renderFollowerCards('ldCollectionDisplay',col,null);
 }
 
 export function startLadder(){

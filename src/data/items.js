@@ -11,13 +11,13 @@ export const GEAR_RARITY_COLORS = {
 
 export const ITEMS = {
   // — Starter (never drops, only starting equipment) —
-  rusty_blade:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Blade',rarity:'starter',rangeType:'melee',stats:{baseDmg:30,baseAS:0.5},desc:'+30Dmg 0.5AS'},
-  wooden_bow:{slot:'weapon',icon:'\u{1F3F9}',name:'Wooden Bow',rarity:'starter',rangeType:'ranged',stats:{baseDmg:25,baseAS:0.7},desc:'+25Dmg 0.7AS'},
-  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:15,baseAS:0.4,mana:50,spellDmgBonus:0.05},desc:'+15Dmg 0.4AS +50Mana +5%Spell'},
-  cloth_cap:{slot:'helmet',icon:'\u{1F9E2}',name:'Cloth Cap',rarity:'starter',stats:{def:3,hp:50},desc:'+3DEF +50HP'},
-  cloth_tunic:{slot:'chest',icon:'\u{1F455}',name:'Cloth Tunic',rarity:'starter',stats:{def:5,hp:80},desc:'+5DEF +80HP'},
-  worn_sandals:{slot:'boots',icon:'\u{1FA74}',name:'Worn Sandals',rarity:'starter',stats:{def:1,moveSpeed:5},desc:'+1DEF +5Spd'},
-  copper_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Copper Ring',rarity:'starter',stats:{baseDmg:5},desc:'+5Dmg'},
+  rusty_blade:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Blade',rarity:'starter',rangeType:'melee',stats:{baseDmg:50,baseAS:0.35},desc:'+50Dmg 0.35AS'},
+  wooden_bow:{slot:'weapon',icon:'\u{1F3F9}',name:'Wooden Bow',rarity:'starter',rangeType:'ranged',stats:{baseDmg:40,baseAS:0.45},desc:'+40Dmg 0.45AS'},
+  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:30,baseAS:0.3,mana:80,spellDmgBonus:0.06},desc:'+30Dmg 0.3AS +80Mana +6%Spell'},
+  cloth_cap:{slot:'helmet',icon:'\u{1F9E2}',name:'Cloth Cap',rarity:'starter',stats:{def:5,hp:100},desc:'+5DEF +100HP'},
+  cloth_tunic:{slot:'chest',icon:'\u{1F455}',name:'Cloth Tunic',rarity:'starter',stats:{def:8,hp:150},desc:'+8DEF +150HP'},
+  worn_sandals:{slot:'boots',icon:'\u{1FA74}',name:'Worn Sandals',rarity:'starter',stats:{def:2,moveSpeed:8},desc:'+2DEF +8Spd'},
+  copper_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Copper Ring',rarity:'starter',stats:{baseDmg:10,hp:50},desc:'+10Dmg +50HP'},
 
   // — Common —
   arcane_staff:{slot:'weapon',icon:'\u{1FA84}',name:'Arcane Staff',rarity:'common',rangeType:'ranged',stats:{baseDmg:55,baseAS:0.55,spellDmgBonus:0.08},desc:'+55Dmg 0.55AS +8%Spell'},

@@ -107,5 +107,5 @@ function rehydrateFollowers(collection){
 }
 
 export function setupAutoSave(){
-  window.addEventListener('beforeunload',function(){saveGame()});
+  window.addEventListener('beforeunload',function(){if(!state._resetting)saveGame()});
 }

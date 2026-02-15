@@ -127,6 +127,10 @@ export function updateFollowerDisplays(){
   var nf=document.getElementById('p1NoFollowers');
   if(nf)nf.style.display=state.p1Collection.length?'none':'block';
   renderFollowerCards('p1CollectionDisplay',state.p1Collection);
+  // Ladder follower display
+  var lnf=document.getElementById('ldNoFollowers');
+  if(lnf)lnf.style.display=state.p1Collection.length?'none':'block';
+  renderFollowerCards('ldCollectionDisplay',state.p1Collection);
   updateStakeUI();
 }
 

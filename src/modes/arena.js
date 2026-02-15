@@ -13,6 +13,7 @@ import { mkHero, mkArenaFollower, applyFollowerBuff, getCustomTotalStats, serial
 import { buildHUD, updateUI, buildCharTooltip, buildCustomTooltip, buildDefeatSheet, renderFollowerCards, updateFollowerDisplays, updateStakeUI } from '../render/ui.js';
 import { initGround } from '../render/arena.js';
 import { openCustomEditor } from '../custom.js';
+import { drawSpritePreview } from '../render/sprites.js';
 import * as network from '../network.js';
 import { saveGame } from '../persistence.js';
 
@@ -27,12 +28,12 @@ function buildGearSummary(){
       gearHtml+='<span style="color:'+col+'" title="'+item.name+': '+item.desc+'">'+item.icon+'</span>';
     }
   });
-  return '<div class="cc-icon">\u2692</div>'+
+  return '<canvas class="hero-preview-canvas" width="100" height="120" id="arenaPreviewCanvas"></canvas>'+
     '<div class="cc-name cst">'+state.customChar.name+'</div>'+
-    '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS</div>'+
+    '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
     '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
-    '<div style="font-size:.42rem;color:var(--parch-dk);margin-top:2px">Click to edit gear</div>'+
-    buildCustomTooltip();
+    buildCustomTooltip()+
+    '<button class="dg-choice" style="margin-top:6px;font-size:.42rem;padding:3px 8px" onclick="event.stopPropagation();showArchetypePicker()">Change Class</button>';
 }
 
 export function buildSelector(){
@@ -45,6 +46,8 @@ export function buildSelector(){
     card.innerHTML=buildGearSummary();
     card.onclick=function(){openCustomEditor('p1')};
     heroArea.appendChild(card);
+    var pc=heroArea.querySelector('#arenaPreviewCanvas');
+    if(pc)drawSpritePreview(pc,state.customChar.sprite);
   }
   // Online controls (register / upload)
   var ctrl=document.getElementById('onlineControls');
@@ -257,7 +260,7 @@ export function showWin(w){
   }
 
   b.innerHTML=bannerHtml;b.style.color=w.color;b.style.borderColor=w.color;
-  b.style.background='linear-gradient(180deg,rgba(60,45,30,0.95),rgba(40,30,20,0.95))';
+  b.style.background='linear-gradient(180deg,rgba(10,10,30,0.95),rgba(5,5,20,0.95))';
   b.className='win-banner show';document.getElementById('btnGo').disabled=true;updateUI();
 
   // Report online battle result
@@ -305,5 +308,6 @@ export function switchMode(mode){
   if(mode==='arena'){buildSelector();updateStakeUI();refreshOpponents()}
   if(mode==='ladder'){
     import('../modes/ladder.js').then(function(m){m.buildLadderPicker()});
+    updateFollowerDisplays();
   }
 }
