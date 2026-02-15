@@ -13,30 +13,30 @@ export const ITEMS = {
   // — Starter (never drops, only starting equipment) —
   rusty_blade:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Blade',rarity:'starter',rangeType:'melee',stats:{baseDmg:30,baseAS:0.5},desc:'+30Dmg 0.5AS'},
   wooden_bow:{slot:'weapon',icon:'\u{1F3F9}',name:'Wooden Bow',rarity:'starter',rangeType:'ranged',stats:{baseDmg:25,baseAS:0.7},desc:'+25Dmg 0.7AS'},
-  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:20,baseAS:0.4,mana:50},desc:'+20Dmg 0.4AS +50Mana'},
+  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:15,baseAS:0.4,mana:50,spellDmgBonus:0.05},desc:'+15Dmg 0.4AS +50Mana +5%Spell'},
   cloth_cap:{slot:'helmet',icon:'\u{1F9E2}',name:'Cloth Cap',rarity:'starter',stats:{def:3,hp:50},desc:'+3DEF +50HP'},
   cloth_tunic:{slot:'chest',icon:'\u{1F455}',name:'Cloth Tunic',rarity:'starter',stats:{def:5,hp:80},desc:'+5DEF +80HP'},
   worn_sandals:{slot:'boots',icon:'\u{1FA74}',name:'Worn Sandals',rarity:'starter',stats:{def:1,moveSpeed:5},desc:'+1DEF +5Spd'},
   copper_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Copper Ring',rarity:'starter',stats:{baseDmg:5},desc:'+5Dmg'},
 
   // — Common —
-  arcane_staff:{slot:'weapon',icon:'\u{1FA84}',name:'Arcane Staff',rarity:'common',rangeType:'ranged',stats:{baseDmg:95,baseAS:0.75},desc:'+95Dmg 0.75AS'},
+  arcane_staff:{slot:'weapon',icon:'\u{1FA84}',name:'Arcane Staff',rarity:'common',rangeType:'ranged',stats:{baseDmg:55,baseAS:0.55,spellDmgBonus:0.08},desc:'+55Dmg 0.55AS +8%Spell'},
   steel_helm:{slot:'helmet',icon:'\u26D1',name:'Steel Helm',rarity:'common',stats:{def:15,hp:200},desc:'+15DEF +200HP'},
   chain_mail:{slot:'chest',icon:'\u26D3',name:'Chain Mail',rarity:'common',stats:{def:22,hp:300},desc:'+22DEF +300HP'},
   steel_boots:{slot:'boots',icon:'\u{1F97E}',name:'Steel Boots',rarity:'common',stats:{def:8,moveSpeed:10},desc:'+8DEF +10Spd'},
   power_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Ring of Power',rarity:'common',stats:{baseDmg:30},desc:'+30Dmg'},
 
   // — Uncommon —
-  crystal_staff:{slot:'weapon',icon:'\u{1F52E}',name:'Crystal Staff',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:120,baseAS:0.65},desc:'+120Dmg 0.65AS'},
-  shortbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Swift Shortbow',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:140,baseAS:1.4},desc:'+140Dmg 1.4AS'},
+  crystal_staff:{slot:'weapon',icon:'\u{1F52E}',name:'Crystal Staff',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:80,baseAS:0.6,spellDmgBonus:0.12},desc:'+80Dmg 0.6AS +12%Spell'},
+  shortbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Swift Shortbow',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:60,baseAS:0.8},desc:'+60Dmg 0.8AS'},
   shadow_hood:{slot:'helmet',icon:'\u{1F3AD}',name:'Shadow Hood',rarity:'uncommon',stats:{def:8,evasion:0.05,moveSpeed:10},desc:'+5%Eva +10Spd'},
   leather_vest:{slot:'chest',icon:'\u{1F9BA}',name:'Leather Vest',rarity:'uncommon',stats:{def:15,evasion:0.08,moveSpeed:15},desc:'+8%Eva +15Spd'},
   swift_boots:{slot:'boots',icon:'\u{1F45F}',name:'Swift Boots',rarity:'uncommon',stats:{def:3,moveSpeed:40,evasion:0.03},desc:'+40Spd +3%Eva'},
   speed_charm:{slot:'accessory',icon:'\u26A1',name:'Speed Charm',rarity:'uncommon',stats:{baseAS:0.15,moveSpeed:15},desc:'+0.15AS +15Spd'},
 
   // — Rare —
-  frost_daggers:{slot:'weapon',icon:'\u{1F5E1}',name:'Frost Daggers',rarity:'rare',rangeType:'melee',stats:{baseDmg:175,baseAS:1.4},desc:'+175Dmg 1.4AS'},
-  cursed_scythe:{slot:'weapon',icon:'\u26B0',name:'Cursed Scythe',rarity:'rare',rangeType:'melee',stats:{baseDmg:200,baseAS:0.95},desc:'+200Dmg 0.95AS'},
+  frost_daggers:{slot:'weapon',icon:'\u{1F5E1}',name:'Frost Daggers',rarity:'rare',rangeType:'melee',stats:{baseDmg:100,baseAS:0.85},desc:'+100Dmg 0.85AS'},
+  cursed_scythe:{slot:'weapon',icon:'\u26B0',name:'Cursed Scythe',rarity:'rare',rangeType:'melee',stats:{baseDmg:130,baseAS:0.65},desc:'+130Dmg 0.65AS'},
   mage_crown:{slot:'helmet',icon:'\u{1F451}',name:'Arcane Crown',rarity:'rare',stats:{def:5,mana:100,spellDmgBonus:0.05},desc:'+100Mana +5%Spell'},
   berserker_helm:{slot:'helmet',icon:'\u{1F480}',name:'Berserker Helm',rarity:'rare',stats:{def:10,hp:400},desc:'+10DEF +400HP'},
   mage_robe:{slot:'chest',icon:'\u{1F9E5}',name:'Arcane Robe',rarity:'rare',stats:{def:10,mana:150,manaRegen:2},desc:'+150Mana +2/s'},
@@ -46,8 +46,8 @@ export const ITEMS = {
   mana_crystal:{slot:'accessory',icon:'\u{1F48E}',name:'Mana Crystal',rarity:'rare',stats:{mana:200,manaRegen:3},desc:'+200Mana +3/s'},
 
   // — Epic —
-  longbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Flame Longbow',rarity:'epic',rangeType:'ranged',stats:{baseDmg:205,baseAS:1.0},desc:'+205Dmg 1.0AS'},
-  war_axe:{slot:'weapon',icon:'\u{1FA93}',name:'Blood War Axe',rarity:'epic',rangeType:'melee',stats:{baseDmg:230,baseAS:0.85},desc:'+230Dmg 0.85AS'},
+  longbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Flame Longbow',rarity:'epic',rangeType:'ranged',stats:{baseDmg:170,baseAS:0.85},desc:'+170Dmg 0.85AS'},
+  war_axe:{slot:'weapon',icon:'\u{1FA93}',name:'Blood War Axe',rarity:'epic',rangeType:'melee',stats:{baseDmg:195,baseAS:0.7},desc:'+195Dmg 0.7AS'},
   dragon_helm:{slot:'helmet',icon:'\u{1F409}',name:'Dragon Helm',rarity:'epic',stats:{def:20,hp:300},desc:'+20DEF +300HP'},
   blood_plate:{slot:'chest',icon:'\u2764',name:'Blood Plate',rarity:'epic',stats:{def:25,hp:800},desc:'+25DEF +800HP'},
   windwalkers:{slot:'boots',icon:'\u{1F4A8}',name:'Windwalkers',rarity:'epic',stats:{def:6,moveSpeed:55,evasion:0.06},desc:'+55Spd +6%Eva'},
@@ -55,7 +55,7 @@ export const ITEMS = {
   berserker_totem:{slot:'accessory',icon:'\u{1F9B4}',name:'Berserker Totem',rarity:'epic',stats:{baseDmg:40,hp:300},desc:'+40Dmg +300HP'},
 
   // — Legendary —
-  great_sword:{slot:'weapon',icon:'\u2694',name:'Greatsword',rarity:'legendary',rangeType:'melee',stats:{baseDmg:260,baseAS:0.7},desc:'+260Dmg 0.7AS'},
+  great_sword:{slot:'weapon',icon:'\u2694',name:'Greatsword',rarity:'legendary',rangeType:'melee',stats:{baseDmg:250,baseAS:0.85},desc:'+250Dmg 0.85AS'},
   crown_of_abyss:{slot:'helmet',icon:'\u{1F451}',name:'Crown of the Abyss',rarity:'legendary',stats:{def:25,hp:500,spellDmgBonus:0.10},desc:'+25DEF +500HP +10%Spell'},
   dragonscale:{slot:'chest',icon:'\u{1F432}',name:'Dragonscale',rarity:'legendary',stats:{def:40,hp:1000,moveSpeed:-5},desc:'+40DEF +1000HP -5Spd'},
   stormstriders:{slot:'boots',icon:'\u26A1',name:'Stormstriders',rarity:'legendary',stats:{def:10,moveSpeed:65,evasion:0.08,baseAS:0.1},desc:'+65Spd +8%Eva +0.1AS'},

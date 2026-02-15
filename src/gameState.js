@@ -62,7 +62,12 @@ export const state = {
 
   // Follower assignments
   p1StakedFollower: null,
-  p1FighterFollowers: [],
+
+  // Online arena
+  playerId: null,
+  playerName: null,
+  onlineOpponents: [],
+  selectedOpponent: null,
 
   // Dungeon
   dgRun: null,

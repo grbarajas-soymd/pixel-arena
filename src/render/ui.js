@@ -131,30 +131,38 @@ export function updateFollowerDisplays(){
 }
 
 export function updateStakeUI(){
-  var p1FEl=document.getElementById('p1Fighters');
-  if(!p1FEl)return;
-  renderFollowerCards('p1Fighters',state.p1Collection,function(f){
+  var stakeEl=document.getElementById('p1Stake');
+  if(!stakeEl)return;
+  renderFollowerCards('p1Stake',state.p1Collection,function(f){
     var idx=state.p1Collection.indexOf(f);
-    if(idx===state.p1StakedFollower)return;
-    var fi=state.p1FighterFollowers.indexOf(idx);
-    if(fi>=0){state.p1FighterFollowers.splice(fi,1)}
-    else{if(state.p1FighterFollowers.length>=3)return;state.p1FighterFollowers.push(idx)}
+    if(state.p1StakedFollower===idx){state.p1StakedFollower=null}
+    else{state.p1StakedFollower=idx}
     updateStakeUI();
   });
-  p1FEl.querySelectorAll('.follower-card').forEach(function(card,i){
-    if(state.p1FighterFollowers.indexOf(i)>=0)card.classList.add('selected');
-    if(i===state.p1StakedFollower)card.style.opacity='0.4';
+  stakeEl.querySelectorAll('.follower-card').forEach(function(card,i){
+    if(i===state.p1StakedFollower)card.classList.add('selected');
   });
-  document.getElementById('p1FighterCount').textContent='('+state.p1FighterFollowers.length+'/3)';
-  var wagerList=state.p1Collection.filter(function(f,i){return state.p1FighterFollowers.indexOf(i)<0});
-  renderFollowerCards('p1Stake',wagerList,function(f){
-    var realIdx=state.p1Collection.indexOf(f);
-    if(state.p1StakedFollower===realIdx){state.p1StakedFollower=null}
-    else{state.p1StakedFollower=realIdx}
-    updateStakeUI();
-  });
-  document.getElementById('p1Stake').querySelectorAll('.follower-card').forEach(function(card,i){
-    var realIdx=state.p1Collection.indexOf(wagerList[i]);
-    if(realIdx===state.p1StakedFollower)card.classList.add('selected');
-  });
+  var warn=document.getElementById('wagerWarning');
+  if(warn)warn.style.display=state.p1StakedFollower===null?'block':'none';
+}
+
+export function buildDefeatSheet(data){
+  var html='<div class="defeat-sheet" style="border:1px solid #ff444466;padding:8px;margin:6px 0;background:rgba(60,30,30,0.5)">';
+  html+='<div style="font-size:.55rem;color:#ff6666;margin-bottom:4px">DEFEATED BY</div>';
+  html+='<div style="font-size:.6rem">'+data.icon+' <b>'+data.name+'</b></div>';
+  html+='<div style="font-size:.45rem;color:var(--parch-dk);margin:4px 0">';
+  if(data.stats){
+    html+='HP: '+Math.round(data.stats.hp)+' | DMG: '+Math.round(data.stats.baseDmg||data.stats.dmg||0)+' | DEF: '+Math.round(data.stats.def||0);
+    if(data.stats.baseAS)html+=' | AS: '+data.stats.baseAS.toFixed(2);
+    if(data.stats.evasion)html+=' | EVA: '+Math.round(data.stats.evasion*100)+'%';
+  }
+  html+='</div>';
+  if(data.skills&&data.skills.length){
+    html+='<div style="font-size:.42rem;color:#88aacc;margin-top:2px">Skills: ';
+    data.skills.forEach(function(s){html+=s+' '});
+    html+='</div>';
+  }
+  if(data.type)html+='<div style="font-size:.42rem;color:var(--parch-dk);margin-top:2px">['+data.type+']</div>';
+  html+='</div>';
+  return html;
 }

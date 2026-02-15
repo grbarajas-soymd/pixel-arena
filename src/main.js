@@ -11,7 +11,8 @@ import { loadGame, setupAutoSave } from './persistence.js';
 // Mode modules
 import {
   buildSelector, launchBattle, backToSelect, startBattle, resetBattle,
-  showWin, setSpd, toggleSound, cycleBiome, switchMode
+  showWin, setSpd, toggleSound, cycleBiome, switchMode,
+  registerPlayer, uploadBuild, refreshOpponents
 } from './modes/arena.js';
 import { startLadder, ladderContinue, ladderQuit, ladderFight } from './modes/ladder.js';
 import {
@@ -125,3 +126,6 @@ window.dgVictory = dgVictory;
 window._dgActualGenerateRoom = _dgActualGenerateRoom;
 window.dgEquipGearDrop = dgEquipGearDrop;
 window.dgStashGearDrop = dgStashGearDrop;
+window.registerPlayer = registerPlayer;
+window.uploadBuild = uploadBuild;
+window.refreshOpponents = refreshOpponents;

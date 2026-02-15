@@ -23,6 +23,8 @@ export function saveGame(){
         ultimate:state.customChar.ultimate,
         sprite:state.customChar.sprite,
       },
+      playerId:state.playerId,
+      playerName:state.playerName,
     };
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
   }catch(e){}
@@ -80,6 +82,9 @@ export function loadGame(){
     if(!hasAny){
       state.customChar.equipment=Object.assign({},STARTER_GEAR);
     }
+
+    if(data.playerId)state.playerId=data.playerId;
+    if(data.playerName)state.playerName=data.playerName;
 
     state.p1Class='custom';
 

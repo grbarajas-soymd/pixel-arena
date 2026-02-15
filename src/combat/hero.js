@@ -18,6 +18,19 @@ export function getWeaponRangeType() {
   return 'melee';
 }
 
+export function serializeBuild() {
+  var s = getCustomTotalStats();
+  return {
+    name: state.customChar.name,
+    sprite: state.customChar.sprite,
+    equipment: Object.assign({}, state.customChar.equipment),
+    skills: state.customChar.skills.slice(),
+    ultimate: state.customChar.ultimate,
+    rangeType: getWeaponRangeType(),
+    stats: { hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, mana: s.mana || 0, manaRegen: s.manaRegen || 0, energy: s.energy || 0, energyRegen: s.energyRegen || 0, spellDmgBonus: s.spellDmgBonus || 0 }
+  };
+}
+
 export function mkHero(classKey, side) {
   // Check for ladder-generated opponent
   if (side === 'right' && state._ladderGenConfig) {
@@ -70,7 +83,7 @@ export function mkFollower(owner) { return { alive: true, hp: owner.followerMaxH
 export function mkCustomHero(side) {
   var isLeft = side === 'left', s = getCustomTotalStats(), isMelee = getWeaponRangeType() === 'melee';
   var h = { type: 'custom', customSprite: state.customChar.sprite, name: state.customChar.name, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side, x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1, maxHp: s.hp, hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, moveSpeedBonus: 0, attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300, atkCnt: 0, atkCd: 0, bleedStacks: [], shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0, state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0, totDmg: 0, totHeal: 0, blActive: false, blEnd: 0, blDmg: 0, markNext: false, followerAlive: false, follower: null, followerMaxHp: 450, arenaFollowers: [], ultActive: false, ultEnd: 0, shieldActive: false, shieldHp: 0, shieldEnd: 0, mana: s.mana || 0, maxMana: s.mana || 0, manaRegen: s.manaRegen || 0, charge: 0, maxCharge: 10, chargeDecayTimer: 0, castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0, spellRange: isMelee ? 200 : 400, ultStrikes: 0, ultStrikeTimer: 0, energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0, meleeRange: MELEE, throwRange: 200, stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5, envenomed: false, envenomedEnd: 0, deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0, smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120, resource: Math.max(s.mana || 0, s.energy || 0, 100), maxResource: Math.max(s.mana || 0, s.energy || 0, 100), resourceRegen: Math.max(s.manaRegen || 0, s.energyRegen || 0, 2), spells: {}, customSkillIds: [], customUltId: null };
-  for (var i = 0; i < 2; i++) { if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) { h.spells['skill' + i] = { cd: 0, bcd: 3000, n: ALL_SKILLS[state.customChar.skills[i]].name }; h.customSkillIds.push({ idx: state.customChar.skills[i], key: 'skill' + i }) } }
+  for (var i = 0; i < 2; i++) { if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) { h.spells['skill' + i] = { cd: 0, bcd: ALL_SKILLS[state.customChar.skills[i]].bcd || 3000, n: ALL_SKILLS[state.customChar.skills[i]].name }; h.customSkillIds.push({ idx: state.customChar.skills[i], key: 'skill' + i }) } }
   if (state.customChar.ultimate !== null && ALL_ULTS[state.customChar.ultimate]) { h.spells.ultimate = { cd: 0, bcd: Infinity, used: false, n: ALL_ULTS[state.customChar.ultimate].name }; h.customUltId = state.customChar.ultimate }
   return h;
 }
@@ -101,7 +114,7 @@ export function mkLadderHero(cfg, side) {
   };
   for (var i = 0; i < cfg.skills.length && i < 2; i++) {
     if (cfg.skills[i] !== null && ALL_SKILLS[cfg.skills[i]]) {
-      h.spells['skill' + i] = { cd: 0, bcd: 3000, n: ALL_SKILLS[cfg.skills[i]].name };
+      h.spells['skill' + i] = { cd: 0, bcd: ALL_SKILLS[cfg.skills[i]].bcd || 3000, n: ALL_SKILLS[cfg.skills[i]].name };
       h.customSkillIds.push({ idx: cfg.skills[i], key: 'skill' + i });
     }
   }

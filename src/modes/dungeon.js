@@ -6,7 +6,7 @@ import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower } from '../data/followers.js';
 import { addBl } from '../combat/engine.js';
 import { getCustomTotalStats } from '../combat/hero.js';
-import { buildCustomTooltip, updateFollowerDisplays } from '../render/ui.js';
+import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '../render/ui.js';
 
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
 
@@ -857,10 +857,24 @@ function dgDeath(){
   var rc=document.getElementById('dgRoomContent');
   var followerList='';
   kept.forEach(function(f){followerList+='<span style="color:'+RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
+  // Build defeat sheet for the monster that killed you
+  var slainByHtml='';
+  var lastStats=r._lastCombatStats;
+  if(r.combatEnemy||lastStats){
+    var m=r.combatEnemy||{};
+    var defeatData={
+      name:lastStats?lastStats.monsterName:m.name||'Unknown',
+      icon:lastStats?lastStats.monsterIcon:m.icon||'\u2694',
+      stats:{hp:m._maxHp||m.hp||0,dmg:m.dmg||0,def:m.def||0,evasion:m.evasion||0},
+      skills:[],type:'monster'
+    };
+    slainByHtml=buildDefeatSheet(defeatData);
+  }
   rc.innerHTML='<div class="dg-intermission">'+
     '<div class="dg-im-title" style="color:#ff4444">\u{1F480} DEFEATED \u{1F480}</div>'+
     '<div class="dg-im-summary">'+
       'Fell on <b>Floor '+r.floor+', Room '+r.room+'</b><br><br>'+
+      slainByHtml+
       '<span class="dg-im-stat" style="color:#ff8844">Rooms: '+r.roomHistory.length+'</span>'+
       '<span class="dg-im-stat" style="color:#ff4444">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:var(--gold-bright)">Gold: '+r.gold+'</span>'+

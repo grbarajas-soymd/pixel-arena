@@ -9,7 +9,7 @@ import { SFX } from '../sfx.js';
 import { addLog } from '../combat/engine.js';
 import { tick } from '../combat/engine.js';
 import { mkHero, getCustomTotalStats, mkArenaFollower, applyFollowerBuff } from '../combat/hero.js';
-import { buildHUD, updateUI, buildCustomTooltip, renderFollowerCards } from '../render/ui.js';
+import { buildHUD, updateUI, buildCustomTooltip, buildDefeatSheet, renderFollowerCards } from '../render/ui.js';
 import { startBattle, showWin, resetBattle } from './arena.js';
 
 var LADDER_SEQUENCE=['wizard','ranger','assassin','barbarian'];
@@ -341,6 +341,22 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
     '</div>';
   }
 
+  // Show defeat sheet on loss
+  var defeatHtml='';
+  if(!won&&state.ladderRun.currentOpponent){
+    var co=state.ladderRun.currentOpponent;
+    if(co.type==='class'){
+      var cls=CLASSES[co.classKey];
+      if(cls)defeatHtml=buildDefeatSheet({name:cls.name,icon:cls.icon,stats:{hp:cls.hp,baseDmg:cls.baseDmg,baseAS:cls.baseAS,def:cls.def,evasion:cls.evasion||0},skills:[],type:'class'});
+    } else if(co.type==='generated'&&co.config){
+      var cfg=co.config;
+      var snames=[];
+      if(cfg.skills)cfg.skills.forEach(function(si){if(si!==null&&ALL_SKILLS[si])snames.push(ALL_SKILLS[si].name)});
+      if(cfg.ultimate!==null&&ALL_ULTS[cfg.ultimate])snames.push(ALL_ULTS[cfg.ultimate].name+' (Ult)');
+      defeatHtml=buildDefeatSheet({name:cfg.name,icon:'\u2692',stats:{hp:cfg.hp,baseDmg:cfg.baseDmg,baseAS:cfg.baseAS,def:cfg.def,evasion:cfg.evasion},skills:snames,type:'generated'});
+    }
+  }
+
   var stakeHtml='';
   if(stakeMsg)stakeHtml='<div style="font-size:.5rem;color:#ff4444;margin:4px 0">'+stakeMsg+'</div>';
 
@@ -358,7 +374,7 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
 
   var screenHtml='<div class="ld-inter" id="ldInterContent">'+
     '<div class="ld-title" style="color:'+titleColor+'">'+titleHtml+'</div>'+
-    bracketHtml+statsHtml+stakeHtml+rewardHtml+
+    bracketHtml+statsHtml+defeatHtml+stakeHtml+rewardHtml+
     '<div class="dg-choices" style="margin-top:10px">';
   if(won){
     screenHtml+='<button class="dg-choice danger" onclick="ladderContinue()">\u2694 FIGHT NEXT</button>';
