@@ -80,7 +80,7 @@
 <div id="dungeonScreen" style="display:flex">
   <div class="dg-header">&#127984; THE DEPTHS &#127984;</div>
   <div class="dg-sub">Descend to find powerful gear and followers</div>
-  <div id="dungeonPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+  <div id="dungeonPickScreen">
     <div class="sel-title">&#8212; Your Hero &#8212;</div>
     <div class="sel-row" id="dgClassPick"></div>
     <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
@@ -149,10 +149,10 @@
 </div>
 <div class="dropdown-overlay" id="ddOverlay"><div class="dropdown-panel"><div class="dd-title" id="ddTitle">Select</div><div id="ddItems"></div><button class="dd-close" onclick="closeDD()">CLOSE</button></div></div>
 
-<div id="ladderScreen" style="display:none">
+<div id="ladderScreen">
   <div class="dg-header">&#127942; THE LADDER &#127942;</div>
   <div class="dg-sub">Fight every class then face infinite challengers. Every 3 wins earns a follower!</div>
-  <div id="ladderPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+  <div id="ladderPickScreen">
     <div class="sel-title">&#8212; Your Hero &#8212;</div>
     <div class="sel-row" id="ldClassPick"></div>
     <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>

@@ -46,7 +46,7 @@ body{background:#0a0a1a;color:var(--text);font-family:'Nunito',sans-serif;min-he
 .sub{text-align:center;font-size:.65rem;letter-spacing:4px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase}
 
 /* ===== SELECTOR ===== */
-#selectorScreen{display:none;flex-direction:column;align-items:center;gap:14px;padding:16px 0}
+#selectorScreen{display:none;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
 .sel-title{font-family:'Chakra Petch',sans-serif;font-size:.8rem;color:var(--gold);letter-spacing:1px;text-shadow:0 0 10px rgba(255,204,0,0.2)}
 .sel-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
 .class-card{
@@ -203,7 +203,7 @@ body{background:#0a0a1a;color:var(--text);font-family:'Nunito',sans-serif;min-he
 }
 
 /* CUSTOM CHARACTER SHEET */
-#customScreen{display:none;flex-direction:column;align-items:center;gap:12px;padding:16px 0}
+#customScreen{display:none;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
 .cs-header{font-family:'Chakra Petch',sans-serif;font-size:.95rem;color:var(--pink-glow);text-shadow:2px 2px 0 #3a0a3a,0 0 20px rgba(255,68,204,0.3);letter-spacing:2px}
 .cs-layout{display:grid;grid-template-columns:1fr 180px 1fr;gap:10px;width:100%;max-width:880px}
 .cs-panel{background:var(--panel);border:2px solid var(--panel-border);border-radius:4px;padding:10px;box-shadow:inset 0 0 20px rgba(0,0,0,0.2),0 2px 8px rgba(0,0,0,0.3)}
@@ -237,8 +237,15 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
 .bar-fill.hp-c{background:linear-gradient(90deg,#6a1a6a,var(--pink-glow))}
 .bar-fill.res-bar{background:linear-gradient(90deg,#4a1a5a,var(--pink-glow))}
 
+/* ===== LADDER MODE ===== */
+#ladderScreen{display:none;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+#ladderScreen>*{width:100%}
+#ladderPickScreen{display:flex;flex-direction:column;align-items:center;gap:10px}
+
 /* ===== DUNGEON MODE ===== */
 #dungeonScreen{display:none;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+#dungeonScreen>*{width:100%}
+#dungeonPickScreen{display:flex;flex-direction:column;align-items:center;gap:10px}
 .dg-header{font-family:'Chakra Petch',sans-serif;font-size:.95rem;color:#00ff88;text-shadow:2px 2px 0 #0a2a1a,0 0 20px rgba(0,255,136,0.3);letter-spacing:2px}
 #selectorScreen .dg-header{color:var(--gold-bright);text-shadow:2px 2px 0 #3a2a0a,0 0 20px rgba(255,204,0,0.3)}
 #ladderScreen .dg-header{color:#ff8844;text-shadow:2px 2px 0 #2a1a0a,0 0 20px rgba(255,136,68,0.3)}
@@ -310,7 +317,7 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
 @keyframes ldglow{0%,100%{box-shadow:0 0 15px rgba(255,204,34,0.3)}50%{box-shadow:0 0 30px rgba(255,204,34,0.6)}}
 
 /* Ladder intermission */
-.ld-inter{text-align:center;padding:12px 0}
+.ld-inter{text-align:center;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:8px}
 .ld-inter .ld-title{font-family:'Chakra Petch',sans-serif;font-size:.75rem;margin-bottom:8px}
 .ld-inter .ld-bracket{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:8px 0}
 .ld-inter .ld-opp{
