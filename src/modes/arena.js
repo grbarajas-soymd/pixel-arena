@@ -219,7 +219,7 @@ export function startBattle(){
   var msg=n1+' vs '+n2+' \u2014 FIGHT!';
   var biomeMsg=' ['+getBiome().name+']';
   addLog(0,msg+biomeMsg,'spell');updateUI();
-  state.intv=setInterval(function(){for(var i=0;i<state.spd;i++)if(!state.over)tick()},TK);
+  state.intv=setInterval(function(){for(var i=0;i<state.spd;i++)if(!state.over)tick();updateUI()},TK);
 }
 
 export function resetBattle(){
