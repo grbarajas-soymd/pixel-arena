@@ -335,8 +335,16 @@ export function _dgActualGenerateRoom(){
   else{
     var types=['combat','combat','treasure','trap','rest','shrine','follower_cage'];
     if(state.dgRun.floor>=3)types.push('merchant');
+    // Prevent same room type back-to-back (ignore boss rooms for dedup)
+    var last=state.dgRun._lastNonBossRoom||'';
+    if(last){
+      types=types.filter(function(t){return t!==last});
+      if(types.length===0)types=['combat']; // fallback
+    }
     roomType=types[Math.floor(Math.random()*types.length)];
   }
+  // Track last non-boss room type for dedup
+  if(state.dgRun.room!==3)state.dgRun._lastNonBossRoom=roomType;
   state.dgRun.roomHistory.push({floor:state.dgRun.floor,room:state.dgRun.room,type:roomType,cleared:false,name:''});
   renderRoom(roomType);
   dgUpdateProgress();updateDgUI();

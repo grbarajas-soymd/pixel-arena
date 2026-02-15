@@ -38,10 +38,12 @@ export function mkHero(classKey, side) {
   }
   if (classKey === 'custom') return mkCustomHero(side);
   const c = CLASSES[classKey]; const isLeft = side === 'left';
+  // Scale down class opponents in ladder mode (they're PvP-tuned, too strong for gear-progression heroes)
+  var ls = (side === 'right' && state._ladderMode) ? 0.7 : 1;
   const base = {
     type: classKey, name: c.nameShort, color: c.color, colorDark: c.colorDark, colorLight: c.colorLight, side,
     x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,
-    maxHp: c.hp, hp: c.hp, baseDmg: c.baseDmg, baseAS: c.baseAS, def: c.def, evasion: c.evasion || 0,
+    maxHp: Math.round(c.hp * ls), hp: Math.round(c.hp * ls), baseDmg: Math.round(c.baseDmg * ls), baseAS: parseFloat((c.baseAS * ls).toFixed(2)), def: Math.round(c.def * ls), evasion: c.evasion || 0,
     moveSpeed: c.moveSpeed, moveSpeedBonus: c.moveSpeedBonus || 0,
     attackRange: c.attackRange || c.throwRange || 200, preferredRange: c.preferredRange || 200,
     atkCnt: 0, atkCd: 0, bleedStacks: [],

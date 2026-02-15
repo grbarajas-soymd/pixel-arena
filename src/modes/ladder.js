@@ -91,10 +91,12 @@ function ladderShowFollowerPick(){
   var oppPreview='';
   if(nextIdx<LADDER_SEQUENCE.length){
     var nk=LADDER_SEQUENCE[nextIdx];var nc=CLASSES[nk];
+    // Show scaled stats (70% of PvP values)
+    var sHp=Math.round(nc.hp*0.7),sDmg=Math.round(nc.baseDmg*0.7),sAS=(nc.baseAS*0.7).toFixed(2),sDef=Math.round(nc.def*0.7);
     oppPreview='<div class="ld-next-preview">'+
       '<div class="lnp-title">OPPONENT #'+fightNum+'</div>'+
       '<div class="lnp-name" style="color:'+nc.color+'">'+nc.icon+' '+nc.name+'</div>'+
-      '<div class="lnp-stats">'+nc.hp+' HP | '+nc.baseDmg+' DMG | '+nc.baseAS+' AS | '+nc.def+' DEF</div>'+
+      '<div class="lnp-stats">'+sHp+' HP | '+sDmg+' DMG | '+sAS+' AS | '+sDef+' DEF</div>'+
     '</div>';
   } else {
     var nextOpp=generateLadderOpponent(state.ladderRun.wins);
@@ -198,9 +200,9 @@ function ladderNextFight(){
 
 function generateLadderOpponent(wins){
   var tier=Math.max(0,Math.min(wins-3,25));
-  var baseHp=3500+tier*180;var baseDmg=100+tier*8;
-  var baseAS=0.75+Math.min(tier*0.03,0.6);var baseDef=25+tier*3;
-  var baseEva=Math.min(0.015*tier,0.2);var baseSpd=95+tier*2;
+  var baseHp=3200+tier*140;var baseDmg=80+tier*6;
+  var baseAS=0.7+Math.min(tier*0.025,0.5);var baseDef=20+tier*2;
+  var baseEva=Math.min(0.01*tier,0.15);var baseSpd=90+tier*2;
   var itemKeys=Object.keys(ITEMS);
   var slots=['weapon','helmet','chest','boots','accessory'];
   var equip={};
@@ -208,15 +210,17 @@ function generateLadderOpponent(wins){
     var pool=itemKeys.filter(function(k){return ITEMS[k].slot===slot});
     if(pool.length>0)equip[slot]=pool[Math.floor(Math.random()*pool.length)];
   });
+  // Gear only contributes 50% of its stats to keep opponents fair
   for(var sk in equip){
     var item=ITEMS[equip[sk]];if(!item)continue;
     for(var k in item.stats){
-      if(k==='hp')baseHp+=item.stats[k];
-      else if(k==='baseDmg')baseDmg+=item.stats[k];
-      else if(k==='baseAS')baseAS+=item.stats[k];
-      else if(k==='def')baseDef+=item.stats[k];
-      else if(k==='evasion')baseEva=Math.min(0.8,baseEva+item.stats[k]);
-      else if(k==='moveSpeed')baseSpd+=item.stats[k];
+      var v=item.stats[k]*0.5;
+      if(k==='hp')baseHp+=v;
+      else if(k==='baseDmg')baseDmg+=v;
+      else if(k==='baseAS')baseAS+=v;
+      else if(k==='def')baseDef+=v;
+      else if(k==='evasion')baseEva=Math.min(0.8,baseEva+v);
+      else if(k==='moveSpeed')baseSpd+=v;
     }
   }
   var sk1=Math.floor(Math.random()*ALL_SKILLS.length);
@@ -258,11 +262,14 @@ function ladderLaunchBattle(oppClass){
   document.getElementById('ladderPickScreen').style.display='none';
   document.getElementById('battleScreen').style.display='block';
 
+  // Signal ladder mode so mkHero can scale class opponents
+  state._ladderMode=true;
+
   // Intercept showWin for ladder results
   var _prevShowWin=state._showWinFn||showWin;
   state._showWinFn=function(w){
     var playerWon=(w===state.h1);
-    state._showWinFn=_prevShowWin;state._ladderGenConfig=null;
+    state._showWinFn=_prevShowWin;state._ladderGenConfig=null;state._ladderMode=false;
     state.ladderRun.history.push({
       name:state.ladderRun.currentOppName,icon:state.ladderRun.currentOppIcon,
       won:playerWon,
