@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Arena — Autobattler</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="bg"></div>
+<div class="app">
+<div class="title">⚔ PIXEL ARENA ⚔</div>
+<p class="sub">Choose Your Champions</p>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tabArena" onclick="switchMode('arena')">⚔ ARENA</button>
+  <button class="mode-tab" id="tabDungeon" onclick="switchMode('dungeon')">🏰 DUNGEON</button>
+  <button class="mode-tab" id="tabLadder" onclick="switchMode('ladder')">🏆 LADDER</button>
+</div>
+
+<div id="selectorScreen">
+  <div class="sel-title">— Player 1 —</div>
+  <div class="sel-row" id="p1Cards"></div>
+  <div class="sel-title" style="margin-top:6px">— Player 2 —</div>
+  <div class="sel-row" id="p2Cards"></div>
+  <div class="stake-section" id="stakeSection">
+    <div class="sel-title" style="font-size:.55rem">👾 ASSIGN FOLLOWERS 👾</div>
+    <div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">Pick up to 3 fighters per side. Optionally wager 1 follower — loser forfeits it!</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:.5rem;color:var(--teal-glow);margin-bottom:4px">P1 Fighters <span id="p1FighterCount" style="color:var(--parch-dk)">(0/3)</span></div>
+        <div class="follower-collection" id="p1Fighters"></div>
+        <div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">P1 Wager <span style="color:var(--parch-dk)">(optional)</span></div>
+        <div class="follower-collection" id="p1Stake"></div>
+      </div>
+      <div>
+        <div style="font-size:.5rem;color:var(--fire-glow);margin-bottom:4px">P2 Fighters <span id="p2FighterCount" style="color:var(--parch-dk)">(0/3)</span></div>
+        <div class="follower-collection" id="p2Fighters"></div>
+        <div style="font-size:.48rem;color:#ff6644;margin:6px 0 4px">P2 Wager <span style="color:var(--parch-dk)">(optional)</span></div>
+        <div class="follower-collection" id="p2Stake"></div>
+      </div>
+    </div>
+  </div>
+  <button class="go-btn" onclick="launchBattle()">⚔ BATTLE ⚔</button>
+</div>
+
+<div id="dungeonScreen">
+  <div class="dg-header">🏰 THE DEPTHS 🏰</div>
+  <div class="dg-sub">Descend to find powerful followers</div>
+  <div id="dungeonPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div class="sel-title">— Who is Delving? —</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:2px">
+      <button class="mode-tab active" id="dgP1Tab" onclick="setDungeonPlayer(1)" style="font-size:.55rem;padding:6px 18px">P1 Dungeon</button>
+      <button class="mode-tab" id="dgP2Tab" onclick="setDungeonPlayer(2)" style="font-size:.55rem;padding:6px 18px">P2 Dungeon</button>
+    </div>
+    <div class="sel-title">— Choose Your Delver —</div>
+    <div class="sel-row" id="dgClassPick"></div>
+    <div style="font-size:.52rem;color:var(--parch-dk);text-align:center;max-width:400px;line-height:1.6">
+      Descend through randomized floors. Defeat monsters, find treasure, and capture followers. Your hero heals 30% between floors. Followers fight for you in Arena battles!
+    </div>
+    <button class="go-btn" onclick="startDungeon()" id="btnDungeon" style="font-size:.65rem;padding:10px 24px">🏰 DESCEND</button>
+    <button class="btn btn-back" onclick="switchMode('arena')">← BACK TO ARENA</button>
+    <div id="dgStashDisplay" style="width:100%;max-width:800px;margin-top:6px;font-size:.48rem;color:var(--parch-dk);text-align:center"></div>
+    <div style="width:100%;max-width:800px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">📦 P1 FOLLOWERS</div>
+        <div class="follower-collection" id="p1CollectionDisplay"></div>
+        <div id="p1NoFollowers" class="no-followers">No followers yet!</div>
+      </div>
+      <div>
+        <div class="sel-title" style="font-size:.55rem;color:var(--fire-glow)">📦 P2 FOLLOWERS</div>
+        <div class="follower-collection" id="p2CollectionDisplay"></div>
+        <div id="p2NoFollowers" class="no-followers">No followers yet!</div>
+      </div>
+    </div>
+  </div>
+  <div id="dungeonRunScreen" style="display:none">
+    <div id="dgProgressBar" style="width:100%;max-width:700px;margin:0 auto 6px;padding:0 4px">
+      <div style="display:flex;justify-content:space-between;font-size:.48rem;color:var(--parch-dk);margin-bottom:2px">
+        <span id="dgProgressLabel">Floor 1 — Room 1/3</span>
+        <span id="dgProgressStats"></span>
+      </div>
+      <div style="height:10px;background:rgba(0,0,0,0.4);border:1px solid var(--panel-border);position:relative;overflow:hidden">
+        <div id="dgProgressFill" style="height:100%;width:0%;background:linear-gradient(90deg,#1a4a1a,#44ee88);transition:width 0.4s"></div>
+      </div>
+      <div id="dgRoomMap" style="display:flex;gap:3px;margin-top:4px;justify-content:center;flex-wrap:wrap"></div>
+    </div>
+    <div class="dg-main">
+      <div class="dg-panel">
+        <div class="dg-panel-title">🗡 DELVER</div>
+        <div id="dgHeroInfo"></div>
+        <div class="dg-panel-title" style="margin-top:8px">📜 LOG</div>
+        <div class="dg-log" id="dgLog"></div>
+      </div>
+      <div class="dg-panel dg-map">
+        <div class="dg-floor-num" id="dgFloorNum">FLOOR 1</div>
+        <div id="dgRoomContent"></div>
+      </div>
+      <div class="dg-panel">
+        <div class="dg-panel-title">🎒 ITEMS</div>
+        <div id="dgInventory"></div>
+        <div class="dg-panel-title" style="margin-top:8px">👾 CAPTURED</div>
+        <div id="dgFollowers"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:8px">
+      <button class="btn btn-back" onclick="abandonDungeon()">☠ ABANDON RUN</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="customScreen">
+  <div class="cs-header">&#9874; CHARACTER FORGE &#9874;</div>
+  <div class="cs-layout">
+    <div class="cs-panel"><div class="cs-panel-title">&#9876; EQUIPMENT</div><div id="equipSlots"></div><div class="cs-panel-title" style="margin-top:8px">&#128202; BASE STATS</div><div id="statEditors"></div></div>
+    <div class="cs-panel" style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="cs-panel-title">PREVIEW</div><div class="cs-avatar"><canvas id="previewCanvas" width="160" height="180"></canvas></div><input class="cs-name-input" id="customName" placeholder="Hero Name" maxlength="12" value="Custom"><div id="customTotalStats" style="font-size:.5rem;color:var(--parch-dk);line-height:1.5;text-align:center;margin-top:3px"></div></div>
+    <div class="cs-panel"><div class="cs-panel-title">&#10022; SKILLS (Pick 2)</div><div id="skillSlot1" class="skill-pick" onclick="openSkillPicker(0)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 1 - Click</div></div></div><div id="skillSlot2" class="skill-pick" onclick="openSkillPicker(1)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 2 - Click</div></div></div><div class="cs-panel-title" style="margin-top:8px">&#128128; ULTIMATE</div><div id="ultSlot" class="skill-pick" onclick="openSkillPicker(2)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Ultimate - Click</div></div></div>
+    <div class="cs-panel-title" style="margin-top:8px">&#9881; COMBAT</div>
+    <div class="stat-edit-row"><span class="stat-edit-label">Range</span><select id="customRangeType" class="stat-edit-val"><option value="melee">Melee</option><option value="ranged" selected>Ranged</option></select></div>
+    <div class="stat-edit-row"><span class="stat-edit-label">Sprite</span><select id="customSprite" class="stat-edit-val"><option value="wizard">Mage</option><option value="ranger">Archer</option><option value="assassin">Rogue</option><option value="barbarian">Warrior</option></select></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button class="go-btn" onclick="saveCustomAndBack()" style="font-size:.65rem;padding:10px 24px">&#10003; SAVE &amp; BACK</button><button class="btn btn-back" onclick="cancelCustom()">&#10005; CANCEL</button></div>
+</div>
+<div class="dropdown-overlay" id="ddOverlay"><div class="dropdown-panel"><div class="dd-title" id="ddTitle">Select</div><div id="ddItems"></div><button class="dd-close" onclick="closeDD()">CLOSE</button></div></div>
+
+<div id="ladderScreen" style="display:none">
+  <div class="dg-header">🏆 THE LADDER 🏆</div>
+  <div class="dg-sub">Fight every class then face infinite challengers. Every 5 wins earns a follower!</div>
+  <div id="ladderPickScreen" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:2px">
+      <button class="mode-tab active" id="ldP1Tab" onclick="setLadderPlayer(1)" style="font-size:.55rem;padding:6px 18px">P1 Ladder</button>
+      <button class="mode-tab" id="ldP2Tab" onclick="setLadderPlayer(2)" style="font-size:.55rem;padding:6px 18px">P2 Ladder</button>
+    </div>
+    <div class="sel-title">— Choose Your Fighter —</div>
+    <div class="sel-row" id="ldClassPick"></div>
+    <button class="go-btn" onclick="startLadder()" id="btnLadder" style="font-size:.65rem;padding:10px 24px">🏆 BEGIN CLIMB</button>
+    <button class="btn btn-back" onclick="switchMode('arena')">← BACK</button>
+    <div id="ladderRecord" style="font-size:.55rem;color:var(--parch-dk);margin-top:4px"></div>
+  </div>
+</div>
+
+<div id="battleScreen">
+  <div class="win-banner" id="winBanner"></div>
+  <div class="ctrls">
+    <button class="btn btn-go" id="btnGo" onclick="startBattle()">FIGHT!</button>
+    <button class="btn btn-rst" onclick="resetBattle()">RESET</button>
+    <button class="btn btn-back" onclick="backToSelect()">BACK</button>
+    <button class="btn btn-spd" onclick="setSpd(1,this)">1x</button>
+    <button class="btn btn-spd on" onclick="setSpd(2,this)">2x</button>
+    <button class="btn btn-spd" onclick="setSpd(5,this)">5x</button>
+    <button class="btn btn-spd" onclick="setSpd(10,this)">10x</button>
+    <button class="btn btn-spd" id="btnSound" onclick="toggleSound(this)" title="Toggle Sound">🔊</button>
+    <button class="btn btn-spd" onclick="cycleBiome(this)" title="Change Arena">🌍</button>
+  </div>
+  <canvas id="arenaCanvas" width="1000" height="500"></canvas>
+  <div class="hud">
+    <div class="hud-panel p1" id="hudP1"></div>
+    <div class="hud-panel p2" id="hudP2"></div>
+  </div>
+  <div class="log-wrap">
+    <div class="log-title">COMBAT LOG</div>
+    <div class="log-scroll" id="log"><div style="color:var(--parch-dk)">Awaiting battle...</div></div>
+  </div>
+</div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
