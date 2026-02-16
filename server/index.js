@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 var __dirname = path.dirname(fileURLToPath(import.meta.url));
 var DATA_DIR = path.join(__dirname, 'data');
 var DB_FILE = path.join(DATA_DIR, 'characters.json');
-var PORT = 3001;
+var PORT = process.env.PORT || 3001;
 
 // Ensure data directory + file exist
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -27,6 +27,8 @@ function writeDB(db) {
 var app = express();
 app.use(cors());
 app.use(express.json());
+
+// ---- API ROUTES ----
 
 // POST /api/register — create player identity
 app.post('/api/register', function (req, res) {
@@ -90,6 +92,16 @@ app.post('/api/battles', function (req, res) {
   res.json({ ok: true });
 });
 
+// ---- STATIC FILES (production) ----
+var distPath = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  // SPA fallback: serve index.html for non-API routes
+  app.get('*', function (req, res) {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 app.listen(PORT, function () {
-  console.log('Pixel Arena API listening on port ' + PORT);
+  console.log('Pixel Arena running on port ' + PORT);
 });

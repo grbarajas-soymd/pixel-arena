@@ -1,5 +1,5 @@
 // =============== NETWORK LAYER ===============
-var API_BASE = 'http://localhost:3001';
+var API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
 export function register(name) {
   return fetch(API_BASE + '/api/register', {
