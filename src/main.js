@@ -35,6 +35,74 @@ import {
 import { render } from './render/arena.js';
 import { updateFollowerDisplays, updateStakeUI } from './render/ui.js';
 
+// =============== DEVICE DETECTION ===============
+function detectLayout() {
+  var w = window.innerWidth, h = window.innerHeight;
+  var isPortrait = h > w;
+  var isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  var isTablet = isTouch && Math.min(w, h) >= 600;
+  var isMobile = isTouch ? (isTablet ? isPortrait : true) : (w < 768);
+  document.body.classList.toggle('is-mobile', isMobile);
+  document.body.classList.toggle('is-desktop', !isMobile);
+  state.isMobile = isMobile;
+}
+window.addEventListener('resize', detectLayout);
+window.addEventListener('orientationchange', function(){ setTimeout(detectLayout, 100); });
+detectLayout();
+
+// =============== START SCREEN ===============
+function drawLogo(canvas) {
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  // Crossed swords
+  ctx.font = 'bold 28px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#8a7a52';
+  ctx.fillText('\u2694', w / 2 - 155, h / 2);
+  ctx.fillText('\u2694', w / 2 + 155, h / 2);
+  // Glow text
+  ctx.font = 'bold 48px "Cinzel"';
+  ctx.shadowColor = 'rgba(200,168,72,0.4)';
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = '#c8a848';
+  ctx.fillText('PIXEL ARENA', w / 2, h / 2);
+  // Bright inner text
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#d8b858';
+  ctx.fillText('PIXEL ARENA', w / 2, h / 2);
+  // Decorative line
+  ctx.strokeStyle = 'rgba(200,168,72,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - 130, h / 2 + 28);
+  ctx.lineTo(w / 2 + 130, h / 2 + 28);
+  ctx.stroke();
+}
+
+function initStartScreen() {
+  var skipStart = localStorage.getItem('pixel-arena-skip-start') === '1';
+  if (!skipStart) {
+    document.querySelector('.app').style.display = 'none';
+    drawLogo(document.getElementById('logoCanvas'));
+  } else {
+    document.getElementById('startScreen').style.display = 'none';
+  }
+}
+
+function dismissStartScreen() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.querySelector('.app').style.display = '';
+  if (document.getElementById('skipStartCheck').checked) {
+    localStorage.setItem('pixel-arena-skip-start', '1');
+  }
+}
+window.dismissStartScreen = dismissStartScreen;
+
+initStartScreen();
+
 // =============== INITIALIZATION ===============
 state.canvas = document.getElementById('arenaCanvas');
 state.ctx = state.canvas.getContext('2d');

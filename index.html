@@ -9,6 +9,17 @@
 <body>
 <div class="bg"></div>
 
+<div id="startScreen" class="start-screen">
+  <div class="start-content">
+    <canvas id="logoCanvas" width="400" height="120"></canvas>
+    <div class="start-subtitle">Gear Up. Fight. Conquer.</div>
+    <button class="start-play-btn" onclick="dismissStartScreen()">ENTER THE ARENA</button>
+    <label class="start-skip-label">
+      <input type="checkbox" id="skipStartCheck"> Don't show again
+    </label>
+  </div>
+</div>
+
 <div class="dropdown-overlay" id="archetypeOverlay" style="display:none;z-index:200">
   <div class="dropdown-panel" style="max-width:500px;text-align:center">
     <div class="dd-title" style="font-size:.7rem;margin-bottom:8px">Choose Your Path</div>
@@ -56,7 +67,7 @@
 <div id="selectorScreen">
   <div class="dg-header">&#9876; THE ARENA &#9876;</div>
   <div class="dg-sub">Fight online opponents and wager followers</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px">
+  <div class="arena-grid">
     <div>
       <div id="arenaCharSheet"></div>
       <div id="onlineControls" style="margin-top:8px;text-align:center"></div>

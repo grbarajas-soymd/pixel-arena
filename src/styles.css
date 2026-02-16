@@ -35,7 +35,9 @@ body{background:#0d0a07;color:var(--text);font-family:'Cinzel',serif;min-height:
   repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(60,40,20,0.025) 3px,rgba(60,40,20,0.025) 4px),
   radial-gradient(ellipse at 50% 30%,#1a1208 0%,#0d0a07 70%);
 }
-.app{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:10px;text-align:center}
+.app{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:10px;text-align:center;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center}
+body.is-mobile .app{max-width:100%;padding:6px}
+body.is-desktop .app{max-width:1300px;padding:10px 20px}
 .title{
   font-family:'Cinzel',serif;text-align:center;font-size:1.6rem;
   color:var(--gold-bright);text-shadow:2px 2px 0 #2a1a08,0 0 20px rgba(200,168,72,0.25),0 0 40px rgba(200,168,72,0.1);
@@ -161,47 +163,85 @@ body{background:#0d0a07;color:var(--text);font-family:'Cinzel',serif;min-height:
 }
 .win-banner.show{display:block;animation:winP 2s infinite}
 @keyframes winP{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,0.5),0 0 8px rgba(200,168,72,0.08)}50%{box-shadow:0 2px 8px rgba(0,0,0,0.5),0 0 20px rgba(200,168,72,0.25)}}
-/* ===== MOBILE RESPONSIVE ===== */
-@media(max-width:768px){
-  .hud{grid-template-columns:1fr}
-  .sel-row{flex-direction:column;align-items:center}
-  .title{font-size:.9rem}
-  .class-card{width:120px;padding:10px 6px}
-  .cc-icon{font-size:1.6rem}
-  .cc-name{font-size:.55rem}
-  .cc-stats{font-size:.65rem}
-  .cs-layout{grid-template-columns:1fr;max-width:400px}
-  #arenaCanvas{width:100%;height:auto}
-  .ctrls{flex-wrap:wrap;gap:3px}
-  .btn{padding:6px 10px;font-size:.65rem}
-  .btn-spd{padding:6px 8px;font-size:.5rem}
-  .go-btn{font-size:.75rem;padding:10px 24px}
-  .stake-section{max-width:100%;padding:8px}
-  .follower-card{width:110px;padding:6px 4px}
-  .log-scroll{height:70px}
-  .dg-main{grid-template-columns:1fr;max-width:400px}
-  .ld-next-preview{max-width:100%}
-  .char-sheet{grid-template-columns:1fr!important;max-width:400px!important}
-  .char-sheet-sprite{margin:0 auto}
+/* ===== START SCREEN ===== */
+.start-screen{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:#0d0a07;flex-direction:column}
+.start-content{text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+#logoCanvas{image-rendering:pixelated;max-width:90vw}
+.start-subtitle{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase}
+.start-play-btn{
+  font-family:'Cinzel',serif;font-size:1rem;letter-spacing:3px;
+  padding:16px 48px;border:2px solid var(--gold);color:var(--gold-bright);
+  background:linear-gradient(180deg,#1e1408 0%,#120c04 100%);
+  cursor:pointer;transition:all .3s;
+  box-shadow:0 0 12px rgba(200,168,72,0.15);
+  animation:titleGlow 4s ease-in-out infinite alternate;
 }
-@media(max-width:480px){
-  .title{font-size:.75rem;letter-spacing:1px}
-  .sub{font-size:.5rem;letter-spacing:2px}
-  .class-card{width:100px;padding:8px 4px}
-  .cc-icon{font-size:1.3rem;margin-bottom:3px}
-  .cc-name{font-size:.48rem}
-  .cc-stats{font-size:.55rem}
-  .go-btn{font-size:.62rem;padding:8px 16px}
-  .btn{padding:5px 8px;font-size:.55rem}
-  .btn-spd{padding:5px 6px;font-size:.45rem}
-  .mode-tab{font-size:.45rem;padding:6px 10px}
-  .follower-card{width:90px;padding:5px 3px}
-  .follower-card .fc-icon{font-size:1rem}
-  .follower-card .fc-name{font-size:.42rem}
-  .follower-card .fc-stats{font-size:.38rem}
-  .dg-choice{font-size:.52rem;padding:8px 12px;min-width:80px}
-  .hud-name{font-size:.55rem}
-  .cs-header{font-size:.75rem}
+.start-play-btn:hover{background:linear-gradient(180deg,#2a1e10 0%,#1a1208 100%);box-shadow:0 0 24px rgba(200,168,72,0.3)}
+.start-skip-label{font-size:.48rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:4px}
+.start-skip-label input{margin:0}
+
+/* ===== ARENA GRID ===== */
+.arena-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px}
+
+/* ===== SCREEN FILL ===== */
+#selectorScreen,#dungeonScreen,#ladderScreen,#battleScreen,#customScreen{flex:1}
+
+/* ===== RESPONSIVE: MOBILE (body.is-mobile) ===== */
+body.is-mobile .title{font-size:.85rem;letter-spacing:1px}
+body.is-mobile .sub{font-size:.5rem;letter-spacing:2px;margin-bottom:6px}
+body.is-mobile .mode-tabs{overflow-x:auto;justify-content:flex-start;padding:0 4px;-webkit-overflow-scrolling:touch}
+body.is-mobile .mode-tab{font-size:.48rem;padding:8px 14px;white-space:nowrap;min-height:44px}
+body.is-mobile .arena-grid{grid-template-columns:1fr}
+body.is-mobile .hud{grid-template-columns:1fr;gap:4px}
+body.is-mobile .hud-panel{padding:6px}
+body.is-mobile .hud-name{font-size:.58rem}
+body.is-mobile .sel-row{flex-direction:column;align-items:center}
+body.is-mobile .class-card{width:120px;padding:10px 6px}
+body.is-mobile .cc-icon{font-size:1.6rem}
+body.is-mobile .cc-name{font-size:.52rem}
+body.is-mobile .cc-stats{font-size:.62rem}
+body.is-mobile .cs-layout{grid-template-columns:1fr;max-width:100%}
+body.is-mobile .cs-header{font-size:.75rem}
+body.is-mobile .cs-avatar{width:180px;height:210px}
+body.is-mobile .cs-avatar canvas{width:180px!important;height:210px!important}
+body.is-mobile #arenaCanvas{width:100%;height:auto}
+body.is-mobile .ctrls{flex-wrap:wrap;gap:3px}
+body.is-mobile .btn{padding:8px 12px;font-size:.6rem;min-height:44px}
+body.is-mobile .btn-spd{padding:8px 10px;font-size:.48rem;min-height:44px}
+body.is-mobile .go-btn{font-size:.72rem;padding:10px 24px}
+body.is-mobile .stake-section{max-width:100%;padding:8px}
+body.is-mobile .follower-card{width:120px;padding:8px 6px}
+body.is-mobile .follower-card .fc-icon{font-size:1.2rem}
+body.is-mobile .follower-card .fc-name{font-size:.46rem}
+body.is-mobile .follower-card .fc-stats{font-size:.4rem}
+body.is-mobile .log-scroll{height:60px}
+body.is-mobile .dg-main{grid-template-columns:1fr;max-width:100%}
+body.is-mobile .dg-map{min-height:250px}
+body.is-mobile .dg-panel{padding:8px}
+body.is-mobile .dg-choice{font-size:.55rem;padding:10px 14px;min-width:80px;min-height:44px}
+body.is-mobile .ld-next-preview{max-width:100%}
+body.is-mobile .char-sheet{grid-template-columns:1fr!important;max-width:100%!important}
+body.is-mobile .char-sheet-sprite{margin:0 auto;border-right:none;border-bottom:1px solid var(--border)}
+body.is-mobile .dg-turn-actions{flex-wrap:wrap;gap:4px;padding:6px}
+body.is-mobile .dg-action-btn{padding:6px 10px;min-width:60px;min-height:44px}
+body.is-mobile .start-play-btn{font-size:.75rem;padding:14px 32px}
+body.is-mobile .start-subtitle{font-size:.52rem;letter-spacing:2px}
+
+/* ===== RESPONSIVE: DESKTOP (body.is-desktop) ===== */
+body.is-desktop .dg-main{grid-template-columns:240px 1fr 240px;max-width:1100px}
+body.is-desktop .cs-layout{grid-template-columns:1fr 280px 1fr;max-width:1060px}
+body.is-desktop .char-sheet{max-width:680px}
+body.is-desktop .arena-grid{max-width:900px}
+
+/* ===== CSS-ONLY FALLBACK (before JS loads) ===== */
+@media(max-width:768px) and (orientation:portrait){
+  .app{max-width:100%;padding:6px}
+  .title{font-size:.85rem}
+  .dg-main{grid-template-columns:1fr;max-width:100%}
+  .char-sheet{grid-template-columns:1fr!important;max-width:100%!important}
+  .cs-layout{grid-template-columns:1fr;max-width:100%}
+  .hud{grid-template-columns:1fr}
+  .arena-grid{grid-template-columns:1fr}
 }
 
 /* CUSTOM CHARACTER SHEET */

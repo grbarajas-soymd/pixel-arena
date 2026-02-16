@@ -78,4 +78,7 @@ export const state = {
   ladderBest: 0,
   _ladderGenConfig: null,
   _showWinFn: null,
+
+  // Layout
+  isMobile: false,
 };
