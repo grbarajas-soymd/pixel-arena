@@ -306,7 +306,9 @@ export function drawBarPixel(h,stunned){
 // --- Gear visual lookup helper ---
 function gearVis(h,slot){
   if(!h.equipment)return null;
-  var key=h.equipment[slot];
+  var entry=h.equipment[slot];
+  if(!entry)return null;
+  var key=typeof entry==='string'?entry:(entry&&entry.baseKey);
   if(!key||!ITEMS[key])return null;
   return ITEMS[key].visual||null;
 }
@@ -1313,6 +1315,156 @@ export function drawSpritePreview(canvas,spriteType,equipment){
   state.bt=origBt;
 }
 
+// ---- Per-type companion sprite dispatch ----
+function _drawCompanionSprite(name,col,rarity){
+  var ctx=state.ctx;
+  if(name==='Fire Imp'){
+    // Small red demon — body, flame head, horns
+    px(-5,-8,10,10,'#aa2200');px(-4,-12,8,5,'#cc3300');
+    px(-3,-16,6,5,'#ff4400');px(-1,-18,2,3,'#ff8833');
+    px(-5,-14,2,2,'#ffdd44');px(3,-14,2,2,'#ffdd44'); // horns
+    px(-2,-12,2,2,'#fff');px(2,-12,2,2,'#fff');px(-1,-12,1,1,'#000');px(3,-12,1,1,'#000');
+    px(-7,-4,3,6,'#aa2200');px(4,-4,3,6,'#aa2200'); // arms
+    px(-1,-20,2,3,'#ffcc22');px(0,-22,1,2,'#ffee44'); // flame tip
+  }else if(name==='Stone Golem'){
+    // Blocky grey body, big arms, small head
+    px(-7,-6,14,10,'#666');px(-6,-10,12,5,'#777');
+    px(-4,-14,8,5,'#888');px(-3,-16,6,3,'#999');
+    px(-2,-12,2,2,'#fff');px(2,-12,2,2,'#fff');px(-1,-12,1,1,'#333');px(3,-12,1,1,'#333');
+    px(-9,-4,4,8,'#555');px(5,-4,4,8,'#555'); // big arms
+    px(-6,4,5,3,'#555');px(1,4,5,3,'#555'); // feet
+  }else if(name==='Shadow Rat'){
+    // Low profile, dark body, long tail, beady eyes
+    px(-6,-4,12,6,'#2a2a2a');px(-4,-7,8,4,'#3a3a3a');
+    px(-2,-8,2,2,'#ff0000');px(2,-8,2,2,'#ff0000'); // red eyes
+    px(6,-3,6,2,'#222');px(10,-4,3,1,'#222'); // tail
+    px(-7,-1,3,3,'#2a2a2a');px(4,-1,3,3,'#2a2a2a'); // legs
+  }else if(name==='Ember Sprite'){
+    // Small floating spark
+    px(-3,-10,6,6,'#ffaa22');px(-2,-14,4,5,'#ffcc44');
+    px(-1,-16,2,3,'#ffee66');
+    px(-2,-10,2,2,'#fff');px(2,-10,2,2,'#fff');px(-1,-10,1,1,'#aa4400');px(3,-10,1,1,'#aa4400');
+    ctx.globalAlpha=0.4;px(-5,-6,2,2,'#ff8800');px(3,-6,2,2,'#ff8800');ctx.globalAlpha=1; // sparks
+  }else if(name==='Mud Crawler'){
+    // Brown bug body
+    px(-6,-5,12,8,'#5a3a1a');px(-5,-9,10,5,'#6a4a2a');
+    px(-4,-11,8,3,'#7a5a3a');
+    px(-3,-8,2,2,'#fff');px(2,-8,2,2,'#fff');px(-2,-8,1,1,'#000');px(3,-8,1,1,'#000');
+    px(-8,-2,3,4,'#5a3a1a');px(5,-2,3,4,'#5a3a1a'); // legs
+  }else if(name==='Frost Wolf'){
+    // Four-legged wolf, blue-grey
+    px(-6,-6,12,8,'#667788');px(-4,-10,8,5,'#778899');
+    px(-3,-13,6,4,'#889aaa');px(-1,-14,2,2,'#99aabb');
+    px(-4,-14,2,3,'#778899');px(2,-14,2,3,'#778899'); // ears
+    px(-2,-10,2,2,'#aaddff');px(2,-10,2,2,'#aaddff');px(-1,-10,1,1,'#224');px(3,-10,1,1,'#224');
+    px(-7,0,3,4,'#667788');px(-3,0,3,4,'#667788');px(0,0,3,4,'#667788');px(4,0,3,4,'#667788');
+    px(6,-5,5,2,'#778899'); // tail
+  }else if(name==='Thunder Hawk'){
+    // Wings spread, yellow/gold, talons
+    px(-3,-10,6,6,'#aa8800');px(-2,-14,4,5,'#bb9900');
+    px(-10,-10,8,3,'#cc9900');px(2,-10,8,3,'#cc9900'); // wings
+    px(-12,-11,4,2,'#ddaa00');px(8,-11,4,2,'#ddaa00'); // wing tips
+    px(-1,-12,2,2,'#fff');px(1,-12,2,2,'#fff');px(0,-12,1,1,'#000');px(2,-12,1,1,'#000');
+    px(0,-15,1,2,'#ff8800'); // beak
+    px(-2,0,2,3,'#886600');px(2,0,2,3,'#886600'); // talons
+  }else if(name==='Iron Beetle'){
+    px(-6,-5,12,8,'#4a4a3a');px(-5,-9,10,5,'#5a5a4a');
+    px(-7,-4,2,6,'#3a3a2a');px(5,-4,2,6,'#3a3a2a'); // pincers
+    px(-3,-7,2,2,'#aaffaa');px(2,-7,2,2,'#aaffaa'); // eyes
+    px(-4,-11,8,3,'#6a6a5a'); // shell
+  }else if(name==='Venom Spider'){
+    px(-5,-6,10,8,'#1a3a1a');px(-4,-10,8,5,'#2a4a2a');
+    px(-2,-8,2,2,'#ff0000');px(2,-8,2,2,'#ff0000');px(0,-8,2,2,'#ff0000'); // multi-eyes
+    px(-8,-4,3,2,'#1a3a1a');px(5,-4,3,2,'#1a3a1a');
+    px(-9,-2,3,2,'#1a3a1a');px(6,-2,3,2,'#1a3a1a'); // legs
+    px(-7,0,3,2,'#1a3a1a');px(4,0,3,2,'#1a3a1a');
+    px(-1,2,2,2,'#66aa22'); // venom drip
+  }else if(name==='Bone Wraith'){
+    px(-4,-8,8,10,'#ddd');px(-3,-14,6,7,'#eee');
+    px(-2,-12,2,2,'#000');px(2,-12,2,2,'#000'); // hollow eyes
+    px(-1,-10,2,1,'#000'); // nose
+    ctx.globalAlpha=0.3;px(-6,-6,2,8,'#aaa');px(4,-6,2,8,'#aaa');ctx.globalAlpha=1; // ghostly arms
+  }else if(name==='Flame Drake'){
+    px(-6,-6,12,9,'#cc4400');px(-4,-11,8,6,'#dd5500');
+    px(-3,-14,6,4,'#ee6600');
+    px(-2,-11,2,2,'#ffee00');px(2,-11,2,2,'#ffee00');px(-1,-11,1,1,'#000');px(3,-11,1,1,'#000');
+    px(-10,-10,5,3,'#cc4400');px(5,-10,5,3,'#cc4400'); // wings
+    px(-7,1,3,3,'#aa3300');px(4,1,3,3,'#aa3300'); // legs
+    px(0,-16,1,2,'#ff8800'); // nostril flame
+  }else if(name==='Crystal Elemental'){
+    // Faceted body, blue glow
+    ctx.shadowColor='#44aaff';ctx.shadowBlur=4;
+    px(-4,-8,8,10,'#4488cc');px(-3,-14,6,7,'#55aadd');
+    px(-5,-4,2,6,'#3377bb');px(3,-4,2,6,'#3377bb');
+    ctx.shadowBlur=0;
+    px(-2,-12,2,2,'#ffffff');px(2,-12,2,2,'#ffffff'); // crystal eyes
+    px(-1,-6,2,2,'#88ddff'); // core
+  }else if(name==='Shadow Panther'){
+    px(-7,-5,14,7,'#1a1a2a');px(-5,-9,10,5,'#222233');
+    px(-4,-12,8,4,'#2a2a3a');
+    px(-3,-10,2,2,'#44ff88');px(2,-10,2,2,'#44ff88'); // glowing green eyes
+    px(-8,0,3,3,'#1a1a2a');px(-4,0,3,3,'#1a1a2a');px(1,0,3,3,'#1a1a2a');px(5,0,3,3,'#1a1a2a');
+    px(7,-4,5,2,'#222233'); // tail
+  }else if(name==='Storm Serpent'){
+    px(-3,-8,6,10,'#336655');px(-2,-14,4,7,'#447766');
+    px(-1,-12,2,2,'#ffff44');px(1,-12,2,2,'#ffff44'); // electric eyes
+    px(3,-4,4,2,'#336655');px(5,-2,3,2,'#336655'); // tail curve
+    ctx.globalAlpha=0.4;px(-4,-6,1,2,'#ffff44');px(3,-6,1,2,'#ffff44');ctx.globalAlpha=1; // sparks
+  }else if(name==='Phoenix'){
+    ctx.shadowColor='#ffaa00';ctx.shadowBlur=6;
+    px(-4,-8,8,8,'#ff8800');px(-3,-14,6,7,'#ffaa22');
+    px(-8,-10,5,3,'#ff6600');px(3,-10,5,3,'#ff6600'); // flaming wings
+    px(-10,-11,3,2,'#ffcc44');px(7,-11,3,2,'#ffcc44');
+    ctx.shadowBlur=0;
+    px(-2,-12,2,2,'#fff');px(2,-12,2,2,'#fff');px(-1,-12,1,1,'#880000');px(3,-12,1,1,'#880000');
+    px(-1,-16,2,3,'#ffee44');px(0,-18,1,2,'#ffff88'); // flame crest
+  }else if(name==='Void Stalker'){
+    px(-5,-6,10,8,'#2a1a3a');px(-4,-11,8,6,'#3a2a4a');
+    px(-3,-14,6,4,'#4a3a5a');
+    px(-2,-10,2,2,'#ff44ff');px(2,-10,2,2,'#ff44ff'); // purple eyes
+    px(-8,-10,4,2,'#2a1a3a');px(4,-10,4,2,'#2a1a3a'); // wings
+    px(-6,0,3,3,'#2a1a3a');px(3,0,3,3,'#2a1a3a');
+  }else if(name==='Ancient Treant'){
+    px(-7,-5,14,9,'#3a5a2a');px(-5,-10,10,6,'#4a6a3a');
+    px(-4,-14,8,5,'#5a7a4a');px(-6,-13,3,4,'#3a5a2a');px(3,-13,3,4,'#3a5a2a'); // branches
+    px(-2,-10,2,2,'#ffcc22');px(2,-10,2,2,'#ffcc22'); // amber eyes
+    px(-8,-2,3,6,'#3a5a2a');px(5,-2,3,6,'#3a5a2a'); // thick arms
+    px(-6,4,4,3,'#2a4a1a');px(2,4,4,3,'#2a4a1a'); // roots
+  }else if(name==='Chaos Dragon'){
+    ctx.shadowColor='#ff4400';ctx.shadowBlur=5;
+    px(-7,-5,14,9,'#6a1a1a');px(-5,-10,10,6,'#8a2a2a');
+    px(-4,-14,8,5,'#aa3a3a');px(-2,-16,4,3,'#cc4a4a');
+    px(-11,-10,5,3,'#6a1a1a');px(6,-10,5,3,'#6a1a1a'); // wings
+    ctx.shadowBlur=0;
+    px(-3,-12,2,2,'#ffcc00');px(2,-12,2,2,'#ffcc00');px(-2,-12,1,1,'#000');px(3,-12,1,1,'#000');
+    px(-7,2,3,3,'#5a1a1a');px(4,2,3,3,'#5a1a1a'); // legs
+    px(0,-18,1,2,'#ff6600'); // flame
+  }else if(name==='Death Knight'){
+    // Armored humanoid, dark purple, sword
+    px(-5,-6,10,10,'#2a1a3a');px(-4,-12,8,7,'#3a2a4a');
+    px(-3,-16,6,5,'#4a3a5a');px(-2,-18,4,3,'#5a4a6a'); // helm
+    px(-2,-14,2,2,'#ff4444');px(2,-14,2,2,'#ff4444'); // red eyes
+    px(-7,-4,3,8,'#2a1a3a');px(4,-4,3,8,'#2a1a3a'); // arms
+    px(6,-10,2,8,'#888');px(6,-12,2,3,'#aaa'); // sword
+    px(-5,4,4,3,'#2a1a3a');px(1,4,4,3,'#2a1a3a'); // boots
+  }else{
+    // Default fallback — colored body with emoji
+    var bd=rarity==='legendary'?'#aa8800':rarity==='epic'?'#7733aa':rarity==='rare'?'#2266aa':rarity==='uncommon'?'#227722':'#666666';
+    px(-6,-10,12,12,bd);px(-5,-14,10,6,col);
+    px(-4,-18,8,6,col);px(-3,-20,6,3,bd);
+    px(-2,-16,2,2,'#fff');px(2,-16,2,2,'#fff');px(-1,-16,1,1,'#000');px(3,-16,1,1,'#000');
+    px(-8,-6,3,8,bd);px(5,-6,3,8,bd);
+  }
+}
+
+function _drawUpgradeStars(ups){
+  if(!ups)return;
+  var ctx=state.ctx;
+  ctx.fillStyle='#ffcc22';ctx.font='bold 6px sans-serif';ctx.textAlign='center';
+  var str='';for(var i=0;i<ups;i++)str+='\u2605';
+  ctx.fillText(str,0,-38);
+}
+
 export function drawFollower(fl,owner){
   const ctx=state.ctx;
   if(!fl.alive)return;
@@ -1320,11 +1472,7 @@ export function drawFollower(fl,owner){
   const fpx=fl.x+hs,fpy=fl.y+bob,f=en(owner).x>fl.x?1:-1;
   ctx.save();ctx.translate(Math.round(fpx),Math.round(fpy));if(f<0)ctx.scale(-1,1);
   ctx.fillStyle='rgba(0,0,0,0.15)';ctx.fillRect(-8,2,16,4);
-  px(-7,-8,14,12,'#cc5500');px(-5,-12,10,6,'#dd6622');
-  px(-4,-16,8,6,'#ff8833');px(-2,-18,4,3,'#ffaa44');
-  px(-3,-14,2,2,'#fff');px(1,-14,2,2,'#fff');px(-2,-14,1,1,'#111');px(2,-14,1,1,'#111');
-  px(-1,-20,2,3,'#ffcc44');px(0,-22,1,2,'#ffdd66');
-  ctx.fillStyle='rgba(200,168,50,0.6)';ctx.font='bold 8px "Cinzel"';ctx.textAlign='center';ctx.fillText('GOAD',0,-25);
+  _drawCompanionSprite(fl._companionName||'Fire Imp','#ffaa44','common');
   const hpP=Math.max(0,fl.hp/fl.maxHp);ctx.fillStyle='#2a1a0a';ctx.fillRect(-8,-30,16,4);
   ctx.fillStyle='#ffaa44';ctx.fillRect(-7,-29,Math.round(14*hpP),2);
   ctx.restore();
@@ -1340,19 +1488,20 @@ export function drawArenaFollower(af){
   ctx.save();ctx.translate(Math.round(fx),Math.round(fy));
   ctx.fillStyle='rgba(0,0,0,0.15)';ctx.fillRect(-10,2,20,5);
   var col=af.color;
-  var bodyDark=af.rarity==='legendary'?'#aa8800':af.rarity==='epic'?'#7733aa':af.rarity==='rare'?'#2266aa':af.rarity==='uncommon'?'#227722':'#666666';
-  px(-6,-10,12,12,bodyDark);px(-5,-14,10,6,col);
-  px(-4,-18,8,6,col);px(-3,-20,6,3,bodyDark);
-  px(-2,-16,2,2,'#fff');px(2,-16,2,2,'#fff');px(-1,-16,1,1,'#000');px(3,-16,1,1,'#000');
-  px(-8,-6,3,8,bodyDark);px(5,-6,3,8,bodyDark);
-  px(-7,2,4,3,bodyDark);px(3,2,4,3,bodyDark);
-  if(af.rarity==='epic'||af.rarity==='legendary'){ctx.shadowColor=col;ctx.shadowBlur=6;ctx.strokeStyle=col+'40';ctx.lineWidth=1;ctx.strokeRect(-8,-20,16,25);ctx.shadowBlur=0;}
-  ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(af.icon,0,-24);
+  var rarity=af.rarity||'common';
+  // Rarity glow
+  if(rarity==='epic'||rarity==='legendary'){ctx.shadowColor=col;ctx.shadowBlur=6}
+  _drawCompanionSprite(af.name,col,rarity);
+  ctx.shadowBlur=0;
+  // HP bar
   var hpP=Math.max(0,af.hp/af.maxHp);
   ctx.fillStyle='#1a1a1a';ctx.fillRect(-10,-32,20,4);
   ctx.fillStyle=hpP>0.3?col:'#cc3300';ctx.fillRect(-9,-31,Math.round(18*hpP),2);
   ctx.strokeStyle='#444';ctx.lineWidth=0.5;ctx.strokeRect(-10.5,-32.5,21,5);
-  ctx.fillStyle=col;ctx.font='bold 7px "Cinzel"';ctx.fillText(af.name,0,-35);
+  // Name
+  ctx.fillStyle=col;ctx.font='bold 7px "Cinzel"';ctx.textAlign='center';ctx.fillText(af.name,0,-35);
+  // Upgrade stars
+  _drawUpgradeStars(af._upgrades||0);
   ctx.restore();
 }
 

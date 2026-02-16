@@ -1,6 +1,6 @@
 // =============== CHARACTER SHEET COMPONENT ===============
 import { state } from '../gameState.js';
-import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from '../data/items.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, gearTemplate } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { getIcon } from './icons.js';
 import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
@@ -65,13 +65,13 @@ export function buildCharSheet(containerId) {
   body.innerHTML += '<div class="char-sheet-section">EQUIPMENT</div>';
   var equipHtml = '<div class="char-sheet-equip">';
   EQ_SLOTS.forEach(function (slot) {
-    var ik = state.customChar.equipment[slot.key];
-    var item = ik ? ITEMS[ik] : null;
-    if (item) {
-      var col = GEAR_RARITY_COLORS[item.rarity] || '#8a8a7a';
+    var entry = state.customChar.equipment[slot.key];
+    var tmpl = gearTemplate(entry);
+    if (tmpl) {
+      var col = GEAR_RARITY_COLORS[tmpl.rarity] || '#8a8a7a';
       equipHtml += '<div class="char-sheet-equip-slot">' +
-        '<span class="char-sheet-equip-icon">' + getIcon(item, 18) + '</span>' +
-        '<span class="char-sheet-equip-name" style="color:' + col + '">' + item.name + '</span>' +
+        '<span class="char-sheet-equip-icon">' + getIcon(tmpl, 18) + '</span>' +
+        '<span class="char-sheet-equip-name" style="color:' + col + '">' + tmpl.name + '</span>' +
         '</div>';
     } else {
       equipHtml += '<div class="char-sheet-equip-slot">' +
@@ -122,8 +122,8 @@ export function buildCharSheet(containerId) {
   // Attach tooltips to equipment slots
   var equipSlots = sheet.querySelectorAll('.char-sheet-equip-slot');
   EQ_SLOTS.forEach(function(slot, idx) {
-    var ik = state.customChar.equipment[slot.key];
-    if (ik && equipSlots[idx]) attachTooltip(equipSlots[idx], (function(k) { return function() { return buildGearTooltipHtml(k) } })(ik));
+    var entry = state.customChar.equipment[slot.key];
+    if (entry && equipSlots[idx]) attachTooltip(equipSlots[idx], (function(e) { return function() { return buildGearTooltipHtml(e) } })(entry));
   });
   // Attach tooltips to skill entries
   var skillEls = sheet.querySelectorAll('.char-sheet-skill');

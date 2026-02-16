@@ -24,7 +24,7 @@ import {
   dgTakeTreasure, dgTriggerTrap, dgDodgeTrap, dgRest, dgSkipRest,
   dgUseShrine, dgBuyItem,
   generateRoom, dgProceedToLoot, dgProceedToCapture, endDungeonRun, dgVictory,
-  _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear,
+  _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgSalvageGearDrop, dgBuyGear,
   dgDeployFollower, showCombatLogPopup, closeCombatLogPopup
 } from './modes/dungeon.js';
 
@@ -493,6 +493,7 @@ window.dgVictory = dgVictory;
 window._dgActualGenerateRoom = _dgActualGenerateRoom;
 window.dgEquipGearDrop = dgEquipGearDrop;
 window.dgStashGearDrop = dgStashGearDrop;
+window.dgSalvageGearDrop = dgSalvageGearDrop;
 window.dgDeployFollower = dgDeployFollower;
 window.showCombatLogPopup = showCombatLogPopup;
 window.closeCombatLogPopup = closeCombatLogPopup;

@@ -2,7 +2,7 @@
 import { state } from '../gameState.js';
 import { TK } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
-import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from '../data/items.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, gearTemplate } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { FOLLOWER_TEMPLATES, RARITY_COLORS } from '../data/followers.js';
 import { SFX } from '../sfx.js';
@@ -22,11 +22,11 @@ function buildGearSummary(){
   var cs=getCustomTotalStats();
   var gearHtml='';
   EQ_SLOTS.forEach(function(slot){
-    var ik=state.customChar.equipment[slot.key];
-    var item=ik?ITEMS[ik]:null;
-    if(item){
-      var col=GEAR_RARITY_COLORS[item.rarity]||'#aaa';
-      gearHtml+='<span style="color:'+col+'" title="'+item.name+': '+item.desc+'">'+item.icon+'</span>';
+    var entry=state.customChar.equipment[slot.key];
+    var tmpl=gearTemplate(entry);
+    if(tmpl){
+      var col=GEAR_RARITY_COLORS[tmpl.rarity]||'#aaa';
+      gearHtml+='<span style="color:'+col+'" title="'+tmpl.name+'">'+tmpl.icon+'</span>';
     }
   });
   return '<canvas class="hero-preview-canvas" width="100" height="120" id="arenaPreviewCanvas"></canvas>'+

@@ -57,6 +57,9 @@ export const state = {
   // Gear bag (unequipped gear the player owns)
   gearBag: [],
 
+  // Dust (salvage currency)
+  dust: 0,
+
   // Follower collections (single-player)
   p1Collection: [],
 

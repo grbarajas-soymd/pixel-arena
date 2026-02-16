@@ -111,6 +111,129 @@ export var STARTER_LOADOUTS = {
 // Backwards compat fallback
 export var STARTER_GEAR = STARTER_LOADOUTS.melee.equipment;
 
+// ---- D4-Inspired Rarity Roll Config ----
+// Higher rarity = higher floor (can't roll bad) + higher ceiling (can roll amazing)
+export var RARITY_ROLL_CONFIG = {
+  starter:    { floorPct: 0.95, ceilPct: 1.00 },
+  common:     { floorPct: 0.75, ceilPct: 1.15 },
+  uncommon:   { floorPct: 0.80, ceilPct: 1.20 },
+  rare:       { floorPct: 0.85, ceilPct: 1.25 },
+  epic:       { floorPct: 0.88, ceilPct: 1.30 },
+  legendary:  { floorPct: 0.92, ceilPct: 1.35 },
+  mythic:     { floorPct: 0.95, ceilPct: 1.40 },
+};
+
+// Salvage dust values by rarity
+export var SALVAGE_VALUES = { starter:0, common:1, uncommon:3, rare:8, epic:20, legendary:50, mythic:120 };
+
+// Stats that stay as integers
+var INT_STATS = { hp:1, baseDmg:1, def:1, moveSpeed:1, mana:1, energy:1 };
+
+// Stat label map for descriptions
+var STAT_DESC_LABELS = {
+  hp:'HP', baseDmg:'DMG', baseAS:'AS', def:'DEF', evasion:'Eva',
+  moveSpeed:'Spd', mana:'Mana', manaRegen:'Mana/s', energy:'Energy',
+  energyRegen:'Eng/s', spellDmgBonus:'Spell%'
+};
+
+function _fmtStatDesc(key, val) {
+  if (key === 'evasion' || key === 'spellDmgBonus') return Math.round(val * 100) + '% ' + STAT_DESC_LABELS[key];
+  if (key === 'baseAS') return val.toFixed(2) + ' ' + STAT_DESC_LABELS[key];
+  var sign = val > 0 ? '+' : '';
+  return sign + Math.round(val) + ' ' + (STAT_DESC_LABELS[key] || key);
+}
+
+/** Build human-readable description from rolled stats */
+export function buildGearDesc(stats) {
+  var parts = [];
+  for (var k in stats) {
+    if (stats[k] === 0) continue;
+    parts.push(_fmtStatDesc(k, stats[k]));
+  }
+  return parts.join(', ');
+}
+
+/** Roll a gear instance from a template key — creates unique item with rolled stats */
+export function rollGearInstance(itemKey) {
+  var tmpl = ITEMS[itemKey];
+  if (!tmpl) return null;
+  var cfg = RARITY_ROLL_CONFIG[tmpl.rarity] || RARITY_ROLL_CONFIG.common;
+  var stats = {};
+  var totalPct = 0, statCount = 0;
+  for (var k in tmpl.stats) {
+    var base = tmpl.stats[k];
+    var lo = base * cfg.floorPct;
+    var hi = base * cfg.ceilPct;
+    // For negative stats (like -10 moveSpeed), invert the roll logic
+    var rolled;
+    if (base < 0) {
+      // Negative stat: lower magnitude is better, so flip floor/ceil
+      rolled = lo + Math.random() * (hi - lo);
+    } else if (base === 0) {
+      rolled = 0;
+    } else {
+      rolled = lo + Math.random() * (hi - lo);
+    }
+    if (INT_STATS[k]) {
+      rolled = Math.round(rolled);
+    } else {
+      rolled = Math.round(rolled * 100) / 100;
+    }
+    stats[k] = rolled;
+    // Track quality percentile
+    if (base !== 0) {
+      var range = hi - lo;
+      var pct = range > 0 ? ((rolled - lo) / range) : 1;
+      // For negative stats, higher (closer to 0) is better
+      if (base < 0) pct = 1 - pct;
+      totalPct += pct;
+      statCount++;
+    }
+  }
+  var quality = statCount > 0 ? Math.round((totalPct / statCount) * 100) : 50;
+  return {
+    id: itemKey + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    baseKey: itemKey,
+    stats: stats,
+    desc: buildGearDesc(stats),
+    quality: quality
+  };
+}
+
+/** Resolve gear entry — handles both legacy string keys and new instance objects */
+export function resolveGear(entry) {
+  if (!entry) return null;
+  // Legacy string key
+  if (typeof entry === 'string') {
+    var tmpl = ITEMS[entry];
+    if (!tmpl) return null;
+    return { baseKey: entry, stats: Object.assign({}, tmpl.stats), desc: tmpl.desc, quality: 50, _legacy: true };
+  }
+  // Instance object with null stats (migrated legacy)
+  if (entry._legacy && !entry.stats) {
+    var tmpl2 = ITEMS[entry.baseKey];
+    if (!tmpl2) return null;
+    entry.stats = Object.assign({}, tmpl2.stats);
+    entry.desc = tmpl2.desc;
+    entry.quality = 50;
+  }
+  return entry;
+}
+
+/** Get the ITEMS template for display (icon, visual, slot, rarity, name) */
+export function gearTemplate(entry) {
+  if (!entry) return null;
+  if (typeof entry === 'string') return ITEMS[entry] || null;
+  return ITEMS[entry.baseKey] || null;
+}
+
+/** Get dust value for salvaging */
+export function gearSalvageValue(entry) {
+  var tmpl = gearTemplate(entry);
+  if (!tmpl) return 0;
+  return SALVAGE_VALUES[tmpl.rarity] || 0;
+}
+
 var DROP_WEIGHTS = [
   // floors 1-2
   {common:60,uncommon:30,rare:10,epic:0,legendary:0},
@@ -151,7 +274,8 @@ export function rollGearDrop(floor,clears){
   // Regular drops never include mythic
   var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity&&ITEMS[k].rarity!=='mythic'});
   if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='common'});
-  return pool[Math.floor(Math.random()*pool.length)];
+  var key=pool[Math.floor(Math.random()*pool.length)];
+  return rollGearInstance(key);
 }
 
 // Dungeon victory exclusive drop — mythic or legendary only
@@ -160,7 +284,8 @@ export function rollVictoryGearDrop(dungeonClears){
   var rarity=Math.random()*100<mythicChance?'mythic':'legendary';
   var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
   if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='legendary'});
-  return pool[Math.floor(Math.random()*pool.length)];
+  var key=pool[Math.floor(Math.random()*pool.length)];
+  return rollGearInstance(key);
 }
 
 export function rollShopGear(floor){
@@ -169,5 +294,6 @@ export function rollShopGear(floor){
   if(rarity==='epic'||rarity==='legendary')rarity='rare';
   var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
   if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='common'});
-  return pool[Math.floor(Math.random()*pool.length)];
+  var key=pool[Math.floor(Math.random()*pool.length)];
+  return rollGearInstance(key);
 }

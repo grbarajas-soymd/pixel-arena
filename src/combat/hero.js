@@ -2,19 +2,26 @@
 import { state } from '../gameState.js';
 import { AX, AW, GY, MELEE } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
-import { ITEMS } from '../data/items.js';
+import { ITEMS, resolveGear, gearTemplate } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { RARITY_COLORS } from '../data/followers.js';
 
 export function getCustomTotalStats() {
   var s = Object.assign({}, state.customChar.baseStats);
-  for (var sk in state.customChar.equipment) { var ik = state.customChar.equipment[sk]; if (ik && ITEMS[ik]) for (var k in ITEMS[ik].stats) s[k] = (s[k] || 0) + ITEMS[ik].stats[k] }
+  for (var sk in state.customChar.equipment) {
+    var entry = state.customChar.equipment[sk];
+    var resolved = resolveGear(entry);
+    if (resolved && resolved.stats) {
+      for (var k in resolved.stats) s[k] = (s[k] || 0) + resolved.stats[k];
+    }
+  }
   s.hp = Math.max(100, s.hp); s.baseDmg = Math.max(10, s.baseDmg); s.baseAS = Math.max(0.1, s.baseAS); s.def = Math.max(0, s.def); s.evasion = Math.max(0, Math.min(.8, s.evasion)); s.moveSpeed = Math.max(30, s.moveSpeed); return s;
 }
 
 export function getWeaponRangeType() {
-  var wk = state.customChar.equipment.weapon;
-  if (wk && ITEMS[wk] && ITEMS[wk].rangeType) return ITEMS[wk].rangeType;
+  var entry = state.customChar.equipment.weapon;
+  var tmpl = gearTemplate(entry);
+  if (tmpl && tmpl.rangeType) return tmpl.rangeType;
   return 'melee';
 }
 
@@ -249,6 +256,7 @@ export function mkArenaFollower(template, owner, idx, total) {
   var offsetY = (idx - (total - 1) / 2) * 20;
   return {
     alive: true, name: template.name, icon: template.icon, rarity: template.rarity,
+    _upgrades: template.upgrades || 0,
     color: RARITY_COLORS[template.rarity] || '#aaa',
     hp: template.combatHp, maxHp: template.combatHp,
     baseDmg: template.combatDmg, baseAS: template.combatAS, def: template.combatDef,

@@ -2,7 +2,7 @@
 // Hover (desktop) / Long-press (mobile) tooltips for gear, skills, followers.
 
 import { state } from './gameState.js';
-import { ITEMS, GEAR_RARITY_COLORS } from './data/items.js';
+import { ITEMS, GEAR_RARITY_COLORS, resolveGear, gearTemplate } from './data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from './data/skills.js';
 import { RARITY_COLORS } from './data/followers.js';
 
@@ -112,49 +112,59 @@ function fmtStat(key, val) {
 }
 
 // ---- Gear Tooltip ----
-export function buildGearTooltipHtml(itemKey) {
-  var item = ITEMS[itemKey];
-  if (!item) return '';
-  var col = GEAR_RARITY_COLORS[item.rarity] || '#aaa';
+// Accepts either a string key (legacy) or gear instance object
+export function buildGearTooltipHtml(entry) {
+  var tmpl = gearTemplate(entry);
+  var resolved = resolveGear(entry);
+  if (!tmpl) return '';
+  var col = GEAR_RARITY_COLORS[tmpl.rarity] || '#aaa';
+  var stats = resolved ? resolved.stats : tmpl.stats;
 
-  var h = '<div class="tt-header" style="color:' + col + '">' + item.icon + ' ' + item.name + '</div>';
-  h += '<div class="tt-rarity" style="color:' + col + '">' + item.rarity + ' ' + item.slot + '</div>';
-  if (item.rangeType) h += '<div style="font-size:.42rem;color:var(--text-dim)">' + item.rangeType + '</div>';
+  var h = '<div class="tt-header" style="color:' + col + '">' + tmpl.icon + ' ' + tmpl.name + '</div>';
+  h += '<div class="tt-rarity" style="color:' + col + '">' + tmpl.rarity + ' ' + tmpl.slot + '</div>';
+  if (tmpl.rangeType) h += '<div style="font-size:.42rem;color:var(--text-dim)">' + tmpl.rangeType + '</div>';
+  // Quality badge
+  if (resolved && resolved.quality !== undefined && !resolved._legacy) {
+    var qCol = resolved.quality >= 95 ? '#ffcc22' : resolved.quality >= 80 ? '#66cc66' : resolved.quality >= 60 ? '#55aaaa' : '#888';
+    var qLabel = resolved.quality >= 95 ? 'PERFECT!' : resolved.quality >= 80 ? 'Excellent' : resolved.quality >= 60 ? 'Good' : '';
+    if (qLabel) h += '<div style="font-size:.42rem;color:' + qCol + ';font-weight:bold">' + qLabel + ' (' + resolved.quality + '%)</div>';
+  }
   h += '<div class="tt-divider"></div>';
   h += '<div class="tt-section">Stats</div>';
 
-  for (var k in item.stats) {
-    var val = item.stats[k];
+  for (var k in stats) {
+    var val = stats[k];
     if (val === 0) continue;
     var sign = val > 0 ? '+' : '';
     h += '<div class="tt-stat"><span class="tt-stat-label">' + (STAT_LABELS[k] || k) + '</span><span class="tt-stat-val">' + sign + fmtStat(k, val) + '</span></div>';
   }
 
   // Comparison to equipped
-  var equippedKey = state.customChar.equipment[item.slot];
-  if (equippedKey && equippedKey !== itemKey) {
-    var cur = ITEMS[equippedKey];
-    if (cur) {
-      var curCol = GEAR_RARITY_COLORS[cur.rarity] || '#aaa';
-      h += '<div class="tt-compare">';
-      h += '<div style="margin-bottom:2px">vs <span style="color:' + curCol + '">' + cur.name + '</span></div>';
-      var allKeys = {};
-      for (var k2 in item.stats) allKeys[k2] = true;
-      for (var k3 in cur.stats) allKeys[k3] = true;
-      var diffs = [];
-      for (var sk in allKeys) {
-        var nv = item.stats[sk] || 0, cv = cur.stats[sk] || 0, diff = nv - cv;
-        if (diff !== 0) {
-          var cls = diff > 0 ? 'tt-diff-pos' : 'tt-diff-neg';
-          var sign2 = diff > 0 ? '+' : '';
-          diffs.push('<span class="' + cls + '">' + sign2 + fmtStat(sk, diff) + ' ' + (STAT_LABELS[sk] || sk) + '</span>');
-        }
+  var equippedEntry = state.customChar.equipment[tmpl.slot];
+  var equippedTmpl = gearTemplate(equippedEntry);
+  var equippedRes = resolveGear(equippedEntry);
+  var isSameItem = equippedEntry === entry || (equippedEntry && entry && equippedEntry.id && entry.id && equippedEntry.id === entry.id);
+  if (equippedTmpl && !isSameItem) {
+    var curStats = equippedRes ? equippedRes.stats : equippedTmpl.stats;
+    var curCol = GEAR_RARITY_COLORS[equippedTmpl.rarity] || '#aaa';
+    h += '<div class="tt-compare">';
+    h += '<div style="margin-bottom:2px">vs <span style="color:' + curCol + '">' + equippedTmpl.name + '</span></div>';
+    var allKeys = {};
+    for (var k2 in stats) allKeys[k2] = true;
+    for (var k3 in curStats) allKeys[k3] = true;
+    var diffs = [];
+    for (var sk in allKeys) {
+      var nv = stats[sk] || 0, cv = curStats[sk] || 0, diff = nv - cv;
+      if (diff !== 0) {
+        var cls = diff > 0 ? 'tt-diff-pos' : 'tt-diff-neg';
+        var sign2 = diff > 0 ? '+' : '';
+        diffs.push('<span class="' + cls + '">' + sign2 + fmtStat(sk, diff) + ' ' + (STAT_LABELS[sk] || sk) + '</span>');
       }
-      h += diffs.join(' ');
-      h += '</div>';
     }
-  } else if (!equippedKey) {
-    h += '<div class="tt-compare" style="color:#6a9a6a">No item in ' + item.slot + ' slot</div>';
+    h += diffs.join(' ');
+    h += '</div>';
+  } else if (!equippedEntry) {
+    h += '<div class="tt-compare" style="color:#6a9a6a">No item in ' + tmpl.slot + ' slot</div>';
   }
 
   return h;

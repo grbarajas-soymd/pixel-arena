@@ -1,6 +1,6 @@
 // =============== CUSTOM CHARACTER EDITOR ===============
 import { state } from './gameState.js';
-import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from './data/items.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, resolveGear, gearTemplate, gearSalvageValue } from './data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from './data/skills.js';
 import { getCustomTotalStats, getWeaponRangeType } from './combat/hero.js';
 import { switchMode } from './modes/arena.js';
@@ -18,13 +18,16 @@ var CLASS_DEFAULTS = {
 
 export function buildCustomSheet(){
   var eq=document.getElementById('equipSlots');eq.innerHTML='';
+  // Dust display
+  var dustEl=document.getElementById('dustDisplay');
+  if(dustEl)dustEl.textContent='\u2728 Dust: '+(state.dust||0);
   for(var i=0;i<EQ_SLOTS.length;i++){
-    var slot=EQ_SLOTS[i],ik=state.customChar.equipment[slot.key],item=ik?ITEMS[ik]:null,el=document.createElement('div');
+    var slot=EQ_SLOTS[i],entry=state.customChar.equipment[slot.key],tmpl=gearTemplate(entry),resolved=resolveGear(entry),el=document.createElement('div');
     el.className='eq-slot';el.setAttribute('data-slot',slot.key);
     el.onclick=function(){openItemPicker(this.getAttribute('data-slot'))};
-    var rarityCol=item&&item.rarity?GEAR_RARITY_COLORS[item.rarity]||'#aaa':'#aaa';
-    el.innerHTML='<div class="eq-slot-icon">'+getIcon(item||slot,20)+'</div><div class="eq-slot-label">'+slot.label+'</div><div class="eq-slot-name" style="color:'+rarityCol+'">'+(item?item.name:'- Empty -')+'</div><div class="eq-slot-stats">'+(item?item.desc:'Click')+'</div>'+(item&&item.rarity?'<div style="font-size:.4rem;color:'+rarityCol+'">'+item.rarity+'</div>':'');
-    if(ik)attachTooltip(el,(function(k){return function(){return buildGearTooltipHtml(k)}})(ik));
+    var rarityCol=tmpl&&tmpl.rarity?GEAR_RARITY_COLORS[tmpl.rarity]||'#aaa':'#aaa';
+    el.innerHTML='<div class="eq-slot-icon">'+getIcon(tmpl||slot,20)+'</div><div class="eq-slot-label">'+slot.label+'</div><div class="eq-slot-name" style="color:'+rarityCol+'">'+(tmpl?tmpl.name:'- Empty -')+'</div><div class="eq-slot-stats">'+(resolved?resolved.desc:'Click')+'</div>'+(tmpl&&tmpl.rarity?'<div style="font-size:.4rem;color:'+rarityCol+'">'+tmpl.rarity+'</div>':'');
+    if(entry)attachTooltip(el,(function(e){return function(){return buildGearTooltipHtml(e)}})(entry));
     eq.appendChild(el);
   }
   // Gear bag display
@@ -34,13 +37,19 @@ export function buildCustomSheet(){
       bagEl.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">No spare gear. Run dungeons to find loot!</div>';
     } else {
       bagEl.innerHTML='';
-      state.gearBag.forEach(function(ik){
-        var it=ITEMS[ik];if(!it)return;
-        var col=GEAR_RARITY_COLORS[it.rarity]||'#aaa';
-        var div=document.createElement('div');div.className='dg-inv-item';div.style.cursor='default';
-        div.innerHTML='<span class="dg-inv-icon">'+getIcon(it,14)+'</span><span style="color:'+col+'">'+it.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+it.slot+')</span>';
-        attachTooltip(div,(function(k){return function(){return buildGearTooltipHtml(k)}})(ik));
+      state.gearBag.forEach(function(entry,idx){
+        var tmpl2=gearTemplate(entry);if(!tmpl2)return;
+        var resolved2=resolveGear(entry);
+        var col=GEAR_RARITY_COLORS[tmpl2.rarity]||'#aaa';
+        var dustVal=gearSalvageValue(entry);
+        var div=document.createElement('div');div.className='dg-inv-item';div.style.cursor='default';div.style.display='flex';div.style.alignItems='center';div.style.gap='4px';
+        div.innerHTML='<span class="dg-inv-icon">'+getIcon(tmpl2,14)+'</span><span style="color:'+col+';flex:1">'+tmpl2.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+tmpl2.slot+')</span>'+(dustVal>0?'<button class="salvage-btn" data-idx="'+idx+'" title="Salvage for '+dustVal+' dust">\u2728'+dustVal+'</button>':'');
+        attachTooltip(div,(function(e){return function(){return buildGearTooltipHtml(e)}})(entry));
         bagEl.appendChild(div);
+      });
+      // Attach salvage handlers
+      bagEl.querySelectorAll('.salvage-btn').forEach(function(btn){
+        btn.onclick=function(e){e.stopPropagation();salvageBagItem(parseInt(this.getAttribute('data-idx')))};
       });
     }
   }
@@ -83,44 +92,56 @@ export function applyClassDefaults(){
 }
 
 export function openItemPicker(slotKey){
-  var equippedKey=state.customChar.equipment[slotKey];
-  var ownedKeys=state.gearBag.filter(function(k){return ITEMS[k]&&ITEMS[k].slot===slotKey});
+  var equippedEntry=state.customChar.equipment[slotKey];
+  var ownedEntries=[];
+  state.gearBag.forEach(function(entry,idx){var tmpl3=gearTemplate(entry);if(tmpl3&&tmpl3.slot===slotKey)ownedEntries.push({entry:entry,idx:idx})});
   var c=document.getElementById('ddItems');c.innerHTML='';
   document.getElementById('ddTitle').textContent='Choose '+slotKey;
   var el=document.createElement('div');el.className='dd-item';
   el.innerHTML='<div class="dd-item-icon">\u2715</div><div class="dd-item-info"><div class="dd-item-name" style="color:#aa6666">Unequip</div></div>';
   el.onclick=function(){
-    if(equippedKey){state.gearBag.push(equippedKey)}
+    if(equippedEntry){state.gearBag.push(equippedEntry)}
     state.customChar.equipment[slotKey]=null;buildCustomSheet();closeDD();
   };c.appendChild(el);
-  if(equippedKey&&ITEMS[equippedKey]){
-    var v=ITEMS[equippedKey];
-    var col=GEAR_RARITY_COLORS[v.rarity]||'#aaa';
+  var eqTmpl=gearTemplate(equippedEntry);
+  var eqRes=resolveGear(equippedEntry);
+  if(eqTmpl){
+    var col=GEAR_RARITY_COLORS[eqTmpl.rarity]||'#aaa';
     el=document.createElement('div');el.className='dd-item';el.style.opacity='0.5';
-    el.innerHTML='<div class="dd-item-icon">'+getIcon(v,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+' (equipped)</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
+    el.innerHTML='<div class="dd-item-icon">'+getIcon(eqTmpl,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+eqTmpl.name+' (equipped)</div><div class="dd-item-stats">'+(eqRes?eqRes.desc:eqTmpl.desc)+'</div><div style="font-size:.4rem;color:'+col+'">'+eqTmpl.rarity+'</div></div>';
     c.appendChild(el);
   }
-  ownedKeys.forEach(function(k){
-    var v=ITEMS[k];if(!v)return;
-    var col=GEAR_RARITY_COLORS[v.rarity]||'#aaa';
+  ownedEntries.forEach(function(obj){
+    var entry2=obj.entry,bagIdx=obj.idx;
+    var tmpl4=gearTemplate(entry2);if(!tmpl4)return;
+    var res4=resolveGear(entry2);
+    var col2=GEAR_RARITY_COLORS[tmpl4.rarity]||'#aaa';
     el=document.createElement('div');el.className='dd-item';
-    el.innerHTML='<div class="dd-item-icon">'+getIcon(v,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+'</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
+    el.innerHTML='<div class="dd-item-icon">'+getIcon(tmpl4,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col2+'">'+tmpl4.name+'</div><div class="dd-item-stats">'+(res4?res4.desc:tmpl4.desc)+'</div><div style="font-size:.4rem;color:'+col2+'">'+tmpl4.rarity+'</div></div>';
     el.onclick=function(){
-      if(equippedKey){state.gearBag.push(equippedKey)}
-      var idx=state.gearBag.indexOf(k);
-      if(idx>=0)state.gearBag.splice(idx,1);
-      state.customChar.equipment[slotKey]=k;
+      if(equippedEntry){state.gearBag.push(equippedEntry)}
+      state.gearBag.splice(bagIdx,1);
+      state.customChar.equipment[slotKey]=entry2;
       buildCustomSheet();closeDD();
     };
-    attachTooltip(el,(function(key){return function(){return buildGearTooltipHtml(key)}})(k));
+    attachTooltip(el,(function(e){return function(){return buildGearTooltipHtml(e)}})(entry2));
     c.appendChild(el);
   });
-  if(ownedKeys.length===0&&!equippedKey){
+  if(ownedEntries.length===0&&!equippedEntry){
     el=document.createElement('div');el.className='dd-item';
     el.innerHTML='<div class="dd-item-info"><div class="dd-item-name" style="color:var(--parch-dk)">No gear for this slot. Run dungeons!</div></div>';
     c.appendChild(el);
   }
   document.getElementById('ddOverlay').classList.add('show');
+}
+
+function salvageBagItem(idx){
+  if(idx<0||idx>=state.gearBag.length)return;
+  var entry=state.gearBag[idx];
+  var dustVal=gearSalvageValue(entry);
+  state.gearBag.splice(idx,1);
+  state.dust=(state.dust||0)+dustVal;
+  buildCustomSheet();
 }
 
 export function openSkillPicker(idx){

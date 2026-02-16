@@ -114,6 +114,32 @@ export const FOLLOWER_TEMPLATES = [
 
 export const RARITY_COLORS={common:'#8a8a7a',uncommon:'#4a8a4a',rare:'#4a6a9a',epic:'#8a4a9a',legendary:'#c8a848',mythic:'#cc3333'};
 
+// ---- Follower Crafting ----
+export var CRAFT_COSTS={common:5,uncommon:15,rare:40,epic:100,legendary:250};
+export var UPGRADE_COST=30;
+export var MAX_UPGRADES=3;
+
+export function craftFollower(rarity){
+  var pool=FOLLOWER_TEMPLATES.filter(function(f){return f.rarity===rarity});
+  if(pool.length===0)return null;
+  var tmpl=pool[Math.floor(Math.random()*pool.length)];
+  return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
+    combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
+    abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
+    abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
+    wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
+    upgrades:0,assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
+}
+
+export function upgradeFollower(follower){
+  if(!follower||follower.upgrades>=MAX_UPGRADES)return false;
+  follower.upgrades=(follower.upgrades||0)+1;
+  follower.combatHp=Math.round(follower.combatHp*1.15);
+  follower.combatDmg=Math.round(follower.combatDmg*1.15);
+  follower.combatDef=Math.round(follower.combatDef*1.15);
+  return true;
+}
+
 function _pickRarity(weights){
   var rarities=['common','uncommon','rare','epic','legendary'];
   var total=weights.reduce((a,b)=>a+b,0);var r=Math.random()*total,acc=0;

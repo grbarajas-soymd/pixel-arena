@@ -125,8 +125,9 @@ When you capture a follower during a dungeon run, it provides two benefits:
 If you capture multiple followers, you can switch which one is deployed using the **Deploy** button in the sidebar.
 
 **What you keep:**
-- **Gear** persists forever. Equipped items and stashed items in your Gear Bag carry between runs.
+- **Gear** persists forever. Equipped items and stashed items in your Gear Bag carry between runs. You can also **salvage** gear drops for dust instead of keeping them.
 - **Followers** captured during the run are kept (all on victory, half on death).
+- **Dust** earned from salvaging gear persists and can be spent in the Follower Forge.
 - **Run items** (Whetstone, Swift Elixir, etc.) and **gold** are lost when the run ends.
 
 ---
@@ -172,7 +173,7 @@ Fight other players' heroes online and wager followers.
 
 ## Equipment
 
-Gear comes in 6 rarities:
+Gear comes in 7 rarities:
 
 | Rarity | Color | Source |
 |--------|-------|--------|
@@ -182,24 +183,110 @@ Gear comes in 6 rarities:
 | **Rare** | Blue | Dungeon floors 3+ |
 | **Epic** | Purple | Dungeon floors 5+ |
 | **Legendary** | Orange | Dungeon floors 5+ (very rare) |
+| **Mythic** | Red | Dungeon floors 7+ (extremely rare) |
 
 **Equipment slots:** Weapon, Helmet, Chest, Boots, Accessory
 
-**Notable gear:**
+### Stat Rolling (D4-Inspired)
 
-| Item | Rarity | Slot | Stats | Notes |
-|------|--------|------|-------|-------|
-| Arcane Staff | Common | Weapon | +55 Dmg, 0.55 AS, +8% Spell | Good mage upgrade |
-| Chain Mail | Common | Chest | +22 DEF, +300 HP | Big survivability boost |
-| Swift Shortbow | Uncommon | Weapon | +60 Dmg, 0.8 AS | Fast ranged DPS |
-| Frost Daggers | Rare | Weapon | +100 Dmg, 0.85 AS | Strong melee weapon |
-| Plate Armor | Rare | Chest | +30 DEF, +500 HP, -10 Spd | Tank chest piece |
-| Flame Longbow | Epic | Weapon | +170 Dmg, 0.85 AS | Massive ranged DPS |
-| Greatsword | Legendary | Weapon | +250 Dmg, 0.85 AS | Best melee weapon |
-| Dragonscale | Legendary | Chest | +40 DEF, +1000 HP, -5 Spd | Best tank chest |
-| Stormstriders | Legendary | Boots | +65 Spd, +8% Eva, +0.1 AS | Best boots |
+Every gear drop has **dynamically rolled stats**. Instead of fixed values, each stat is rolled within a rarity-scaled range:
+
+| Rarity | Roll Range | What It Means |
+|--------|-----------|---------------|
+| Common | 75%-115% of base | Wide variance — could be great or terrible |
+| Uncommon | 80%-120% | Slightly tighter floor |
+| Rare | 85%-125% | Reliably decent |
+| Epic | 88%-130% | Can't roll badly |
+| Legendary | 92%-135% | Always strong |
+| Mythic | 95%-140% | Near-perfect floor, sky-high ceiling |
+
+Each gear drop gets a **quality score** (0-100) based on how well it rolled across all stats:
+- **95+** = "PERFECT ROLL!" (gold glow)
+- **80+** = "Excellent" (green badge)
+- **60+** = "Good" (teal badge)
+
+This means two drops of the same item can have very different stats. A well-rolled Rare can outperform a poorly rolled Epic!
+
+### Gear Drops
+
+When gear drops in the dungeon, it appears as a **dramatic full-screen overlay** with:
+- Rarity-colored backdrop glow and sparkle effects
+- Card slam animation
+- Full stat breakdown with color-coded comparison vs your equipped item
+- Quality badge for good rolls
+- Three action buttons: **Equip**, **Stash**, or **Salvage**
+
+### Notable Gear
+
+| Item | Rarity | Slot | Base Stats | Notes |
+|------|--------|------|------------|-------|
+| Arcane Staff | Common | Weapon | ~55 Dmg, ~0.55 AS, ~8% Spell | Good mage upgrade |
+| Chain Mail | Common | Chest | ~22 DEF, ~300 HP | Big survivability boost |
+| Swift Shortbow | Uncommon | Weapon | ~60 Dmg, ~0.8 AS | Fast ranged DPS |
+| Frost Daggers | Rare | Weapon | ~100 Dmg, ~0.85 AS | Strong melee weapon |
+| Plate Armor | Rare | Chest | ~30 DEF, ~500 HP, ~-10 Spd | Tank chest piece |
+| Flame Longbow | Epic | Weapon | ~170 Dmg, ~0.85 AS | Massive ranged DPS |
+| Greatsword | Legendary | Weapon | ~250 Dmg, ~0.85 AS | Best melee weapon |
+| Dragonscale | Legendary | Chest | ~40 DEF, ~1000 HP, ~-5 Spd | Best tank chest |
+| Stormstriders | Legendary | Boots | ~65 Spd, ~8% Eva, ~0.1 AS | Best boots |
+
+*Stats shown are base template values — actual drops roll within the rarity range shown above.*
 
 **Tip:** Hover over any gear item (or long-press on mobile) to see a detailed tooltip with full stats and a comparison vs your currently equipped item in that slot. Green numbers mean the new item is better, red means worse. This works everywhere — equipment slots, gear bag, dungeon merchant, and loot drops.
+
+---
+
+## Salvage & Dust
+
+Unwanted gear can be **salvaged** for **dust**, a currency used to craft and upgrade followers.
+
+### Salvage Values
+
+| Rarity | Dust |
+|--------|------|
+| Common | 1 |
+| Uncommon | 3 |
+| Rare | 8 |
+| Epic | 20 |
+| Legendary | 50 |
+| Mythic | 120 |
+
+**How to salvage:**
+- **On gear drop:** Click the "Salvage" button on the full-screen gear drop overlay (instead of Equip or Stash)
+- **From gear bag:** In the Character Forge, each gear bag item has a Salvage button
+
+Your dust balance is shown in the Character Forge header and the Follower Forge panel.
+
+---
+
+## Follower Forge
+
+The **Follower Forge** is accessible from the dungeon picker screen. Spend salvage dust to craft new followers or upgrade existing ones.
+
+### Crafting Followers
+
+| Rarity | Cost | What You Get |
+|--------|------|-------------|
+| Common | 5 dust | Random common follower |
+| Uncommon | 15 dust | Random uncommon follower |
+| Rare | 40 dust | Random rare follower |
+| Epic | 100 dust | Random epic follower |
+| Legendary | 250 dust | Random legendary follower |
+
+Crafted followers are added to your collection instantly.
+
+### Upgrading Followers
+
+- Cost: **30 dust** per upgrade
+- Each upgrade boosts a follower's **combat HP, DMG, and DEF by 15%**
+- Maximum **3 upgrades** per follower
+- Upgraded followers show gold star badges (1-3 stars)
+- Upgrade stars are visible on companion sprites in combat
+
+**Tips:**
+- Salvage low-rarity gear you won't use — even common dust adds up
+- Upgrading a rare follower 3x can make it rival an epic's combat stats
+- Save dust for legendary crafts if you want Chaos Dragon or Death Knight
 
 ---
 
@@ -246,7 +333,7 @@ Ultimates trigger automatically when your HP drops below a threshold. They can o
 
 ## Followers
 
-Followers are creatures you capture in the dungeon or earn from the ladder. They serve multiple purposes:
+Followers are creatures you capture in the dungeon, earn from the ladder, or **craft in the Follower Forge**. Each follower type has a **unique pixel-art sprite** in combat (Fire Imps look like tiny demons, Frost Wolves like four-legged wolves, etc.). They serve multiple purposes:
 
 **1. Dungeon Companion** (deployed during runs)
 - Your first captured follower is auto-deployed as a **combat companion**.
@@ -311,12 +398,13 @@ Here's the recommended path for a new player:
 
 1. **Pick Warrior archetype** — free skills, tanky, forgiving.
 2. **Run Dungeon** — aim to clear floors 1-3 on your first run. Floors 1-2 are easy, floor 3 is where it gets real.
-3. **Equip upgrades** — any Common or Uncommon drop is a huge upgrade over starter gear.
+3. **Equip upgrades** — any Common or Uncommon drop is a huge upgrade over starter gear. Salvage gear you don't need for dust.
 4. **Capture followers** — your first captured follower becomes a combat companion, boosting your stats and fighting alongside you.
 5. **Run Dungeon again** — with better gear and a companion, push for floor 4+.
-6. **Try Ladder** — after 1-2 dungeon runs, you should have enough stats to beat the first 2-3 ladder opponents.
-7. **Grind for rares** — Rare+ gear from floor 3+ dungeons and ladder follower rewards will power you up significantly.
-8. **Push deeper** — Epic/Legendary gear from floors 5+ lets you clear the full dungeon and go deep in the ladder.
+6. **Craft followers** — spend dust in the Follower Forge to fill out your collection. Upgrade your best followers for combat power.
+7. **Try Ladder** — after 1-2 dungeon runs, you should have enough stats to beat the first 2-3 ladder opponents.
+8. **Grind for rares** — Rare+ gear from floor 3+ dungeons and ladder follower rewards will power you up significantly. Watch for high quality rolls!
+9. **Push deeper** — Epic/Legendary/Mythic gear from floors 5+ lets you clear the full dungeon and go deep in the ladder.
 
 ### Power Benchmarks
 
@@ -336,12 +424,13 @@ Access the Character Forge by clicking **Edit Hero** from any mode's hero card.
 
 Here you can:
 - **Swap equipment** between equipped slots and your Gear Bag
+- **Salvage gear** from your Gear Bag for dust
 - **Pick 2 skills** from all 11 available skills
 - **Pick 1 ultimate** from all 4 ultimates
 - **Choose your sprite** (Mage, Archer, Rogue, Warrior appearance)
 - **Name your hero**
 
-Your stat totals update live as you change gear. The preview canvas shows your hero sprite.
+Your stat totals update live as you change gear. The preview canvas shows your hero sprite. Your **dust balance** is shown in the header.
 
 **Tooltips:** Hover over any equipment slot, skill, or follower card to see detailed stats. On mobile, long-press (~0.4s) to show the tooltip, then release to dismiss it.
 
@@ -403,3 +492,18 @@ Yes. On the dungeon pick screen, click a follower in your collection to select i
 
 **Q: Does the game work on mobile?**
 Yes! The game auto-detects your device. Phones use a mobile-friendly single-column layout. Tablets switch between desktop (landscape) and mobile (portrait) layouts automatically. All touch targets are sized for easy tapping.
+
+**Q: What is dust and how do I get it?**
+Dust is a currency earned by **salvaging** unwanted gear. You can salvage gear when it drops in the dungeon (click "Salvage" on the drop overlay) or from your Gear Bag in the Character Forge. Higher rarity gear gives more dust (common: 1, mythic: 120).
+
+**Q: How does the Follower Forge work?**
+The Follower Forge is on the dungeon picker screen. Spend dust to craft a random follower of a chosen rarity (common: 5 dust → legendary: 250 dust). You can also upgrade existing followers up to 3 times (30 dust each) for +15% combat stats per upgrade.
+
+**Q: What does the quality score on gear mean?**
+When gear drops, each stat is rolled within a range based on rarity. The quality score (0-100) represents how well the item rolled across all its stats. A "PERFECT ROLL!" (95+) means nearly every stat hit the top of its range. Two drops of the same item can have very different stats.
+
+**Q: What is Mythic rarity?**
+Mythic is the highest gear tier, shown in red. Mythic items drop rarely on floors 7+ and have a very tight roll range (95%-140% of base stats), meaning they're consistently powerful. Salvaging mythic gear gives 120 dust.
+
+**Q: Can I upgrade followers?**
+Yes! In the Follower Forge, each owned follower has an Upgrade button. Each upgrade costs 30 dust and boosts combat HP, DMG, and DEF by 15%. Max 3 upgrades per follower. Upgraded followers show gold star badges on their sprites.

@@ -1,7 +1,7 @@
 // =============== PERSISTENCE (localStorage) ===============
 import { state, FIXED_BASE_STATS } from './gameState.js';
 import { FOLLOWER_TEMPLATES } from './data/followers.js';
-import { STARTER_GEAR, STARTER_LOADOUTS } from './data/items.js';
+import { STARTER_GEAR, STARTER_LOADOUTS, ITEMS } from './data/items.js';
 
 var SAVE_KEY='pixel-arena-save';
 var MAX_SLOTS=4;
@@ -66,7 +66,35 @@ function migrateWrapper(data){
     };
   }
 
-  if(data.version!==3)return null;
+  // v3 -> v4: convert string gear keys to instance format, add dust
+  if(data.version===3){
+    data.version=4;
+    if(data.slots){
+      data.slots.forEach(function(slot){
+        // Migrate equipment strings to legacy wrappers
+        if(slot.customChar&&slot.customChar.equipment){
+          var eq=slot.customChar.equipment;
+          for(var sk in eq){
+            if(typeof eq[sk]==='string'&&eq[sk]){
+              eq[sk]={baseKey:eq[sk],stats:null,_legacy:true};
+            }
+          }
+        }
+        // Migrate gearBag strings to legacy wrappers
+        if(slot.gearBag){
+          for(var i=0;i<slot.gearBag.length;i++){
+            if(typeof slot.gearBag[i]==='string'){
+              slot.gearBag[i]={baseKey:slot.gearBag[i],stats:null,_legacy:true};
+            }
+          }
+        }
+        // Add dust if missing
+        if(slot.dust===undefined)slot.dust=0;
+      });
+    }
+  }
+
+  if(data.version!==4)return null;
   return data;
 }
 
@@ -99,6 +127,7 @@ export function saveGame(){
   slot.gearBag=state.gearBag;
   slot.ladderBest=state.ladderBest;
   slot.dungeonClears=state.dungeonClears||0;
+  slot.dust=state.dust||0;
   slot.playerId=state.playerId;
   slot.playerName=state.playerName;
 
@@ -157,6 +186,7 @@ export function loadCharacterSlot(slotIndex){
   state.gearBag=slot.gearBag||[];
   state.ladderBest=slot.ladderBest||0;
   state.dungeonClears=slot.dungeonClears||0;
+  state.dust=slot.dust||0;
   state.playerId=slot.playerId||null;
   state.playerName=slot.playerName||null;
   state.p1Class='custom';
@@ -176,7 +206,7 @@ export function loadCharacterSlot(slotIndex){
 export function createCharacterSlot(name,archetypeKey){
   var wrapper=readWrapper();
   if(!wrapper){
-    wrapper={version:3,activeSlot:0,preferences:{spd:state.spd},slots:[]};
+    wrapper={version:4,activeSlot:0,preferences:{spd:state.spd},slots:[]};
   }
   if(wrapper.slots.length>=MAX_SLOTS)return -1;
 
@@ -202,6 +232,7 @@ export function createCharacterSlot(name,archetypeKey){
     gearBag:[],
     ladderBest:0,
     dungeonClears:0,
+    dust:0,
     playerId:null,
     playerName:null,
   };

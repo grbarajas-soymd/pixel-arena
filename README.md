@@ -55,18 +55,18 @@ pixel-arena/
       hero.js                # Hero factory: mkHero, mkCustomHero, mkLadderHero, mkArenaFollower, serializeBuild
     data/
       classes.js             # 4 NPC classes: Wizard, Ranger, Assassin, Barbarian (stats + spell configs)
-      items.js               # All gear items by slot (weapon/helmet/chest/boots/accessory), starter loadouts
+      items.js               # Gear items, rarity roll config, rollGearInstance(), resolveGear(), salvage values
       skills.js              # ALL_SKILLS (active abilities) + ALL_ULTS (ultimate abilities)
-      followers.js           # Follower templates, rarity tiers, combat stats, buff/debuff definitions
+      followers.js           # Follower templates, rarity tiers, combat stats, crafting & upgrade system
     modes/
       arena.js               # Arena mode: online opponent browsing, registration, build upload, battle launch, win/loss handling
-      dungeon.js             # Dungeon roguelike: 8 floors x 3 rooms, room generation, gear/follower drops, merchants
+      dungeon.js             # Dungeon roguelike: floors x 3 rooms, dramatic gear drops, salvage, follower forge
       dgCombat.js            # Dungeon turn-based combat: JRPG speed timeline, monster AI, companion system
       ladder.js              # Ladder gauntlet: fight 4 classes then infinite procedural challengers, follower rewards
     tooltip.js               # Universal tooltip system (hover on desktop, long-press on mobile)
     render/
       arena.js               # Canvas rendering: sprites, ground tiles, particles, projectiles, damage numbers
-      sprites.js             # Procedural pixel-art sprite generation for all character classes
+      sprites.js             # Procedural pixel-art sprites for characters + unique per-follower companion sprites
       charSheet.js           # Character sheet component (stats, equipment, skills display)
       ui.js                  # HUD bars, buff/debuff display, follower cards, stake UI, defeat sheet helper
 ```
@@ -81,7 +81,7 @@ Players register with a display name, upload their character build to the server
 **Flow:** Register -> Upload Build -> Browse Opponents -> Select + Wager Follower -> Battle -> Result reported to server
 
 ### Dungeon (Roguelike PvE)
-8-floor dungeon crawl with 3 rooms per floor. Room types: combat, treasure, trap, rest, shrine, merchant, follower cage. Turn-based JRPG-style combat with speed-based turn timeline, skills, potions, and auto-battle. Gear drops persist permanently. Followers are captured and added to your collection. Players can bring an existing follower as a combat companion before descending.
+Endless dungeon crawl with 3 rooms per floor. Room types: combat, treasure, trap, rest, shrine, merchant, follower cage. Turn-based JRPG-style combat with speed-based turn timeline, skills, potions, and auto-battle. Gear drops have **dynamically rolled stats** (D4-inspired rarity-scaled ranges) and are presented in a **dramatic full-screen overlay** with quality badges, stat comparisons, and equip/stash/salvage options. Followers are captured and added to your collection. The **Follower Forge** lets players craft and upgrade followers using salvage dust. Players can bring an existing follower as a combat companion before descending.
 
 ### Ladder (Gauntlet PvE)
 Fight the 4 NPC classes in sequence, then face infinite procedurally-generated challengers with random gear and skills that scale with wins. Earn a follower every 3 wins.
@@ -126,7 +126,7 @@ Storage: flat JSON file at `server/data/characters.json`. Auto-created on server
 {
   name: "MyHero",
   sprite: "wizard",
-  equipment: { weapon: "great_sword", helmet: "dragon_helm", ... },
+  equipment: { weapon: { baseKey: "great_sword", stats: {...}, quality: 74 }, ... },
   skills: [0, 2],          // indices into ALL_SKILLS
   ultimate: 0,             // index into ALL_ULTS
   rangeType: "melee",      // from getWeaponRangeType()
@@ -187,12 +187,12 @@ Key state fields:
 
 ### Persistence (Multi-Character)
 
-The game uses a **v3 multi-slot save format** stored in a single `localStorage` key (`pixel-arena-save`). Up to 4 character slots are supported, each with independent gear, followers, ladder records, and online identity.
+The game uses a **v4 multi-slot save format** stored in a single `localStorage` key (`pixel-arena-save`). Up to 4 character slots are supported, each with independent gear, followers, dust, ladder records, and online identity.
 
 ```javascript
-// v3 save wrapper
+// v4 save wrapper
 {
-  version: 3,
+  version: 4,
   activeSlot: 0,                    // last-played character index
   preferences: { spd: 2 },          // shared across all characters
   slots: [
@@ -202,7 +202,8 @@ The game uses a **v3 multi-slot save format** stored in a single `localStorage` 
       sprite: "barbarian",
       customChar: { name, equipment, skills, ultimate, sprite },
       p1Collection: [],              // follower collection
-      gearBag: [],                   // unequipped gear
+      gearBag: [],                   // unequipped gear (gear instances)
+      dust: 0,                       // salvage dust currency
       ladderBest: 0,
       playerId: null,                // online arena identity
       playerName: null,
@@ -214,7 +215,20 @@ The game uses a **v3 multi-slot save format** stored in a single `localStorage` 
 }
 ```
 
-**Migration chain:** v1 -> v2 -> v3 runs automatically. Existing single-character saves become `slots[0]`.
+**Equipment format:** Gear is stored as **rolled instances** with dynamic stats:
+```javascript
+// Old format (string key): equipment.weapon = 'iron_sword'
+// New format (instance):
+equipment.weapon = {
+  id: 'iron_sword_17081...',
+  baseKey: 'iron_sword',
+  stats: { baseDmg: 82, baseAS: 0.53 },
+  desc: '+82 DMG, 0.53 AS',
+  quality: 74                         // 0-100 percentile score
+}
+```
+
+**Migration chain:** v1 -> v2 -> v3 -> v4 runs automatically. The v3→v4 migration converts string equipment keys to `{ baseKey, stats: null, _legacy: true }` wrappers. `resolveGear()` fills template stats on first access.
 
 **Key functions:**
 - `saveGame()` — writes active character's state to its slot in the wrapper
@@ -262,3 +276,19 @@ HTML uses `onclick=""` handlers, so all interactive functions are exposed via `w
 - The two Vite warnings about dynamic imports (dungeon.js, ladder.js) are expected -- `arena.js` uses dynamic `import()` for lazy loading these modules on mode switch, but `main.js` also statically imports them. This is harmless.
 - All combat math (damage, defense mitigation, evasion, attack speed) is in `src/combat/engine.js`.
 - Sprite rendering is in `src/render/arena.js` -- procedural pixel art, no image assets.
+
+### Gear System (D4-Inspired)
+
+Gear uses **dynamic stat rolling** inspired by Diablo 4's itemization:
+- Each rarity has a `floorPct`/`ceilPct` range (e.g., mythic rolls 95%-140% of template stats, common rolls 75%-115%)
+- `rollGearInstance(itemKey)` creates a unique gear instance with rolled stats and a quality score (0-100)
+- `resolveGear(entry)` is the dual-format handler that accepts both legacy string keys and new instance objects
+- `gearTemplate(entry)` retrieves the ITEMS template for display properties (icon, rarity, name, slot)
+- Gear can be **salvaged** for dust (`gearSalvageValue()`), which is used to **craft and upgrade followers**
+
+### Follower Crafting
+
+The **Follower Forge** (in the dungeon picker screen) lets players spend salvage dust:
+- **Craft followers** by rarity tier (common: 5 dust → legendary: 250 dust)
+- **Upgrade followers** up to 3 times (30 dust each, +15% combat stats per upgrade)
+- `craftFollower(rarity)` and `upgradeFollower(follower)` in `src/data/followers.js`
