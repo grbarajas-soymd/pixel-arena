@@ -56,6 +56,8 @@ var thornsActive=false;var thornsPct=0;var thornsRounds=0;
 var shadowDanceRounds=0;var lastStandRounds=0;var primalFuryRounds=0;var freeSpellsRounds=0;var primalExtraUsed=false;
 var burnDmg=0;var burnTurnsLeft=0;
 var bleedTurnsLeft=0;
+var monsterHealCount=0; // Track how many times monster has healed (diminishing returns)
+var FATIGUE_TURN=50;   // Soft enrage starts after this many turns
 var dgMouseX=-1,dgMouseY=-1; // canvas-space mouse coords for status tooltip hover
 var animAction_skillIdx=null;
 var animAction_skill=null;
@@ -197,7 +199,10 @@ function highlightCounterButtons(hints){
       var btn=document.getElementById(si===0?'dgSk0Btn':'dgSk1Btn');
       if(btn&&!btn.disabled){
         btn.classList.add('dg-counter-highlight');
-        if(btn.innerHTML.indexOf('COUNTER')===-1)btn.innerHTML+=' <span class="dg-counter-label">COUNTER!</span>';
+        if(!btn.querySelector('.dg-counter-label')){
+          var lbl=document.createElement('span');lbl.className='dg-counter-label';lbl.textContent='COUNTER!';
+          btn.appendChild(lbl);
+        }
       }
     }
   }
@@ -297,7 +302,7 @@ export function initDgCombat(monster){
   animAction_skillIdx=null;animAction_skill=null;
   animAction_ultIdx=null;animAction_ult=null;
   playerStunnedByMonster=false;heroPoisonTurns=0;
-  monsterChargingSpecial=null;monsterEnraged=false;monsterEnragedRounds=0;
+  monsterChargingSpecial=null;monsterEnraged=false;monsterEnragedRounds=0;monsterHealCount=0;
   hero._origX=hero.x;
   monsterHero._origX=monsterHero.x;
   // AP timeline init
@@ -391,35 +396,34 @@ function buildActionUI(){
   var sk0=state.customChar.skills[0]!==null?ALL_SKILLS[state.customChar.skills[0]]:null;
   var sk1=state.customChar.skills[1]!==null?ALL_SKILLS[state.customChar.skills[1]]:null;
   var ult=state.customChar.ultimate!==null?ALL_ULTS[state.customChar.ultimate]:null;
+  var compAbilName=companionData?(companionData.abilityName||'Ability'):'Ability';
   var buttons=[
     {id:'dgAtkBtn',label:'\u2694\uFE0F Attack',color:'#ffaa44',action:'attack'},
     {id:'dgSk0Btn',label:sk0?(sk0.icon+' '+sk0.name):'\u2728 Skill 1',color:'#44ddbb',action:'skill0'},
     {id:'dgSk1Btn',label:sk1?(sk1.icon+' '+sk1.name):'\u2728 Skill 2',color:'#44ddbb',action:'skill1'},
     {id:'dgUltBtn',label:ult?(ult.icon+' '+ult.name):'\uD83D\uDCA5 Ultimate',color:'#ff4444',action:'ultimate'},
     {id:'dgPotBtn',label:'\uD83E\uDDEA Potion ('+(run?run.potions:0)+')',color:'#44aa66',action:'potion'},
+    {id:'dgCompBtn',label:'\uD83D\uDC3E '+compAbilName,color:'#bb88ff',action:'companion_ability'},
     {id:'dgFleeBtn',label:'\uD83C\uDFC3 Flee',color:'#888888',action:'flee'},
+    {id:'dgAutoBtn',label:'\u{1F916} Auto',color:'#ccaa00',action:'_auto'},
   ];
-  // Add companion ability button if companion alive
-  if(companionAlive&&companionData){
-    var compAbilName=companionData.abilityName||'Ability';
-    buttons.splice(5,0,{id:'dgCompBtn',label:'\uD83D\uDC3E '+compAbilName,color:'#bb88ff',action:'companion_ability'});
-  }
   buttons.forEach(function(b){
     var btn=document.createElement('button');
     btn.id=b.id;btn.className='dg-action-btn';
     btn.style.borderColor=b.color;btn.style.color=b.color;
     btn.innerHTML=b.label;
     btn.setAttribute('data-action',b.action);
-    btn.onclick=function(){handleAction(b.action);};
+    if(b.action==='_auto'){
+      btn.onclick=function(){toggleAutoBattle();};
+    }else{
+      btn.onclick=function(){handleAction(b.action);};
+    }
+    // Hide companion button if no companion
+    if(b.id==='dgCompBtn'&&!companionAlive){
+      btn.style.display='none';
+    }
     div.appendChild(btn);
   });
-  // Auto Battle button
-  var autoBtn=document.createElement('button');
-  autoBtn.id='dgAutoBtn';autoBtn.className='dg-action-btn';
-  autoBtn.style.borderColor='#ccaa00';autoBtn.style.color='#ccaa00';
-  autoBtn.innerHTML='\u{1F916} Auto';
-  autoBtn.onclick=function(){toggleAutoBattle();};
-  div.appendChild(autoBtn);
   var canvas=document.getElementById('arenaCanvas');
   if(canvas&&canvas.parentNode)canvas.parentNode.insertBefore(div,canvas.nextSibling);
 }
@@ -450,7 +454,7 @@ function refreshButtonStates(){
     else{
       var c0=sk0.cost!==undefined?sk0.cost:30,ok0=c0<=0||res>=c0||freeSpellsRounds>0;
       sk0Btn.disabled=!ok0;sk0Btn.style.opacity=ok0?'1':'0.4';sk0Btn.style.pointerEvents=ok0?'auto':'none';
-      sk0Btn.innerHTML=sk0.icon+' '+sk0.name+' <span style="font-size:.55rem;opacity:.7">('+c0+')</span>';
+      sk0Btn.innerHTML=sk0.icon+' '+sk0.name+' <span class="dg-btn-sub">('+c0+')</span>';
     }
   }
   var sk1Btn=document.getElementById('dgSk1Btn');
@@ -461,7 +465,7 @@ function refreshButtonStates(){
     else{
       var c1=sk1.cost!==undefined?sk1.cost:30,ok1=c1<=0||res>=c1||freeSpellsRounds>0;
       sk1Btn.disabled=!ok1;sk1Btn.style.opacity=ok1?'1':'0.4';sk1Btn.style.pointerEvents=ok1?'auto':'none';
-      sk1Btn.innerHTML=sk1.icon+' '+sk1.name+' <span style="font-size:.55rem;opacity:.7">('+c1+')</span>';
+      sk1Btn.innerHTML=sk1.icon+' '+sk1.name+' <span class="dg-btn-sub">('+c1+')</span>';
     }
   }
   var ultBtn=document.getElementById('dgUltBtn');
@@ -470,7 +474,7 @@ function refreshButtonStates(){
     var ud=ui!==null?ALL_ULTS[ui]:null;
     if(!ud||ultUsed){ultBtn.disabled=true;ultBtn.style.opacity='0.3';ultBtn.style.pointerEvents='none';}
     else{ultBtn.disabled=false;ultBtn.style.opacity='1';ultBtn.style.pointerEvents='auto';}
-    if(ultUsed&&ud)ultBtn.innerHTML=ud.icon+' '+ud.name+' <span style="font-size:.55rem;opacity:.7">(USED)</span>';
+    if(ultUsed&&ud)ultBtn.innerHTML=ud.icon+' '+ud.name+' <span class="dg-btn-sub">(USED)</span>';
   }
   var potBtn=document.getElementById('dgPotBtn');
   if(potBtn){
@@ -479,12 +483,17 @@ function refreshButtonStates(){
     var canPot=pots>0&&hero.hp<hero.maxHp;
     potBtn.disabled=!canPot;potBtn.style.opacity=canPot?'1':'0.4';potBtn.style.pointerEvents=canPot?'auto':'none';
   }
-  // Companion ability button
+  // Companion ability button — hide entirely if no companion, disable if on cd
   var compBtn=document.getElementById('dgCompBtn');
   if(compBtn){
-    var canComp=companionAlive&&companionAbilityCd<=0;
-    compBtn.disabled=!canComp;compBtn.style.opacity=canComp?'1':'0.4';compBtn.style.pointerEvents=canComp?'auto':'none';
-    if(companionAbilityCd>0)compBtn.innerHTML='\uD83D\uDC3E '+(companionData?companionData.abilityName||'Ability':'Ability')+' <span style="font-size:.55rem;opacity:.7">(CD:'+companionAbilityCd+')</span>';
+    if(!companionAlive){
+      compBtn.style.display='none';
+    }else{
+      compBtn.style.display='';
+      var canComp=companionAbilityCd<=0;
+      compBtn.disabled=!canComp;compBtn.style.opacity=canComp?'1':'0.4';compBtn.style.pointerEvents=canComp?'auto':'none';
+      if(companionAbilityCd>0)compBtn.innerHTML='\uD83D\uDC3E '+(companionData?companionData.abilityName||'Ability':'Ability')+' <span class="dg-btn-sub">(CD:'+companionAbilityCd+')</span>';
+    }
   }
 }
 
@@ -1545,6 +1554,20 @@ function startMonsterTurn(){
     setTimeout(function(){finishAnim();},150);
     return;
   }
+  // Fatigue: after FATIGUE_TURN turns, monster takes escalating damage each round
+  if(turnNum>=FATIGUE_TURN){
+    var fatiguePct=0.02+0.01*Math.max(0,turnNum-FATIGUE_TURN);
+    var fatigueDmg=Math.max(1,Math.round(monster.maxHp*fatiguePct));
+    monster.hp-=fatigueDmg;monster.hurtAnim=1;dmgDealt+=fatigueDmg;
+    addFloat(monster.x,monster.y-70,'\u{1F4A8} -'+fatigueDmg+' FATIGUE','#ff8844');
+    if(turnNum===FATIGUE_TURN)combatLog('The battle drags on... '+monster.name+' grows weary!','spell');
+    combatLog(monster.name+' takes '+fatigueDmg+' fatigue dmg (turn '+turnNum+')','debuff');
+    if(monster.hp<=0){
+      monster.hp=0;showTurnText(monster.name+' has been defeated!');SFX.win();
+      combatLog(monster.name+' defeated by fatigue!','death');
+      phase='done';setTimeout(function(){endCombat(true);},500);return;
+    }
+  }
   // Execute charged special if one is pending
   if(monsterChargingSpecial){
     removeTelegraphPanel();
@@ -1613,12 +1636,15 @@ function executeMonsterSpecial(specId,hero,monster){
     setTimeout(function(){finishAnim();},300);return;
   }
   else if(specId==='heal'){
-    // Heal 15% maxHP, replaces attack
-    var healAmt=Math.round(monster.maxHp*0.15);
+    // Heal 15% maxHP with diminishing returns (25% less each use), replaces attack
+    monsterHealCount++;
+    var healPct=0.15*Math.pow(0.75,monsterHealCount-1);
+    var healAmt=Math.round(monster.maxHp*healPct);
+    if(healAmt<1)healAmt=1;
     monster.hp=Math.min(monster.maxHp,monster.hp+healAmt);
     addFloat(monster.x,monster.y-60,'+'+healAmt+' HP','#44aa66');SFX.heal();
-    combatLog(monster.name+' regenerates '+healAmt+' HP!','heal');
-    showTurnText('\u{1F49A} '+monster.name+' regenerates!');
+    combatLog(monster.name+' regenerates '+healAmt+' HP!'+(monsterHealCount>1?' (weakened)':''),'heal');
+    showTurnText('\u{1F49A} '+monster.name+' regenerates!'+(monsterHealCount>1?' (weakened)':''));
     setTimeout(function(){finishAnim();},300);return;
   }
   else if(specId==='warStomp'){
