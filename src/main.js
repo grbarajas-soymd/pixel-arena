@@ -35,6 +35,7 @@ import {
 } from './custom.js';
 
 // Render
+import { openLeaderboard, closeLB } from './ui/leaderboard.js';
 import { render } from './render/arena.js';
 import { updateFollowerDisplays, updateStakeUI } from './render/ui.js';
 import { drawSpritePreview } from './render/sprites.js';
@@ -498,3 +499,5 @@ window.closeCombatLogPopup = closeCombatLogPopup;
 window.registerPlayer = registerPlayer;
 window.uploadBuild = uploadBuild;
 window.refreshOpponents = refreshOpponents;
+window.openLeaderboard = openLeaderboard;
+window.closeLB = closeLB;

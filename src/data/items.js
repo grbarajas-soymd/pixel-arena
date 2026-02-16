@@ -7,6 +7,7 @@ export const GEAR_RARITY_COLORS = {
   rare:'#4a6a9a',
   epic:'#8a4a9a',
   legendary:'#c8a848',
+  mythic:'#cc3333',
 };
 
 export const ITEMS = {
@@ -63,6 +64,14 @@ export const ITEMS = {
   dragonscale:{slot:'chest',icon:'\u{1F432}',name:'Dragonscale',rarity:'legendary',stats:{def:40,hp:1000,moveSpeed:-5},desc:'+40DEF +1000HP -5Spd',visual:{type:'dragonscale',color:'#2a4a2a',hilight:'#4a6a4a',glow:'#c8a848'}},
   stormstriders:{slot:'boots',icon:'\u26A1',name:'Stormstriders',rarity:'legendary',stats:{def:10,moveSpeed:65,evasion:0.08,baseAS:0.1},desc:'+65Spd +8%Eva +0.1AS',visual:{type:'stormstriders',color:'#3a3a5a',hilight:'#5a5a7a',glow:'#6a9aba'}},
   heart_of_chaos:{slot:'accessory',icon:'\u{1F525}',name:'Heart of Chaos',rarity:'legendary',stats:{baseDmg:55,hp:400,baseAS:0.1},desc:'+55Dmg +400HP +0.1AS',visual:{type:'heart',color:'#6a1a1a',hilight:'#8a3a3a',glow:'#aa2a2a'}},
+
+  // — Mythic (dungeon completion only) —
+  soulreaver:{slot:'weapon',icon:'\u2694',name:'Soulreaver',rarity:'mythic',rangeType:'melee',stats:{baseDmg:340,baseAS:0.95,hp:300},desc:'+340Dmg 0.95AS +300HP',visual:{type:'sword',color:'#4a1a1a',hilight:'#8a3a3a',glow:'#ff4444'}},
+  astral_longbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Astral Longbow',rarity:'mythic',rangeType:'ranged',stats:{baseDmg:280,baseAS:1.05,spellDmgBonus:0.10},desc:'+280Dmg 1.05AS +10%Spell',visual:{type:'bow',color:'#3a2a5a',hilight:'#6a4a8a',glow:'#ff4444'}},
+  crown_of_eternity:{slot:'helmet',icon:'\u{1F451}',name:'Crown of Eternity',rarity:'mythic',stats:{def:35,hp:700,spellDmgBonus:0.15,manaRegen:3},desc:'+35DEF +700HP +15%Spell +3Mana/s',visual:{type:'crown',color:'#4a1a2a',hilight:'#7a3a4a',glow:'#ff4444'}},
+  voidplate:{slot:'chest',icon:'\u{1F6E1}',name:'Voidplate',rarity:'mythic',stats:{def:55,hp:1400,evasion:0.05},desc:'+55DEF +1400HP +5%Eva',visual:{type:'dragonscale',color:'#1a1a2a',hilight:'#3a3a4a',glow:'#ff4444'}},
+  godstriders:{slot:'boots',icon:'\u26A1',name:'Godstriders',rarity:'mythic',stats:{def:15,moveSpeed:85,evasion:0.12,baseAS:0.15},desc:'+85Spd +12%Eva +0.15AS',visual:{type:'stormstriders',color:'#3a1a1a',hilight:'#5a3a3a',glow:'#ff4444'}},
+  heart_of_abyss:{slot:'accessory',icon:'\u{1F480}',name:'Heart of the Abyss',rarity:'mythic',stats:{baseDmg:75,hp:600,baseAS:0.15,evasion:0.04},desc:'+75Dmg +600HP +0.15AS +4%Eva',visual:{type:'heart',color:'#2a1a2a',hilight:'#4a3a4a',glow:'#ff4444'}},
 };
 
 export const EQ_SLOTS = [
@@ -122,11 +131,35 @@ function _rollRarity(w){
   return 'legendary';
 }
 
-export function rollGearDrop(floor){
+// Shift drop weights toward rarer items based on dungeon clears (+3% per clear, cap 15%)
+function _getDropWeights(floor,clears){
   var tier=Math.min(3,Math.floor((floor-1)/2));
-  var rarity=_rollRarity(DROP_WEIGHTS[tier]);
-  var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
+  var w=Object.assign({},DROP_WEIGHTS[tier]);
+  if(!clears)return w;
+  var shift=Math.min(15,clears*3);
+  // Move weight from common → epic/legendary
+  var fromCommon=Math.min(w.common,shift);
+  w.common-=fromCommon;
+  w.epic+=Math.round(fromCommon*0.6);
+  w.legendary+=Math.round(fromCommon*0.4);
+  return w;
+}
+
+export function rollGearDrop(floor,clears){
+  var w=_getDropWeights(floor,clears||0);
+  var rarity=_rollRarity(w);
+  // Regular drops never include mythic
+  var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity&&ITEMS[k].rarity!=='mythic'});
   if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='common'});
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+// Dungeon victory exclusive drop — mythic or legendary only
+export function rollVictoryGearDrop(dungeonClears){
+  var mythicChance=Math.min(70,40+dungeonClears*3);
+  var rarity=Math.random()*100<mythicChance?'mythic':'legendary';
+  var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
+  if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='legendary'});
   return pool[Math.floor(Math.random()*pool.length)];
 }
 

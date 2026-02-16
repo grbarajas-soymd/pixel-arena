@@ -112,7 +112,7 @@ export const FOLLOWER_TEMPLATES = [
     wagerDebuff:{name:'Death Curse',desc:'-400 HP, -25 DMG, -15 DEF',apply:function(e){e.maxHp-=400;e.hp=Math.min(e.hp,e.maxHp);e.baseDmg=Math.max(10,e.baseDmg-25);e.def=Math.max(0,e.def-15)}}},
 ];
 
-export const RARITY_COLORS={common:'#8a8a7a',uncommon:'#4a8a4a',rare:'#4a6a9a',epic:'#8a4a9a',legendary:'#c8a848'};
+export const RARITY_COLORS={common:'#8a8a7a',uncommon:'#4a8a4a',rare:'#4a6a9a',epic:'#8a4a9a',legendary:'#c8a848',mythic:'#cc3333'};
 
 function _pickRarity(weights){
   var rarities=['common','uncommon','rare','epic','legendary'];

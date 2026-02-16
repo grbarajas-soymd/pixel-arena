@@ -1,7 +1,7 @@
 // =============== DUNGEON SYSTEM ===============
 import { state } from '../gameState.js';
 import { CLASSES } from '../data/classes.js';
-import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop, rollShopGear } from '../data/items.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop, rollShopGear, rollVictoryGearDrop } from '../data/items.js';
 import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower, rollCageFollower } from '../data/followers.js';
 import { SFX } from '../sfx.js';
 import { getCustomTotalStats } from '../combat/hero.js';
@@ -11,6 +11,7 @@ import { drawSpritePreview } from '../render/sprites.js';
 import { buildCharSheet } from '../render/charSheet.js';
 import { getIcon } from '../render/icons.js';
 import { attachTooltip, buildGearTooltipHtml, buildFollowerTooltipHtml, buildRunItemTooltipHtml } from '../tooltip.js';
+import { uploadStats } from '../network.js';
 
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
 
@@ -41,7 +42,28 @@ var DG_MONSTERS=[
 
 export function buildDungeonPicker(){
   buildCharSheet('dungeonCharSheet');
+  _renderDgClearInfo();
   _renderDgCompanionPicker();
+}
+
+function _renderDgClearInfo(){
+  var el=document.getElementById('dgClearInfo');if(!el)return;
+  var c=state.dungeonClears||0;
+  if(c===0){
+    el.innerHTML='<span style="color:var(--parch-dk);font-size:.48rem">First descent awaits...</span>';
+  } else {
+    var diffPct=c*15;
+    var tierBoost=Math.min(2,Math.floor(c/2));
+    var mythicChance=Math.min(70,40+c*3);
+    el.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);line-height:1.7;text-align:center">'+
+      'Clears: <span style="color:var(--gold-bright);font-weight:bold">'+c+'</span>'+
+      ' | Difficulty: <span style="color:#cc6666">+'+diffPct+'%</span>'+
+      (tierBoost>0?' | Tier: <span style="color:#cc66ff">+'+tierBoost+'</span>':'')+
+      ' | Mythic: <span style="color:#cc3333">'+mythicChance+'%</span>'+
+    '</div>';
+  }
+  var btn=document.getElementById('btnDungeon');
+  if(btn)btn.innerHTML=c>0?'\u{1F3D4}\uFE0F DESCEND (Endless)':'\u{1F3D4}\uFE0F DESCEND';
 }
 
 function _renderDgCompanionPicker(){
@@ -267,7 +289,7 @@ export function dgShowGearDrop(itemKey,afterFn){
     '</div>'+
   '</div>';
   SFX.lootDrop(item.rarity);
-  var sparkleCount=item.rarity==='legendary'?12:item.rarity==='epic'?8:item.rarity==='rare'?5:0;
+  var sparkleCount=item.rarity==='mythic'?18:item.rarity==='legendary'?12:item.rarity==='epic'?8:item.rarity==='rare'?5:0;
   if(sparkleCount){var card=rc.querySelector('.loot-reveal-card');if(card)_spawnDOMSparkles(card,col,sparkleCount)}
   updateDgUI();
 }
@@ -355,7 +377,7 @@ function dgShowFollowerCapture(f,afterFn){
     '</div>'+
   '</div>';
   SFX.lootDrop(f.rarity);
-  var sparkleCount=f.rarity==='legendary'?12:f.rarity==='epic'?8:f.rarity==='rare'?5:0;
+  var sparkleCount=f.rarity==='legendary'?12:f.rarity==='epic'?8:f.rarity==='rare'?5:f.rarity==='mythic'?18:0;
   if(sparkleCount){var card=rc.querySelector('.loot-reveal-card');if(card)_spawnDOMSparkles(card,rcol,sparkleCount)}
   updateDgUI();
 }
@@ -454,7 +476,8 @@ export function _dgActualGenerateRoom(){
 
 export function dgCombatVictory(){
   var r=state.dgRun;var m=r.combatEnemy;
-  var goldReward=Math.round((5+Math.random()*10)*r.floor);
+  var goldScale=1+(state.dungeonClears||0)*0.1;
+  var goldReward=Math.round((5+Math.random()*10)*r.floor*goldScale);
   if(r.room===3)goldReward=Math.round(goldReward*1.5);
   r.gold+=goldReward;r.totalKills++;
   var stats=r._lastCombatStats||{};
@@ -469,9 +492,9 @@ export function dgCombatVictory(){
   // Gear drop: boss = guaranteed, regular = 15% chance
   var gearDropKey=null;
   if(r.room===3){
-    gearDropKey=rollGearDrop(r.floor);
+    gearDropKey=rollGearDrop(r.floor,state.dungeonClears);
   } else if(Math.random()<0.15){
-    gearDropKey=rollGearDrop(r.floor);
+    gearDropKey=rollGearDrop(r.floor,state.dungeonClears);
   }
 
   r.combatEnemy=null;
@@ -550,10 +573,13 @@ function renderRoom(type){
   var r=state.dgRun;
   var isBoss=(r.room===3);
   if(type==='combat'){
-    var tier=Math.min(4,Math.ceil(r.floor/2));
+    var clears=state.dungeonClears||0;
+    var tierBoost=Math.min(2,Math.floor(clears/2));
+    var tier=Math.min(4,Math.ceil(r.floor/2)+tierBoost);
     var pool=DG_MONSTERS.filter(function(m){return m.tier<=tier});
     var monster={...pool[Math.floor(Math.random()*pool.length)]};
-    var scale=1+(r.floor-1)*0.18;
+    var clearScale=1+clears*0.15;
+    var scale=(1+(r.floor-1)*0.18)*clearScale;
     monster.hp=Math.round(monster.hp*scale);monster.dmg=Math.round(monster.dmg*scale);monster.def=Math.round(monster.def*scale);
     if(isBoss){monster.hp=Math.round(monster.hp*1.8);monster.dmg=Math.round(monster.dmg*1.4);monster.name='\u2605 '+monster.name+' \u2605';monster.def=Math.round(monster.def*1.3)}
     monster._maxHp=monster.hp;
@@ -564,7 +590,8 @@ function renderRoom(type){
     return; // initDgCombat handles screen switch
   }
   else if(type==='treasure'){
-    var gold=Math.round((5+Math.random()*10)*r.floor);
+    var treasureScale=1+(state.dungeonClears||0)*0.1;
+    var gold=Math.round((5+Math.random()*10)*r.floor*treasureScale);
     var hasRunItem=Math.random()>0.4;var runItem=null;
     if(hasRunItem){
       var runItems=[
@@ -582,7 +609,7 @@ function renderRoom(type){
       runItem=runItems[Math.floor(Math.random()*runItems.length)];
     }
     // 50% chance of gear drop in treasure rooms
-    var treasureGearKey=Math.random()<0.5?rollGearDrop(r.floor):null;
+    var treasureGearKey=Math.random()<0.5?rollGearDrop(r.floor,state.dungeonClears):null;
     var gearHint='';
     if(treasureGearKey){
       var gi=ITEMS[treasureGearKey];
@@ -594,10 +621,11 @@ function renderRoom(type){
     r._pendingTreasureGear=treasureGearKey;
   }
   else if(type==='trap'){
+    var trapScale=1+(state.dungeonClears||0)*0.1;
     var traps=[
-      {name:'Spike Trap',icon:'\u26A0\uFE0F',desc:'Sharp spikes spring from the floor!',dmg:Math.round(150+r.floor*50)},
-      {name:'Poison Gas',icon:'\u2601\uFE0F',desc:'Toxic fumes fill the chamber!',dmg:Math.round(250+r.floor*60)},
-      {name:'Falling Rocks',icon:'\u{1FAA8}',desc:'The ceiling collapses!',dmg:Math.round(180+r.floor*45)},
+      {name:'Spike Trap',icon:'\u26A0\uFE0F',desc:'Sharp spikes spring from the floor!',dmg:Math.round((150+r.floor*50)*trapScale)},
+      {name:'Poison Gas',icon:'\u2601\uFE0F',desc:'Toxic fumes fill the chamber!',dmg:Math.round((250+r.floor*60)*trapScale)},
+      {name:'Falling Rocks',icon:'\u{1FAA8}',desc:'The ceiling collapses!',dmg:Math.round((180+r.floor*45)*trapScale)},
     ];
     var trap=traps[Math.floor(Math.random()*traps.length)];
     var canDodge=r.evasion>0;
@@ -851,10 +879,12 @@ export function dgDeath(){
 
 export function dgVictory(){
   var r=state.dgRun;
-  dgLog('\u{1F3C6} You conquered the dungeon!','loot');
+  state.dungeonClears++;
+  if(state.playerId)uploadStats(state.playerId,state.ladderBest,state.dungeonClears);
+  dgLog('\u{1F3C6} Dungeon cleared! (Clear #'+state.dungeonClears+')','loot');
   r.followers.forEach(function(f){if(!f._brought)state.p1Collection.push(f)});
-  // Bonus gear drop at floor+2 quality
-  var bonusGearKey=rollGearDrop(Math.min(8,r.floor+2));
+  // Victory drop — mythic or legendary based on clear count
+  var bonusGearKey=rollVictoryGearDrop(state.dungeonClears);
   state.gearBag.push(bonusGearKey);
   var bonusItem=ITEMS[bonusGearKey];
   var bonus=rollFollower(r.floor+2);
@@ -862,11 +892,13 @@ export function dgVictory(){
   var rc=document.getElementById('dgRoomContent');
   var followerList='';
   r.followers.forEach(function(f){followerList+='<span style="color:'+RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
-  var bonusGearHtml=bonusItem?'<br>Bonus Gear: <span style="color:'+GEAR_RARITY_COLORS[bonusItem.rarity]+'">'+bonusItem.icon+' '+bonusItem.name+' ('+bonusItem.rarity+')</span>':'';
+  var bonusGearCol=bonusItem?GEAR_RARITY_COLORS[bonusItem.rarity]||'#aaa':'#aaa';
+  var bonusGearHtml=bonusItem?'<br>Victory Reward: <span style="color:'+bonusGearCol+';font-weight:bold">'+bonusItem.icon+' '+bonusItem.name+' ('+bonusItem.rarity+')</span>':'';
+  var nextDiffPct=Math.round(state.dungeonClears*15);
   rc.innerHTML='<div class="dg-intermission">'+
     '<div class="dg-im-title" style="color:var(--gold-bright)">\u{1F3C6} DUNGEON CONQUERED! \u{1F3C6}</div>'+
     '<div class="dg-im-summary">'+
-      'Cleared all <b>8 Floors</b>!<br><br>'+
+      'Clear <b>#'+state.dungeonClears+'</b> complete!<br><br>'+
       '<span class="dg-im-stat" style="color:#ff8844">Rooms: '+r.roomHistory.length+'</span>'+
       '<span class="dg-im-stat" style="color:#aa5a5a">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:var(--gold-bright)">Gold: '+r.gold+'</span>'+
@@ -875,6 +907,7 @@ export function dgVictory(){
       (followerList?'<br>'+followerList:'')+
       '<br><br>Bonus: <span style="color:'+RARITY_COLORS[bonus.rarity]+';font-size:.55rem">'+bonus.icon+' '+bonus.name+' ('+bonus.rarity+')</span>!'+
       bonusGearHtml+
+      '<br><br><span style="font-size:.48rem;color:#cc6666">Next descent: +'+nextDiffPct+'% difficulty</span>'+
     '</div>'+
     '<div class="dg-choices"><button class="dg-choice gold-c" onclick="endDungeonRun()">\u{1F3C6} Return Victorious</button>'+
     ((r._lastCombatLog&&r._lastCombatLog.length)?'<button class="dg-choice cl-log-btn" onclick="showCombatLogPopup()">\u{1F4DC} Combat Log</button>':'')+

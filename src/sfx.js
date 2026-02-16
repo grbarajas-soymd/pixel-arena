@@ -106,8 +106,17 @@ export const SFX = {
     setTimeout(() => { sweep(4000, 10000, 0.4, 'sine', 0.03); noise(0.15, 0.04); }, 800);
     setTimeout(() => tone(1568, 0.3, 'sine', 0.15), 1000);
   },
+  lootMythic() {
+    sweep(30, 60, 0.8, 'triangle', 0.15); tone(40, 0.6, 'sine', 0.1);
+    setTimeout(() => { [392, 523, 659, 784, 1047, 1319, 1568].forEach((n, i) => {
+      setTimeout(() => { tone(n, 0.18, 'sine', 0.25); tone(n * 0.5, 0.18, 'triangle', 0.1); }, i * 70);
+    }); }, 250);
+    setTimeout(() => { sweep(5000, 12000, 0.5, 'sine', 0.04); noise(0.2, 0.05); }, 750);
+    setTimeout(() => { tone(1568, 0.4, 'sine', 0.2); tone(2093, 0.3, 'sine', 0.12); }, 1000);
+  },
   lootDrop(rarity) {
-    if(rarity==='legendary') this.lootLegendary();
+    if(rarity==='mythic') this.lootMythic();
+    else if(rarity==='legendary') this.lootLegendary();
     else if(rarity==='epic') this.lootEpic();
     else if(rarity==='rare') this.lootRare();
     else if(rarity==='uncommon') this.lootUncommon();

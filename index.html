@@ -105,7 +105,10 @@
     <div id="wagerWarning" class="panel-warning" style="display:none">Must wager a follower to fight!</div>
     <div class="follower-collection" id="p1Stake"></div>
   </div>
-  <button class="go-btn" onclick="launchBattle()">&#9876; BATTLE &#9876;</button>
+  <div style="display:flex;gap:8px;justify-content:center;align-items:center">
+    <button class="go-btn" onclick="launchBattle()">&#9876; BATTLE &#9876;</button>
+    <button class="btn btn-spd" onclick="openLeaderboard()" style="font-size:.5rem;padding:6px 12px">&#127942; Leaderboards</button>
+  </div>
 </div>
 
 <div id="dungeonScreen" style="display:flex">
@@ -116,6 +119,7 @@
     <div class="panel-hint" style="text-align:center;max-width:400px;line-height:1.6">
       Descend through randomized floors. Defeat monsters, find treasure, and collect gear. Your hero heals 30% between floors. Gear persists forever!
     </div>
+    <div id="dgClearInfo" style="margin:4px 0"></div>
     <button class="go-btn" onclick="startDungeon()" id="btnDungeon">&#127984; DESCEND</button>
     <div style="width:100%;max-width:800px;margin-top:8px">
       <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128062; COMPANION</div>
@@ -177,6 +181,7 @@
   <div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button class="go-btn" onclick="saveCustomAndBack()" style="font-size:.65rem;padding:10px 24px">&#10003; SAVE &amp; BACK</button><button class="btn btn-back" onclick="cancelCustom()">&#10005; CANCEL</button></div>
 </div>
 <div class="dropdown-overlay" id="ddOverlay"><div class="dropdown-panel"><div class="dd-title" id="ddTitle">Select</div><div id="ddItems"></div><button class="dd-close" onclick="closeDD()">CLOSE</button></div></div>
+<div class="dropdown-overlay" id="lbOverlay" style="display:none"><div class="dropdown-panel" style="max-width:600px"><div class="dd-title">&#127942; Leaderboards</div><div id="lbTabs" style="display:flex;gap:4px;justify-content:center;margin-bottom:8px"></div><div id="lbContent"></div><button class="dd-close" onclick="closeLB()">CLOSE</button></div></div>
 
 <div id="ladderScreen">
   <div class="dg-header">&#127942; THE LADDER &#127942;</div>

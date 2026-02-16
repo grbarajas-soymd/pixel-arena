@@ -43,7 +43,7 @@ app.post('/api/register', function (req, res) {
   if (!name || name.length > 20) return res.status(400).json({ error: 'Name required (max 20 chars)' });
   var playerId = crypto.randomUUID();
   var db = readDB();
-  db.players[playerId] = { playerName: name, character: null, record: { wins: 0, losses: 0 }, uploadedAt: null };
+  db.players[playerId] = { playerName: name, character: null, record: { wins: 0, losses: 0 }, ladderBest: 0, dungeonClears: 0, uploadedAt: null };
   writeDB(db);
   res.json({ playerId: playerId });
 });
@@ -97,6 +97,45 @@ app.post('/api/battles', function (req, res) {
   }
   writeDB(db);
   res.json({ ok: true });
+});
+
+// POST /api/stats — sync local stats to server (only accepts higher values)
+app.post('/api/stats', function (req, res) {
+  var playerId = req.headers['x-player-id'];
+  if (!playerId) return res.status(401).json({ error: 'Missing X-Player-Id header' });
+  var db = readDB();
+  if (!db.players[playerId]) return res.status(404).json({ error: 'Player not found' });
+  var p = db.players[playerId];
+  var lb = req.body.ladderBest || 0;
+  var dc = req.body.dungeonClears || 0;
+  if (lb > (p.ladderBest || 0)) p.ladderBest = lb;
+  if (dc > (p.dungeonClears || 0)) p.dungeonClears = dc;
+  writeDB(db);
+  res.json({ ok: true });
+});
+
+// GET /api/leaderboard — top 20 rankings for all modes
+app.get('/api/leaderboard', function (req, res) {
+  var db = readDB();
+  var arena = [], ladder = [], dungeon = [];
+  for (var id in db.players) {
+    var p = db.players[id];
+    var r = p.record || { wins: 0, losses: 0 };
+    if (r.wins > 0 || r.losses > 0) {
+      var total = r.wins + r.losses;
+      arena.push({ playerId: id, playerName: p.playerName, wins: r.wins, losses: r.losses, winRate: total > 0 ? Math.round(r.wins / total * 100) : 0 });
+    }
+    if ((p.ladderBest || 0) > 0) {
+      ladder.push({ playerId: id, playerName: p.playerName, ladderBest: p.ladderBest });
+    }
+    if ((p.dungeonClears || 0) > 0) {
+      dungeon.push({ playerId: id, playerName: p.playerName, dungeonClears: p.dungeonClears });
+    }
+  }
+  arena.sort(function (a, b) { return b.wins - a.wins; });
+  ladder.sort(function (a, b) { return b.ladderBest - a.ladderBest; });
+  dungeon.sort(function (a, b) { return b.dungeonClears - a.dungeonClears; });
+  res.json({ arena: arena.slice(0, 20), ladder: ladder.slice(0, 20), dungeon: dungeon.slice(0, 20) });
 });
 
 // ---- ADMIN API ROUTES ----

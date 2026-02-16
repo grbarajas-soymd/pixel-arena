@@ -11,6 +11,7 @@ import { tick } from '../combat/engine.js';
 import { mkHero, getCustomTotalStats, mkArenaFollower, applyFollowerBuff } from '../combat/hero.js';
 import { buildHUD, updateUI, buildCustomTooltip, buildDefeatSheet, renderFollowerCards } from '../render/ui.js';
 import { startBattle, showWin, resetBattle } from './arena.js';
+import { uploadStats } from '../network.js';
 import { drawSpritePreview } from '../render/sprites.js';
 import { buildCharSheet } from '../render/charSheet.js';
 
@@ -282,6 +283,7 @@ function ladderLaunchBattle(oppClass){
       ladderShowIntermission(true,earnedFollower,stakeMsg);
     } else {
       state.ladderBest=Math.max(state.ladderBest,state.ladderRun.wins);
+      if(state.playerId)uploadStats(state.playerId,state.ladderBest,state.dungeonClears);
       ladderShowIntermission(false,null,stakeMsg);
     }
   };

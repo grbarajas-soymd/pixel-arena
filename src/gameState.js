@@ -72,6 +72,7 @@ export const state = {
 
   // Dungeon
   dgRun: null,
+  dungeonClears: 0,
 
   // Ladder
   ladderRun: null,

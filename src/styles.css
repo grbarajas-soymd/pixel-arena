@@ -630,6 +630,7 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
 @keyframes statFadeIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes lootGlowPulse{0%,100%{box-shadow:0 0 8px var(--glow-col,#4a6a9a)}50%{box-shadow:0 0 20px var(--glow-col,#4a6a9a),0 0 40px var(--glow-col,#4a6a9a)}}
 @keyframes legendaryShimmer{0%{left:-100%}100%{left:200%}}
+@keyframes mythicGlow{0%,100%{box-shadow:0 0 12px #cc3333,0 0 24px #cc3333}50%{box-shadow:0 0 24px #cc3333,0 0 48px #ff4444,0 0 72px rgba(204,51,51,0.3)}}
 @keyframes sparkleFloat{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--sx,10px),var(--sy,-40px)) scale(0)}}
 @keyframes victorySlam{0%{opacity:0;transform:scale(2.5)}40%{opacity:1;transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes victoryStatPop{0%{opacity:0;transform:scale(0)}60%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
@@ -647,6 +648,12 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
   background:linear-gradient(90deg,transparent,rgba(200,168,72,0.12),transparent);
   animation:legendaryShimmer 2.5s ease-in-out infinite;pointer-events:none;
 }
+.loot-reveal.mythic .loot-reveal-card{border-color:#cc3333;animation:mythicGlow 1.2s ease-in-out infinite}
+.loot-reveal.mythic .loot-reveal-card::after{
+  content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(204,51,51,0.18),transparent);
+  animation:legendaryShimmer 2s ease-in-out infinite;pointer-events:none;
+}
 .loot-reveal-icon{animation:lootIconBounce .5s ease-out .1s both;display:inline-block;font-size:32px;line-height:1}
 .loot-reveal-name{animation:statFadeIn .3s ease-out .25s both}
 .loot-reveal-rarity{animation:raritySlideIn .4s ease-out .35s both;text-transform:uppercase;letter-spacing:.15em;font-size:.5rem}
@@ -662,6 +669,21 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
   position:absolute;width:4px;height:4px;border-radius:50%;pointer-events:none;
   animation:sparkleFloat 1.5s ease-out both;
 }
+
+/* ===== LEADERBOARD ===== */
+.lb-tab{background:var(--bg-card);border:1px solid var(--panel-border);color:var(--parch-dk);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:.48rem;font-weight:bold;transition:all .2s}
+.lb-tab.active{background:var(--gold-bright);color:var(--bg-main);border-color:var(--gold-bright)}
+.lb-tab:hover:not(.active){border-color:var(--gold-bright);color:var(--gold-bright)}
+.lb-table{width:100%;border-collapse:collapse;font-size:.48rem;margin-top:4px}
+.lb-table th{text-align:left;padding:4px 8px;border-bottom:2px solid var(--panel-border);color:var(--gold-bright);font-size:.42rem;text-transform:uppercase}
+.lb-table td{padding:4px 8px;border-bottom:1px solid rgba(200,168,72,0.1)}
+.lb-table tr:hover{background:rgba(200,168,72,0.05)}
+.lb-rank{font-weight:bold;width:30px;text-align:center}
+.lb-top1{color:#c8a848;text-shadow:0 0 6px rgba(200,168,72,0.5)}
+.lb-top2{color:#aaaacc}
+.lb-top3{color:#aa7744}
+.lb-name{font-weight:bold}
+.lb-me{background:rgba(200,168,72,0.08)!important;border-left:2px solid var(--gold-bright)}
 
 /* ===== TOOLTIP SYSTEM ===== */
 .game-tooltip{

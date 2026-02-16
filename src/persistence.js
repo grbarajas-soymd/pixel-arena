@@ -98,6 +98,7 @@ export function saveGame(){
   slot.p1Collection=state.p1Collection;
   slot.gearBag=state.gearBag;
   slot.ladderBest=state.ladderBest;
+  slot.dungeonClears=state.dungeonClears||0;
   slot.playerId=state.playerId;
   slot.playerName=state.playerName;
 
@@ -155,6 +156,7 @@ export function loadCharacterSlot(slotIndex){
   state.p1Collection=slot.p1Collection||[];
   state.gearBag=slot.gearBag||[];
   state.ladderBest=slot.ladderBest||0;
+  state.dungeonClears=slot.dungeonClears||0;
   state.playerId=slot.playerId||null;
   state.playerName=slot.playerName||null;
   state.p1Class='custom';
@@ -199,6 +201,7 @@ export function createCharacterSlot(name,archetypeKey){
     p1Collection:[],
     gearBag:[],
     ladderBest:0,
+    dungeonClears:0,
     playerId:null,
     playerName:null,
   };

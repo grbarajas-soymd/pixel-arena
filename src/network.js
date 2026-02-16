@@ -31,3 +31,15 @@ export function reportBattle(challengerId, defenderId, challengerWon) {
     body: JSON.stringify({ challengerId: challengerId, defenderId: defenderId, challengerWon: challengerWon })
   }).then(function (r) { return r.json(); });
 }
+
+export function uploadStats(playerId, ladderBest, dungeonClears) {
+  return fetch(API_BASE + '/api/stats', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Player-Id': playerId },
+    body: JSON.stringify({ ladderBest: ladderBest, dungeonClears: dungeonClears })
+  }).then(function (r) { return r.json(); }).catch(function () {});
+}
+
+export function fetchLeaderboard() {
+  return fetch(API_BASE + '/api/leaderboard')
+    .then(function (r) { return r.json(); });
+}
