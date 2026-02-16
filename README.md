@@ -41,10 +41,10 @@ pixel-arena/
     data/                    # Auto-created at startup, gitignored
       characters.json        # Player builds + W/L records (JSON file storage)
   src/
-    main.js                  # Entry point: imports all modules, initializes canvas, loads save, sets up window exports
+    main.js                  # Entry point: imports all modules, character select/create flow, initializes canvas, sets up window exports
     styles.css               # All CSS
     gameState.js             # Central mutable state singleton (zero imports, breaks circular deps)
-    persistence.js           # localStorage save/load with version migration
+    persistence.js           # localStorage save/load with multi-character slots and version migration
     network.js               # Thin fetch() wrapper for all API endpoints
     constants.js             # Tick rate, arena dimensions, melee range
     sfx.js                   # Web Audio procedural sound synthesis
@@ -60,10 +60,14 @@ pixel-arena/
       followers.js           # Follower templates, rarity tiers, combat stats, buff/debuff definitions
     modes/
       arena.js               # Arena mode: online opponent browsing, registration, build upload, battle launch, win/loss handling
-      dungeon.js             # Dungeon roguelike: 8 floors x 3 rooms, turn-based combat, gear/follower drops, merchants
+      dungeon.js             # Dungeon roguelike: 8 floors x 3 rooms, room generation, gear/follower drops, merchants
+      dgCombat.js            # Dungeon turn-based combat: JRPG speed timeline, monster AI, companion system
       ladder.js              # Ladder gauntlet: fight 4 classes then infinite procedural challengers, follower rewards
+    tooltip.js               # Universal tooltip system (hover on desktop, long-press on mobile)
     render/
       arena.js               # Canvas rendering: sprites, ground tiles, particles, projectiles, damage numbers
+      sprites.js             # Procedural pixel-art sprite generation for all character classes
+      charSheet.js           # Character sheet component (stats, equipment, skills display)
       ui.js                  # HUD bars, buff/debuff display, follower cards, stake UI, defeat sheet helper
 ```
 
@@ -77,7 +81,7 @@ Players register with a display name, upload their character build to the server
 **Flow:** Register -> Upload Build -> Browse Opponents -> Select + Wager Follower -> Battle -> Result reported to server
 
 ### Dungeon (Roguelike PvE)
-8-floor dungeon crawl with 3 rooms per floor. Room types: combat, treasure, trap, rest, shrine, merchant, follower cage. Turn-based combat with multiple attack modes (strike, heavy, defend, power, class spell). Gear drops persist permanently. Followers are captured and added to your collection.
+8-floor dungeon crawl with 3 rooms per floor. Room types: combat, treasure, trap, rest, shrine, merchant, follower cage. Turn-based JRPG-style combat with speed-based turn timeline, skills, potions, and auto-battle. Gear drops persist permanently. Followers are captured and added to your collection. Players can bring an existing follower as a combat companion before descending.
 
 ### Ladder (Gauntlet PvE)
 Fight the 4 NPC classes in sequence, then face infinite procedurally-generated challengers with random gear and skills that scale with wins. Earn a follower every 3 wins.
@@ -173,20 +177,53 @@ Thin async `fetch()` wrappers. All functions return Promises. Errors are caught 
 
 All mutable game state lives in `src/gameState.js` as a single exported `state` object. This file has **zero imports** to break circular dependency chains. Every other module imports `state` from here.
 
-Key state fields for online arena:
-- `state.playerId` -- UUID from server registration
-- `state.playerName` -- display name
+Key state fields:
+- `state._activeSlotIndex` -- index of the currently loaded character slot (null if none loaded)
+- `state.playerId` -- UUID from server registration (per-character)
+- `state.playerName` -- display name (per-character)
 - `state.onlineOpponents` -- fetched opponent list (array of `{ playerId, playerName, character, record }`)
 - `state.selectedOpponent` -- currently selected opponent's playerId
 - `state._ladderGenConfig` -- flat config object used by `mkLadderHero()` (shared with ladder mode)
 
-### Persistence
+### Persistence (Multi-Character)
 
-`saveGame()` serializes to localStorage: custom character (equipment, skills, sprite), gear bag, follower collection, ladder best, player identity (playerId, playerName), and preferences.
+The game uses a **v3 multi-slot save format** stored in a single `localStorage` key (`pixel-arena-save`). Up to 4 character slots are supported, each with independent gear, followers, ladder records, and online identity.
 
-`loadGame()` restores all of the above on page load. Follower ability functions are rehydrated from templates since functions can't be serialized to JSON.
+```javascript
+// v3 save wrapper
+{
+  version: 3,
+  activeSlot: 0,                    // last-played character index
+  preferences: { spd: 2 },          // shared across all characters
+  slots: [
+    {
+      id: "char_1707000000000",
+      name: "Warrior",
+      sprite: "barbarian",
+      customChar: { name, equipment, skills, ultimate, sprite },
+      p1Collection: [],              // follower collection
+      gearBag: [],                   // unequipped gear
+      ladderBest: 0,
+      playerId: null,                // online arena identity
+      playerName: null,
+      savedAt: "2025-02-15T...",
+      createdAt: "2025-02-15T...",
+    },
+    // ... up to 3 more
+  ]
+}
+```
 
-Auto-save fires on `beforeunload`. Explicit save fires after build upload and battle completion.
+**Migration chain:** v1 -> v2 -> v3 runs automatically. Existing single-character saves become `slots[0]`.
+
+**Key functions:**
+- `saveGame()` — writes active character's state to its slot in the wrapper
+- `loadSaveWrapper()` — loads and migrates the wrapper, returns it (does not populate state)
+- `loadCharacterSlot(idx)` — populates `state` from a specific slot
+- `createCharacterSlot(name, archetype)` — creates a new slot from `STARTER_LOADOUTS`
+- `deleteCharacterSlot(idx)` — removes a slot
+
+Auto-save fires on `beforeunload`. A "Saved" toast notification appears on key save events (character creation, etc.). Follower ability functions are rehydrated from templates since functions can't be serialized to JSON.
 
 ---
 

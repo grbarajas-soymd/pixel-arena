@@ -4,7 +4,18 @@
 
 When you first load the game, you'll see a **start screen** with the Pixel Arena logo. Tap **ENTER THE ARENA** to begin. You can check "Don't show again" to skip it on future visits.
 
-On your first visit, you'll choose an **archetype** that determines your starting gear and skills. You can change everything later in the Character Forge.
+### Creating Your First Character
+
+On your first visit, you'll **name your hero** and choose an **archetype** that determines your starting gear and skills. You can change everything later in the Character Forge.
+
+### Multiple Characters
+
+The game supports **up to 4 saved characters**. Each character has its own gear, followers, ladder record, and progression. Your progress **saves automatically** whenever you leave the page or switch characters.
+
+- **Switch characters:** Click the **HEROES** tab in the mode bar to return to the character select screen.
+- **Create new character:** On the character select screen, click the **+ New Hero** card.
+- **Delete a character:** Click the **X** button on a character card. This permanently deletes that character's progress.
+- **Delete all:** At the bottom of the character select screen, there's a "Delete All Characters" button to start completely fresh.
 
 | Archetype | Weapon | Skills | Ultimate | Playstyle |
 |-----------|--------|--------|----------|-----------|
@@ -47,6 +58,7 @@ The dungeon is your primary progression loop. You descend through floors of rand
 - You enter at **85% HP** with **3 potions** (each heals 35% of max HP).
 - Between floors, your hero heals 30%.
 - The dungeon has **8 floors**. Clearing all 8 completes the run.
+- **Bring a companion:** Before descending, you can select a follower from your collection to bring along as a combat companion. Brought followers always return to your collection at the end of the run (they're never lost).
 
 **Room types:**
 
@@ -341,7 +353,7 @@ Your stat totals update live as you change gear. The preview canvas shows your h
 |--------|-------------|
 | **Mode tabs** (Arena / Dungeon / Ladder) | Switch between game modes |
 | **Edit Hero** | Open the Character Forge |
-| **RESET** | Wipe all progress (gear, followers, stats) and start fresh |
+| **HEROES** | Open the character select screen to switch characters, create new ones, or delete |
 | **Auto-battle** (in dungeon combat) | Let the AI fight for you. Resets each fight. |
 | **Speed buttons** (1x/2x/5x/10x) | Control arena/ladder battle speed |
 | **Biome button** | Change the battle arena appearance |
@@ -379,6 +391,15 @@ You bet 1 follower per fight. Its buff stats apply to you, and its wager debuff 
 
 **Q: Can I change my archetype later?**
 Yes. Open the Character Forge and click "Change Class" at the bottom. This changes your sprite but keeps all your gear. You can also manually swap skills and equipment to build any hybrid you want.
+
+**Q: How do I save my game?**
+The game saves automatically whenever you leave the page, switch characters, or finish a dungeon run. You'll see a "Saved" toast notification on key save events. Each character slot saves independently.
+
+**Q: Can I have multiple characters?**
+Yes! You can have up to 4 characters, each with their own gear, followers, and progress. Click the **HEROES** tab to switch between them or create new ones.
+
+**Q: Can I bring followers into the dungeon?**
+Yes. On the dungeon pick screen, click a follower in your collection to select it as a companion before descending. Brought companions fight alongside you from the start and always return to your collection at the end, even if you die.
 
 **Q: Does the game work on mobile?**
 Yes! The game auto-detects your device. Phones use a mobile-friendly single-column layout. Tablets switch between desktop (landscape) and mobile (portrait) layouts automatically. All touch targets are sized for easy tapping.
