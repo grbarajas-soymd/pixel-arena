@@ -111,16 +111,27 @@ var DROP_WEIGHTS = [
   {common:5,uncommon:15,rare:25,epic:35,legendary:5},
 ];
 
+function _rollRarity(w){
+  var roll=Math.random()*100;
+  if(roll<w.common)return 'common';
+  if(roll<w.common+w.uncommon)return 'uncommon';
+  if(roll<w.common+w.uncommon+w.rare)return 'rare';
+  if(roll<w.common+w.uncommon+w.rare+w.epic)return 'epic';
+  return 'legendary';
+}
+
 export function rollGearDrop(floor){
   var tier=Math.min(3,Math.floor((floor-1)/2));
-  var w=DROP_WEIGHTS[tier];
-  var roll=Math.random()*100;
-  var rarity;
-  if(roll<w.common)rarity='common';
-  else if(roll<w.common+w.uncommon)rarity='uncommon';
-  else if(roll<w.common+w.uncommon+w.rare)rarity='rare';
-  else if(roll<w.common+w.uncommon+w.rare+w.epic)rarity='epic';
-  else rarity='legendary';
+  var rarity=_rollRarity(DROP_WEIGHTS[tier]);
+  var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
+  if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='common'});
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+export function rollShopGear(floor){
+  var tier=Math.min(3,Math.max(0,Math.floor((floor-3)/2)));
+  var rarity=_rollRarity(DROP_WEIGHTS[tier]);
+  if(rarity==='epic'||rarity==='legendary')rarity='rare';
   var pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity===rarity});
   if(pool.length===0)pool=Object.keys(ITEMS).filter(function(k){return ITEMS[k].rarity==='common'});
   return pool[Math.floor(Math.random()*pool.length)];

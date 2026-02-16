@@ -1,8 +1,9 @@
 // =============== DUNGEON SYSTEM ===============
 import { state } from '../gameState.js';
 import { CLASSES } from '../data/classes.js';
-import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop } from '../data/items.js';
-import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower } from '../data/followers.js';
+import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop, rollShopGear } from '../data/items.js';
+import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower, rollCageFollower } from '../data/followers.js';
+import { SFX } from '../sfx.js';
 import { getCustomTotalStats } from '../combat/hero.js';
 import { initDgCombat } from './dgCombat.js';
 import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '../render/ui.js';
@@ -126,11 +127,11 @@ function dgUpdateProgress(){
   map.innerHTML=html;
 }
 
-function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn){
+function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn,titleClass){
   var rc=document.getElementById('dgRoomContent');
   var r=state.dgRun;
   rc.innerHTML='<div class="dg-intermission">'+
-    '<div class="dg-im-title" style="color:'+(titleColor||'var(--parch)')+'">'+title+'</div>'+
+    '<div class="dg-im-title '+(titleClass||'')+'" style="color:'+(titleColor||'var(--parch)')+'">'+title+'</div>'+
     '<div class="dg-im-summary">'+bodyHtml+'</div>'+
     '<div style="margin:6px 0">'+
       '<span class="dg-im-stat" style="color:#6a9a6a">HP: '+Math.round(r.hp)+'/'+r.maxHp+'</span>'+
@@ -144,11 +145,23 @@ function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn){
 }
 
 // =============== GEAR DROP SYSTEM ===============
+function _spawnDOMSparkles(container,color,count){
+  for(var i=0;i<count;i++){
+    var sp=document.createElement('div');sp.className='loot-sparkle';
+    sp.style.background=color;
+    sp.style.left=Math.random()*100+'%';sp.style.top=Math.random()*100+'%';
+    sp.style.setProperty('--sx',(Math.random()*40-20)+'px');
+    sp.style.setProperty('--sy',(-20-Math.random()*40)+'px');
+    sp.style.animationDelay=(Math.random()*0.5)+'s';
+    container.appendChild(sp);
+  }
+  setTimeout(function(){container.querySelectorAll('.loot-sparkle').forEach(function(s){s.remove()})},2500);
+}
+
 export function dgShowGearDrop(itemKey,afterFn){
   var item=ITEMS[itemKey];if(!item)return;
   var rc=document.getElementById('dgRoomContent');
   var col=GEAR_RARITY_COLORS[item.rarity]||'#aaa';
-  // Compare with currently equipped item in that slot
   var currentKey=state.customChar.equipment[item.slot];
   var currentItem=currentKey?ITEMS[currentKey]:null;
   var compareHtml='';
@@ -164,30 +177,35 @@ export function dgShowGearDrop(itemKey,afterFn){
       if(diff!==0){
         var label=sk==='hp'?'HP':sk==='baseDmg'?'DMG':sk==='baseAS'?'AS':sk==='def'?'DEF':sk==='evasion'?'EVA':sk==='moveSpeed'?'SPD':sk==='mana'?'MANA':sk;
         var diffStr=diff>0?'<span style="color:#6a9a6a">+'+( sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>':'<span style="color:#aa5a5a">'+(sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>';
-        diffs.push(label+': '+diffStr);
+        diffs.push('<span class="loot-reveal-stat" style="animation-delay:'+(0.5+diffs.length*0.08)+'s">'+label+': '+diffStr+'</span>');
       }
     }
     var curCol=GEAR_RARITY_COLORS[currentItem.rarity]||'#aaa';
-    compareHtml='<div style="font-size:.45rem;margin-top:6px;color:var(--parch-dk)">Currently equipped: <span style="color:'+curCol+'">'+getIcon(currentItem,14)+' '+currentItem.name+'</span> ('+currentItem.desc+')</div>';
-    if(diffs.length)compareHtml+='<div style="font-size:.45rem;margin-top:2px">'+diffs.join(' | ')+'</div>';
+    compareHtml='<div class="loot-reveal-compare" style="font-size:.45rem;margin-top:6px;color:var(--parch-dk)">Currently: <span style="color:'+curCol+'">'+getIcon(currentItem,14)+' '+currentItem.name+'</span> ('+currentItem.desc+')</div>';
+    if(diffs.length)compareHtml+='<div class="loot-reveal-stats" style="font-size:.45rem;margin-top:2px">'+diffs.join(' | ')+'</div>';
   } else {
-    compareHtml='<div style="font-size:.45rem;margin-top:4px;color:#6a9a6a">No item equipped in '+item.slot+'</div>';
+    compareHtml='<div class="loot-reveal-compare" style="font-size:.45rem;margin-top:4px;color:#6a9a6a">No item equipped in '+item.slot+'</div>';
   }
   state.dgRun._pendingGearDrop=itemKey;
   state.dgRun._pendingGearAfter=afterFn;
-  rc.innerHTML='<div class="dg-intermission">'+
-    '<div class="dg-im-title" style="color:'+col+'">\u2728 GEAR DROP! \u2728</div>'+
-    '<div style="font-size:.7rem">'+getIcon(item,28)+'</div>'+
-    '<div style="font-size:.55rem;color:'+col+';font-weight:bold">'+item.name+'</div>'+
-    '<div style="font-size:.42rem;color:'+col+'">'+item.rarity+'</div>'+
-    '<div style="font-size:.48rem;color:var(--parch)">'+item.desc+'</div>'+
-    '<div style="font-size:.42rem;color:var(--parch-dk)">Slot: '+item.slot+'</div>'+
+  rc.innerHTML='<div class="dg-intermission loot-reveal '+item.rarity+'">'+
+    '<div class="loot-reveal-card">'+
+    '<div class="dg-im-title loot-reveal-name" style="color:'+col+'">\u2728 GEAR DROP! \u2728</div>'+
+    '<div class="loot-reveal-icon">'+getIcon(item,32)+'</div>'+
+    '<div class="loot-reveal-name" style="font-size:.55rem;color:'+col+';font-weight:bold">'+item.name+'</div>'+
+    '<div class="loot-reveal-rarity" style="color:'+col+'">'+item.rarity+'</div>'+
+    '<div class="loot-reveal-stats" style="font-size:.48rem;color:var(--parch)">'+item.desc+'</div>'+
+    '<div class="loot-reveal-stats" style="font-size:.42rem;color:var(--parch-dk)">Slot: '+item.slot+'</div>'+
     compareHtml+
-    '<div class="dg-choices" style="margin-top:8px">'+
+    '<div class="loot-reveal-actions dg-choices" style="margin-top:8px">'+
       '<button class="dg-choice" style="border-color:'+col+';color:'+col+'" onclick="dgEquipGearDrop()">\u2694 Equip</button>'+
       '<button class="dg-choice gold-c" onclick="dgStashGearDrop()">\u{1F392} Stash</button>'+
     '</div>'+
+    '</div>'+
   '</div>';
+  SFX.lootDrop(item.rarity);
+  var sparkleCount=item.rarity==='legendary'?12:item.rarity==='epic'?8:item.rarity==='rare'?5:0;
+  if(sparkleCount){var card=rc.querySelector('.loot-reveal-card');if(card)_spawnDOMSparkles(card,col,sparkleCount)}
   updateDgUI();
 }
 
@@ -221,19 +239,20 @@ export function dgStashGearDrop(){
 // =============== FOLLOWER CAPTURE ===============
 function dgShowFollowerCapture(f,afterFn){
   var tmpl=FOLLOWER_TEMPLATES.find(function(t){return t.name===f.name});
-  var abilityLine=f.abilityName?'<div class="fim-ability">\u26A1 <b>'+f.abilityName+'</b>: '+f.abilityDesc+'</div>':'';
-  if(tmpl&&tmpl.abilityName)abilityLine='<div class="fim-ability">\u26A1 <b>'+tmpl.abilityName+'</b>: '+tmpl.abilityDesc+'</div>';
+  var abilityLine=f.abilityName?'<div class="fim-ability loot-reveal-stats">\u26A1 <b>'+f.abilityName+'</b>: '+f.abilityDesc+'</div>':'';
+  if(tmpl&&tmpl.abilityName)abilityLine='<div class="fim-ability loot-reveal-stats">\u26A1 <b>'+tmpl.abilityName+'</b>: '+tmpl.abilityDesc+'</div>';
   var wagerLine='';
-  if(f.wagerDebuffName)wagerLine='<div class="fim-wager">\u{1F3B2} Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>';
-  else if(tmpl&&tmpl.wagerDebuff)wagerLine='<div class="fim-wager">\u{1F3B2} Wager: '+tmpl.wagerDebuff.name+' ('+tmpl.wagerDebuff.desc+')</div>';
+  if(f.wagerDebuffName)wagerLine='<div class="fim-wager loot-reveal-stats">\u{1F3B2} Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>';
+  else if(tmpl&&tmpl.wagerDebuff)wagerLine='<div class="fim-wager loot-reveal-stats">\u{1F3B2} Wager: '+tmpl.wagerDebuff.name+' ('+tmpl.wagerDebuff.desc+')</div>';
   var sellPrice=({common:15,uncommon:30,rare:60,epic:120,legendary:250})[f.rarity]||20;
+  var rcol=RARITY_COLORS[f.rarity];
   var col=state.p1Collection;
   var runFollowers=state.dgRun.followers||[];
   var allOwned=col.concat(runFollowers);
   var hasDupe=allOwned.some(function(o){return o.name===f.name});
   var sameRarity=allOwned.filter(function(o){return o.rarity===f.rarity}).length;
   var totalOwned=allOwned.length;
-  var contextHtml='<div style="font-size:.45rem;color:var(--parch-dk);margin-top:6px;line-height:1.6">';
+  var contextHtml='<div class="loot-reveal-compare" style="font-size:.45rem;color:var(--parch-dk);margin-top:6px;line-height:1.6">';
   if(hasDupe)contextHtml+='<span style="color:#ffaa44">\u26A0 You already have a '+f.name+'</span><br>';
   else contextHtml+='<span style="color:#6a9a6a">\u2728 New to your collection!</span><br>';
   contextHtml+='Collection: '+totalOwned+' followers ('+sameRarity+' '+f.rarity+')';
@@ -247,29 +266,34 @@ function dgShowFollowerCapture(f,afterFn){
   });
   var powerHtml='';
   if(totalOwned>0){
-    if(powerScore>bestPower)powerHtml='<div style="font-size:.45rem;color:#6a9a6a;margin-top:2px">\u2B06 Strongest follower you\'d own!</div>';
-    else powerHtml='<div style="font-size:.45rem;color:var(--parch-dk);margin-top:2px">Best: '+bestName+' ('+Math.round(bestPower)+'\u2605) vs this: '+Math.round(powerScore)+'\u2605</div>';
+    if(powerScore>bestPower)powerHtml='<div class="loot-reveal-compare" style="font-size:.45rem;color:#6a9a6a;margin-top:2px">\u2B06 Strongest follower you\'d own!</div>';
+    else powerHtml='<div class="loot-reveal-compare" style="font-size:.45rem;color:var(--parch-dk);margin-top:2px">Best: '+bestName+' ('+Math.round(bestPower)+'\u2605) vs this: '+Math.round(powerScore)+'\u2605</div>';
   }
   var rc=document.getElementById('dgRoomContent');
   state.dgRun._pendingCaptureFollower=f;
   state.dgRun._pendingCaptureAfter=afterFn;
   state.dgRun._pendingCaptureSellPrice=sellPrice;
-  rc.innerHTML='<div class="dg-intermission">'+
-    '<div class="dg-im-title" style="color:'+RARITY_COLORS[f.rarity]+'">\u2728 FOLLOWER CAPTURED! \u2728</div>'+
+  rc.innerHTML='<div class="dg-intermission loot-reveal '+f.rarity+'">'+
+    '<div class="loot-reveal-card">'+
+    '<div class="dg-im-title loot-reveal-name" style="color:'+rcol+'">\u2728 FOLLOWER CAPTURED! \u2728</div>'+
     '<div class="dg-im-follower '+f.rarity+'">'+
-      '<div class="fim-icon">'+getIcon(f,28)+'</div>'+
-      '<div class="fim-name" style="color:'+RARITY_COLORS[f.rarity]+'">'+f.name+'</div>'+
-      '<div class="fim-rarity" style="color:'+RARITY_COLORS[f.rarity]+'">'+f.rarity+'</div>'+
-      '<div class="fim-buff">Arena Buff: '+f.buffDesc+'</div>'+
+      '<div class="fim-icon loot-reveal-icon">'+getIcon(f,32)+'</div>'+
+      '<div class="fim-name loot-reveal-name" style="color:'+rcol+'">'+f.name+'</div>'+
+      '<div class="fim-rarity loot-reveal-rarity" style="color:'+rcol+'">'+f.rarity+'</div>'+
+      '<div class="fim-buff loot-reveal-stats">Arena Buff: '+f.buffDesc+'</div>'+
       abilityLine+wagerLine+
-      '<div style="font-size:.45rem;color:var(--parch-dk);margin-top:4px">Combat: '+f.combatHp+'HP / '+f.combatDmg+'DMG / '+f.combatAS+'AS / '+f.combatDef+'DEF</div>'+
+      '<div class="loot-reveal-stats" style="font-size:.45rem;color:var(--parch-dk);margin-top:4px">Combat: '+f.combatHp+'HP / '+f.combatDmg+'DMG / '+f.combatAS+'AS / '+f.combatDef+'DEF</div>'+
       contextHtml+powerHtml+
     '</div>'+
-    '<div class="dg-choices">'+
-      '<button class="dg-choice" style="border-color:'+RARITY_COLORS[f.rarity]+';color:'+RARITY_COLORS[f.rarity]+'" onclick="dgKeepFollower()">\u{1F3AF} Keep '+f.name+'</button>'+
+    '<div class="loot-reveal-actions dg-choices">'+
+      '<button class="dg-choice" style="border-color:'+rcol+';color:'+rcol+'" onclick="dgKeepFollower()">\u{1F3AF} Keep '+f.name+'</button>'+
       '<button class="dg-choice gold-c" onclick="dgSellFollower()">\u{1F4B0} Release for '+sellPrice+'g</button>'+
     '</div>'+
+    '</div>'+
   '</div>';
+  SFX.lootDrop(f.rarity);
+  var sparkleCount=f.rarity==='legendary'?12:f.rarity==='epic'?8:f.rarity==='rare'?5:0;
+  if(sparkleCount){var card=rc.querySelector('.loot-reveal-card');if(card)_spawnDOMSparkles(card,rcol,sparkleCount)}
   updateDgUI();
 }
 
@@ -318,7 +342,7 @@ export function _dgActualGenerateRoom(){
     if(state.dgRun.floor>=3)types.push('merchant');
     // Prevent same room type back-to-back (ignore boss rooms for dedup)
     var last=state.dgRun._lastNonBossRoom||'';
-    if(last){
+    if(last&&last!=='combat'){
       types=types.filter(function(t){return t!==last});
       if(types.length===0)types=['combat']; // fallback
     }
@@ -358,12 +382,13 @@ export function dgCombatVictory(){
   var hpPct=Math.round(r.hp/r.maxHp*100);
   var hpCol=hpPct>30?'#6a9a6a':'#aa5a5a';
   var isBoss=r.room===3;
+  if(isBoss)SFX.victoryBoss();else SFX.win();
   var body='<span style="font-size:.6rem">'+(m.icon||'\u2694')+'</span> <b>'+m.name+'</b> slain!'+(isBoss?' <span style="color:#aa5a5a">(BOSS)</span>':'')+
     '<br><br>'+
-    '<span class="dg-im-stat" style="color:#ff8844">Dealt: '+(stats.dmgDealt||0)+'</span>'+
-    '<span class="dg-im-stat" style="color:#aa5a5a">Taken: '+(stats.dmgTaken||0)+'</span>'+
-    '<span class="dg-im-stat" style="color:var(--gold-bright)">+'+goldReward+'g</span>'+
-    '<br><span class="dg-im-stat" style="color:'+hpCol+'">HP: '+Math.round(r.hp)+'/'+r.maxHp+' ('+hpPct+'%)</span>';
+    '<span class="dg-im-stat victory-stat-pop" style="color:#ff8844;animation-delay:.15s">Dealt: '+(stats.dmgDealt||0)+'</span>'+
+    '<span class="dg-im-stat victory-stat-pop" style="color:#aa5a5a;animation-delay:.25s">Taken: '+(stats.dmgTaken||0)+'</span>'+
+    '<span class="dg-im-stat victory-stat-pop" style="color:var(--gold-bright);animation-delay:.35s">+'+goldReward+'g</span>'+
+    '<br><span class="dg-im-stat victory-stat-pop" style="color:'+hpCol+';animation-delay:.45s">HP: '+Math.round(r.hp)+'/'+r.maxHp+' ('+hpPct+'%)</span>';
 
   // Build chain of drops to show (gear then follower)
   var afterAllDrops=function(){
@@ -390,7 +415,7 @@ export function dgCombatVictory(){
       body+='<br><span style="color:'+GEAR_RARITY_COLORS[gItem.rarity]+';font-size:.55rem">Something shiny drops... '+getIcon(gItem,16)+'</span>';
     }
     dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,
-      '\u2728 See your loot','dgProceedToLoot()');
+      '\u2728 See your loot','dgProceedToLoot()','victory-slam');
     r._pendingVictoryLoot=showGearFn;
   } else if(droppedFollower){
     var fRef2=droppedFollower;
@@ -399,13 +424,13 @@ export function dgCombatVictory(){
     };
     body+='<br><span style="color:'+RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
     dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,
-      '\u2728 See what you found','dgProceedToLoot()');
+      '\u2728 See what you found','dgProceedToLoot()','victory-slam');
     r._pendingVictoryLoot=nextFn;
   } else {
     if(r.floor>=8&&r.room===3){
-      dgShowIntermission('\u{1F3C6} FINAL BOSS SLAIN! \u{1F3C6}','#ffcc22',body,'\u{1F3C6} Claim Victory','dgVictory()');
+      dgShowIntermission('\u{1F3C6} FINAL BOSS SLAIN! \u{1F3C6}','#ffcc22',body,'\u{1F3C6} Claim Victory','dgVictory()','victory-slam');
     } else {
-      dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,'\u27A1\uFE0F Continue','generateRoom()');
+      dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,'\u27A1\uFE0F Continue','generateRoom()','victory-slam');
     }
   }
   dgUpdateProgress();updateDgUI();
@@ -520,7 +545,7 @@ function renderRoom(type){
     var numGear=2+Math.floor(Math.random()*2);
     var gearForSale=[];
     for(var gi=0;gi<numGear;gi++){
-      var gk=rollGearDrop(r.floor);
+      var gk=rollShopGear(r.floor);
       var gItem=ITEMS[gk];if(!gItem)continue;
       var price=GEAR_PRICES[gItem.rarity]||40;
       gearForSale.push({key:gk,item:gItem,price:price});
@@ -542,7 +567,7 @@ function renderRoom(type){
     rc.innerHTML=sh;
   }
   else if(type==='follower_cage'){
-    var f=rollFollower(r.floor);
+    var f=rollCageFollower(r.floor);
     var lastRoom=r.roomHistory[r.roomHistory.length-1];
     if(lastRoom){lastRoom.cleared=true;lastRoom.name='Cage: '+f.name}
     dgShowFollowerCapture(f,function(){setTimeout(generateRoom,200)});

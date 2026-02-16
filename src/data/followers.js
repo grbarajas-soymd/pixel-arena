@@ -114,16 +114,35 @@ export const FOLLOWER_TEMPLATES = [
 
 export const RARITY_COLORS={common:'#8a8a7a',uncommon:'#4a8a4a',rare:'#4a6a9a',epic:'#8a4a9a',legendary:'#c8a848'};
 
-export function rollFollower(floor){
-  var weights;
-  if(floor<=2) weights=[70,25,5,0,0];
-  else if(floor<=4) weights=[40,35,20,5,0];
-  else if(floor<=6) weights=[20,30,30,15,5];
-  else weights=[10,20,30,25,15];
+function _pickRarity(weights){
   var rarities=['common','uncommon','rare','epic','legendary'];
   var total=weights.reduce((a,b)=>a+b,0);var r=Math.random()*total,acc=0;
-  var pickedRarity='common';
-  for(var i=0;i<weights.length;i++){acc+=weights[i];if(r<=acc){pickedRarity=rarities[i];break}}
+  for(var i=0;i<weights.length;i++){acc+=weights[i];if(r<=acc)return rarities[i]}
+  return 'common';
+}
+
+function _floorWeights(floor){
+  if(floor<=2) return [70,25,5,0,0];
+  if(floor<=4) return [40,35,20,5,0];
+  if(floor<=6) return [20,30,30,15,5];
+  return [10,20,30,25,15];
+}
+
+export function rollFollower(floor){
+  var pickedRarity=_pickRarity(_floorWeights(floor));
+  var pool=FOLLOWER_TEMPLATES.filter(f=>f.rarity===pickedRarity);
+  var tmpl=pool[Math.floor(Math.random()*pool.length)];
+  return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
+    combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
+    abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
+    abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
+    wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
+    assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
+}
+
+export function rollCageFollower(floor){
+  var pickedRarity=_pickRarity(_floorWeights(floor));
+  if(pickedRarity==='legendary')pickedRarity='epic';
   var pool=FOLLOWER_TEMPLATES.filter(f=>f.rarity===pickedRarity);
   var tmpl=pool[Math.floor(Math.random()*pool.length)];
   return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,

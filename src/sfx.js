@@ -87,6 +87,37 @@ export const SFX = {
   followerAtk() { tone(400, 0.04, 'square', 0.12); noise(0.02, 0.08); },
   followerAbility() { sweep(400, 800, 0.1, 'triangle', 0.12); tone(600, 0.06, 'sine', 0.1); },
   followerDeath() { sweep(300, 80, 0.2, 'square', 0.12); noise(0.1, 0.1); },
+  lootCommon() { tone(880, 0.12, 'sine', 0.15); },
+  lootUncommon() { tone(660, 0.1, 'sine', 0.15); setTimeout(() => tone(880, 0.12, 'sine', 0.18), 80); },
+  lootRare() {
+    tone(523, 0.1, 'sine', 0.18); setTimeout(() => tone(659, 0.1, 'sine', 0.18), 80);
+    setTimeout(() => tone(784, 0.15, 'sine', 0.22), 160); setTimeout(() => sweep(2000, 6000, 0.3, 'sine', 0.04), 200);
+  },
+  lootEpic() {
+    tone(80, 0.4, 'triangle', 0.1);
+    [523, 659, 784, 1047].forEach((n, i) => { setTimeout(() => { tone(n, 0.12, 'sine', 0.2); tone(n * 1.5, 0.08, 'sine', 0.06); }, i * 90); });
+    setTimeout(() => sweep(3000, 8000, 0.25, 'sine', 0.03), 350);
+  },
+  lootLegendary() {
+    sweep(40, 80, 0.6, 'triangle', 0.12); tone(60, 0.5, 'sine', 0.08);
+    setTimeout(() => { [523, 659, 784, 1047, 1319, 1568].forEach((n, i) => {
+      setTimeout(() => { tone(n, 0.15, 'sine', 0.22); tone(n * 0.5, 0.15, 'triangle', 0.08); }, i * 80);
+    }); }, 300);
+    setTimeout(() => { sweep(4000, 10000, 0.4, 'sine', 0.03); noise(0.15, 0.04); }, 800);
+    setTimeout(() => tone(1568, 0.3, 'sine', 0.15), 1000);
+  },
+  lootDrop(rarity) {
+    if(rarity==='legendary') this.lootLegendary();
+    else if(rarity==='epic') this.lootEpic();
+    else if(rarity==='rare') this.lootRare();
+    else if(rarity==='uncommon') this.lootUncommon();
+    else this.lootCommon();
+  },
+  victoryBoss() {
+    tone(60, 0.6, 'triangle', 0.12); sweep(80, 200, 0.4, 'sawtooth', 0.08);
+    [392, 523, 659, 784].forEach((n, i) => { setTimeout(() => { tone(n, 0.2, 'sine', 0.2); tone(n * 0.5, 0.2, 'triangle', 0.1); }, 300 + i * 120); });
+    setTimeout(() => { tone(1047, 0.4, 'sine', 0.25); tone(523, 0.4, 'triangle', 0.12); sweep(2000, 6000, 0.3, 'sine', 0.03); }, 800);
+  },
   uiClick() { tone(1000, 0.03, 'square', 0.08); },
   battleStart() {
     sweep(100, 600, 0.3, 'sawtooth', 0.15);

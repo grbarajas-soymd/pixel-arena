@@ -467,5 +467,45 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
 }
 .char-sheet-edit-btn:hover{background:linear-gradient(180deg,#2a1e10,#1a1208);box-shadow:0 0 8px rgba(200,168,72,0.15)}
 
+/* =============== LOOT REVEAL ANIMATIONS =============== */
+@keyframes lootRevealIn{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+@keyframes lootIconBounce{0%{opacity:0;transform:scale(0) translateY(10px)}60%{transform:scale(1.3) translateY(-5px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes raritySlideIn{0%{opacity:0;transform:translateY(12px);letter-spacing:.3em}100%{opacity:1;transform:translateY(0);letter-spacing:.15em}}
+@keyframes statFadeIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes lootGlowPulse{0%,100%{box-shadow:0 0 8px var(--glow-col,#4a6a9a)}50%{box-shadow:0 0 20px var(--glow-col,#4a6a9a),0 0 40px var(--glow-col,#4a6a9a)}}
+@keyframes legendaryShimmer{0%{left:-100%}100%{left:200%}}
+@keyframes sparkleFloat{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--sx,10px),var(--sy,-40px)) scale(0)}}
+@keyframes victorySlam{0%{opacity:0;transform:scale(2.5)}40%{opacity:1;transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes victoryStatPop{0%{opacity:0;transform:scale(0)}60%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+
+.loot-reveal{animation:lootRevealIn .4s ease-out both}
+.loot-reveal-card{
+  border:1px solid var(--border);border-radius:4px;padding:10px;position:relative;overflow:hidden;
+  background:var(--bg-card);
+}
+.loot-reveal.rare .loot-reveal-card{--glow-col:#4a6a9a;border-color:#4a6a9a;animation:lootGlowPulse 2s ease-in-out infinite}
+.loot-reveal.epic .loot-reveal-card{--glow-col:#8a4a9a;border-color:#8a4a9a;animation:lootGlowPulse 1.8s ease-in-out infinite}
+.loot-reveal.legendary .loot-reveal-card{--glow-col:#c8a848;border-color:#c8a848;animation:lootGlowPulse 1.5s ease-in-out infinite}
+.loot-reveal.legendary .loot-reveal-card::after{
+  content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(200,168,72,0.12),transparent);
+  animation:legendaryShimmer 2.5s ease-in-out infinite;pointer-events:none;
+}
+.loot-reveal-icon{animation:lootIconBounce .5s ease-out .1s both;display:inline-block;font-size:32px;line-height:1}
+.loot-reveal-name{animation:statFadeIn .3s ease-out .25s both}
+.loot-reveal-rarity{animation:raritySlideIn .4s ease-out .35s both;text-transform:uppercase;letter-spacing:.15em;font-size:.5rem}
+.loot-reveal-stats{animation:statFadeIn .3s ease-out .45s both}
+.loot-reveal-stat{animation:statFadeIn .3s ease-out both}
+.loot-reveal-compare{animation:statFadeIn .3s ease-out .55s both}
+.loot-reveal-actions{animation:statFadeIn .3s ease-out .65s both}
+
+.victory-slam{animation:victorySlam .5s ease-out both}
+.victory-stat-pop{animation:victoryStatPop .35s ease-out both}
+
+.loot-sparkle{
+  position:absolute;width:4px;height:4px;border-radius:50%;pointer-events:none;
+  animation:sparkleFloat 1.5s ease-out both;
+}
+
 /* Scrollbar global */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3a2e1e;border-radius:2px}
