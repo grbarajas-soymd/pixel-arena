@@ -6,7 +6,7 @@ import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower, rollCageFollower } fro
 import { SFX } from '../sfx.js';
 import { getCustomTotalStats } from '../combat/hero.js';
 import { initDgCombat } from './dgCombat.js';
-import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '../render/ui.js';
+import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays, renderFollowerCards } from '../render/ui.js';
 import { drawSpritePreview } from '../render/sprites.js';
 import { buildCharSheet } from '../render/charSheet.js';
 import { getIcon } from '../render/icons.js';
@@ -41,6 +41,38 @@ var DG_MONSTERS=[
 
 export function buildDungeonPicker(){
   buildCharSheet('dungeonCharSheet');
+  _renderDgCompanionPicker();
+}
+
+function _renderDgCompanionPicker(){
+  if(state._dgCompanionIdx===undefined)state._dgCompanionIdx=null;
+  var nf=document.getElementById('p1NoFollowers');
+  if(nf)nf.style.display=state.p1Collection.length?'none':'block';
+  renderFollowerCards('p1CollectionDisplay',state.p1Collection,function(f,i){
+    state._dgCompanionIdx=state._dgCompanionIdx===i?null:i;
+    _renderDgCompanionPicker();
+  });
+  var cards=document.querySelectorAll('#p1CollectionDisplay .follower-card');
+  cards.forEach(function(card,i){
+    if(i===state._dgCompanionIdx)card.classList.add('selected');
+  });
+  var helper=document.getElementById('dgCompanionHelper');
+  if(!helper){
+    var container=document.getElementById('p1CollectionDisplay');
+    if(container&&container.parentNode){
+      helper=document.createElement('div');helper.id='dgCompanionHelper';
+      helper.style.cssText='font-size:.45rem;color:var(--text-dim);text-align:center;margin:4px 0';
+      container.parentNode.insertBefore(helper,container);
+    }
+  }
+  if(helper){
+    if(state.p1Collection.length>0){
+      var sel=state._dgCompanionIdx!==null?state.p1Collection[state._dgCompanionIdx]:null;
+      helper.innerHTML=sel
+        ?'<span style="color:'+RARITY_COLORS[sel.rarity]+'">'+sel.icon+' '+sel.name+'</span> will join as companion'
+        :'Tap a follower to bring them as your starting companion';
+    }else helper.innerHTML='';
+  }
 }
 
 export function startDungeon(){
@@ -72,7 +104,18 @@ export function startDungeon(){
     _lastCombatStats:null,
   };
   state.dgRun.hp+=state.dgRun.bonusHp;state.dgRun.maxHp+=state.dgRun.bonusHp;
+  // Bring selected companion from collection
+  if(state._dgCompanionIdx!==null&&state.p1Collection[state._dgCompanionIdx]){
+    var comp=state.p1Collection[state._dgCompanionIdx];
+    var brought=Object.assign({},comp,{_brought:true});
+    state.dgRun.followers.push(brought);
+    var bDesc=applyFollowerBuffToRun(brought,state.dgRun);
+    state.dgRun.deployedFollower=brought;
+  }
   dgLog('You descend into the depths...','info');
+  if(state.dgRun.deployedFollower&&state.dgRun.deployedFollower._brought){
+    dgLog(state.dgRun.deployedFollower.name+' fights by your side!','good');
+  }
   document.getElementById('dungeonPickScreen').style.display='none';
   document.getElementById('dungeonRunScreen').style.display='block';
   dgUpdateProgress();
@@ -390,6 +433,8 @@ export function _dgActualGenerateRoom(){
   else{
     var types=['combat','combat','treasure','trap','rest','shrine','follower_cage'];
     if(state.dgRun.floor>=3)types.push('merchant');
+    // No rest on floor 1 — player starts near full HP
+    if(state.dgRun.floor===1)types=types.filter(function(t){return t!=='rest'});
     // Prevent same room type back-to-back (ignore boss rooms for dedup)
     var last=state.dgRun._lastNonBossRoom||'';
     if(last&&last!=='combat'){
@@ -763,8 +808,10 @@ function dgRefreshMerchant(){
 export function dgDeath(){
   var r=state.dgRun;
   dgLog('\u2620 You have been slain on Floor '+r.floor+'!','bad');
-  var kept=r.followers.slice(0,Math.ceil(r.followers.length/2));
-  kept.forEach(function(f){state.p1Collection.push(f)});
+  var captured=r.followers.filter(function(f){return !f._brought});
+  var keptCaptured=captured.slice(0,Math.ceil(captured.length/2));
+  keptCaptured.forEach(function(f){state.p1Collection.push(f)});
+  var kept=r.followers.filter(function(f){return f._brought}).concat(keptCaptured);
   // Gear already in bag is kept (no stash saving needed)
   var rc=document.getElementById('dgRoomContent');
   var followerList='';
@@ -802,7 +849,7 @@ export function dgDeath(){
 export function dgVictory(){
   var r=state.dgRun;
   dgLog('\u{1F3C6} You conquered the dungeon!','loot');
-  r.followers.forEach(function(f){state.p1Collection.push(f)});
+  r.followers.forEach(function(f){if(!f._brought)state.p1Collection.push(f)});
   // Bonus gear drop at floor+2 quality
   var bonusGearKey=rollGearDrop(Math.min(8,r.floor+2));
   state.gearBag.push(bonusGearKey);
@@ -832,14 +879,16 @@ export function dgVictory(){
 
 export function endDungeonRun(){
   state.dgRun=null;
+  state._dgCompanionIdx=null;
   document.getElementById('dungeonRunScreen').style.display='none';
   document.getElementById('dungeonPickScreen').style.display='flex';
   updateFollowerDisplays();
+  buildDungeonPicker();
 }
 
 export function abandonDungeon(){
   if(!state.dgRun)return;
   if(!confirm('Abandon run? You keep followers and gear found so far.'))return;
-  state.dgRun.followers.forEach(function(f){state.p1Collection.push(f)});
+  state.dgRun.followers.forEach(function(f){if(!f._brought)state.p1Collection.push(f)});
   endDungeonRun();
 }

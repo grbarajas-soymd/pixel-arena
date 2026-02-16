@@ -216,8 +216,13 @@ export function initDgCombat(monster){
   showTurnText('Battle Start!');
   lastTime=performance.now();
   rafId=requestAnimationFrame(dgRender);
-  // Start AP-based turn system — first turn after short delay
-  setTimeout(function(){advanceTurn();},400);
+  // Hero always gets the first turn — AP system kicks in after
+  setTimeout(function(){
+    phase='pick';currentActor='hero';
+    enableButtons(true);
+    showTurnText('Turn 1 \u2014 Choose your action!');
+    calcTimelinePreview();updateUI();
+  },400);
 }
 
 // ===== ACTION BUTTON UI =====

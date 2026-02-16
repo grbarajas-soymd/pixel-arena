@@ -79,6 +79,9 @@ export const state = {
   _ladderGenConfig: null,
   _showWinFn: null,
 
+  // Multi-character
+  _activeSlotIndex: null,
+
   // Layout
   isMobile: false,
 };

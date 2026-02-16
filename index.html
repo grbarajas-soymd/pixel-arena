@@ -20,10 +20,22 @@
   </div>
 </div>
 
+<div id="charSelectOverlay" class="dropdown-overlay" style="display:none;z-index:250">
+  <div class="dropdown-panel" style="max-width:560px;text-align:center">
+    <div class="dd-title" style="font-size:.7rem;margin-bottom:8px">&#9876; Choose Your Hero &#9876;</div>
+    <div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:4px">
+      Select a hero or forge a new one. Progress saves automatically.
+    </div>
+    <div id="charSlotGrid" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+    <div id="charSelectFooter" style="margin-top:12px"></div>
+  </div>
+</div>
+
 <div class="dropdown-overlay" id="archetypeOverlay" style="display:none;z-index:200">
   <div class="dropdown-panel" style="max-width:500px;text-align:center">
     <div class="dd-title" style="font-size:.7rem;margin-bottom:8px">Choose Your Path</div>
-    <div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:12px">This determines your starting gear and skills. You can change everything later.</div>
+    <input id="newCharName" class="cs-name-input" placeholder="Enter hero name..." maxlength="12" style="margin-bottom:10px;text-align:center;width:200px">
+    <div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:12px">Name your hero, then pick a starting class. You can change everything later.</div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <div class="class-card bar" style="cursor:pointer;width:130px" onclick="pickArchetype('melee')">
         <div class="cc-icon">&#128481;</div>
@@ -61,7 +73,7 @@
   <button class="mode-tab" id="tabArena" onclick="switchMode('arena')">&#9876; ARENA</button>
   <button class="mode-tab active" id="tabDungeon" onclick="switchMode('dungeon')">&#127984; DUNGEON</button>
   <button class="mode-tab" id="tabLadder" onclick="switchMode('ladder')">&#127942; LADDER</button>
-  <button class="mode-tab reset-tab" onclick="resetGame()" title="Reset all progress">&#128260; RESET</button>
+  <button class="mode-tab reset-tab" onclick="showCharacterSelect()" title="Switch hero">&#128100; HEROES</button>
 </div>
 
 <div id="selectorScreen">
@@ -94,7 +106,6 @@
     <div class="follower-collection" id="p1Stake"></div>
   </div>
   <button class="go-btn" onclick="launchBattle()">&#9876; BATTLE &#9876;</button>
-  <button class="btn btn-back" onclick="resetGame()" style="margin-top:12px;font-size:.42rem;opacity:0.6">&#128260; Reset Game</button>
 </div>
 
 <div id="dungeonScreen" style="display:flex">
@@ -107,9 +118,9 @@
     </div>
     <button class="go-btn" onclick="startDungeon()" id="btnDungeon">&#127984; DESCEND</button>
     <div style="width:100%;max-width:800px;margin-top:8px">
-      <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128230; FOLLOWERS</div>
+      <div class="sel-title" style="font-size:.55rem;color:var(--teal-glow)">&#128062; COMPANION</div>
       <div class="follower-collection" id="p1CollectionDisplay"></div>
-      <div id="p1NoFollowers" class="no-followers">No followers yet!</div>
+      <div id="p1NoFollowers" class="no-followers">No followers yet! Run dungeons to capture them.</div>
     </div>
   </div>
   <div id="dungeonRunScreen" style="display:none">
