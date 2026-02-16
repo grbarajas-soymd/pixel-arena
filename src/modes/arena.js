@@ -126,8 +126,15 @@ export function registerPlayer(){
       state.playerId=res.playerId;
       state.playerName=name;
       saveGame();
-      buildSelector();
-      refreshOpponents();
+      // Auto-upload build immediately after registration
+      var build=serializeBuild();
+      network.uploadBuild(res.playerId,build).then(function(){
+        buildSelector();
+        refreshOpponents();
+      }).catch(function(){
+        buildSelector();
+        refreshOpponents();
+      });
     }
   }).catch(function(){
     var statusEl=document.getElementById('onlineStatus');
