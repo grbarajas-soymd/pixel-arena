@@ -11,17 +11,19 @@ export const GEAR_RARITY_COLORS = {
 
 export const ITEMS = {
   // — Starter (never drops, only starting equipment) —
-  rusty_blade:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Blade',rarity:'starter',rangeType:'melee',stats:{baseDmg:50,baseAS:0.35},desc:'+50Dmg 0.35AS',visual:{type:'sword',color:'#5a4a3a',hilight:'#7a6a5a'}},
-  wooden_bow:{slot:'weapon',icon:'\u{1F3F9}',name:'Wooden Bow',rarity:'starter',rangeType:'ranged',stats:{baseDmg:40,baseAS:0.45},desc:'+40Dmg 0.45AS',visual:{type:'bow',color:'#5a3a1a',hilight:'#7a5a3a'}},
-  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:30,baseAS:0.3,mana:80,spellDmgBonus:0.06},desc:'+30Dmg 0.3AS +80Mana +6%Spell',visual:{type:'staff',color:'#4a4a3a',hilight:'#6a6a5a',glow:'#6aaa8a'}},
-  cloth_cap:{slot:'helmet',icon:'\u{1F9E2}',name:'Cloth Cap',rarity:'starter',stats:{def:5,hp:100},desc:'+5DEF +100HP',visual:{type:'cloth_cap',color:'#5a5a4a',hilight:'#7a7a6a'}},
-  cloth_tunic:{slot:'chest',icon:'\u{1F455}',name:'Cloth Tunic',rarity:'starter',stats:{def:8,hp:150},desc:'+8DEF +150HP',visual:{type:'cloth',color:'#5a5a4a',hilight:'#7a7a6a'}},
-  worn_sandals:{slot:'boots',icon:'\u{1FA74}',name:'Worn Sandals',rarity:'starter',stats:{def:2,moveSpeed:8},desc:'+2DEF +8Spd',visual:{type:'sandals',color:'#5a4a3a',hilight:'#7a6a5a'}},
-  copper_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Copper Ring',rarity:'starter',stats:{baseDmg:10,hp:50},desc:'+10Dmg +50HP',visual:{type:'ring',color:'#7a5a3a',hilight:'#9a7a5a'}},
-  rusty_daggers:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Daggers',rarity:'starter',rangeType:'melee',stats:{baseDmg:35,baseAS:0.55,evasion:0.03},desc:'+35Dmg 0.55AS +3%Eva',visual:{type:'daggers',color:'#5a5a5a',hilight:'#7a7a7a'}},
+  rusty_blade:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Blade',rarity:'starter',rangeType:'melee',stats:{baseDmg:60,baseAS:0.4},desc:'+60Dmg 0.4AS',visual:{type:'sword',color:'#5a4a3a',hilight:'#7a6a5a'}},
+  wooden_bow:{slot:'weapon',icon:'\u{1F3F9}',name:'Wooden Bow',rarity:'starter',rangeType:'ranged',stats:{baseDmg:45,baseAS:0.5},desc:'+45Dmg 0.5AS',visual:{type:'bow',color:'#5a3a1a',hilight:'#7a5a3a'}},
+  worn_wand:{slot:'weapon',icon:'\u{1FA84}',name:'Worn Wand',rarity:'starter',rangeType:'ranged',stats:{baseDmg:40,baseAS:0.35,mana:80,spellDmgBonus:0.08},desc:'+40Dmg 0.35AS +80Mana +8%Spell',visual:{type:'staff',color:'#4a4a3a',hilight:'#6a6a5a',glow:'#6aaa8a'}},
+  cloth_cap:{slot:'helmet',icon:'\u{1F9E2}',name:'Cloth Cap',rarity:'starter',stats:{def:5,hp:150},desc:'+5DEF +150HP',visual:{type:'cloth_cap',color:'#5a5a4a',hilight:'#7a7a6a'}},
+  cloth_tunic:{slot:'chest',icon:'\u{1F455}',name:'Cloth Tunic',rarity:'starter',stats:{def:10,hp:200},desc:'+10DEF +200HP',visual:{type:'cloth',color:'#5a5a4a',hilight:'#7a7a6a'}},
+  worn_sandals:{slot:'boots',icon:'\u{1FA74}',name:'Worn Sandals',rarity:'starter',stats:{def:3,moveSpeed:12},desc:'+3DEF +12Spd',visual:{type:'sandals',color:'#5a4a3a',hilight:'#7a6a5a'}},
+  copper_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Copper Ring',rarity:'starter',stats:{baseDmg:15,hp:100},desc:'+15Dmg +100HP',visual:{type:'ring',color:'#7a5a3a',hilight:'#9a7a5a'}},
+  rusty_daggers:{slot:'weapon',icon:'\u{1F5E1}',name:'Rusty Daggers',rarity:'starter',rangeType:'melee',stats:{baseDmg:40,baseAS:0.6,evasion:0.04},desc:'+40Dmg 0.6AS +4%Eva',visual:{type:'daggers',color:'#5a5a5a',hilight:'#7a7a7a'}},
 
   // — Common —
-  arcane_staff:{slot:'weapon',icon:'\u{1FA84}',name:'Arcane Staff',rarity:'common',rangeType:'ranged',stats:{baseDmg:55,baseAS:0.55,spellDmgBonus:0.08},desc:'+55Dmg 0.55AS +8%Spell',visual:{type:'staff',color:'#3a4a5a',hilight:'#5a6a7a',glow:'#6aaa8a'}},
+  iron_sword:{slot:'weapon',icon:'\u{1F5E1}',name:'Iron Sword',rarity:'common',rangeType:'melee',stats:{baseDmg:75,baseAS:0.5},desc:'+75Dmg 0.5AS',visual:{type:'sword',color:'#5a5a5a',hilight:'#7a7a7a'}},
+  hunting_knives:{slot:'weapon',icon:'\u{1F5E1}',name:'Hunting Knives',rarity:'common',rangeType:'melee',stats:{baseDmg:55,baseAS:0.75,evasion:0.03},desc:'+55Dmg 0.75AS +3%Eva',visual:{type:'daggers',color:'#6a5a4a',hilight:'#8a7a6a'}},
+  arcane_staff:{slot:'weapon',icon:'\u{1FA84}',name:'Arcane Staff',rarity:'common',rangeType:'ranged',stats:{baseDmg:60,baseAS:0.55,spellDmgBonus:0.08},desc:'+60Dmg 0.55AS +8%Spell',visual:{type:'staff',color:'#3a4a5a',hilight:'#5a6a7a',glow:'#6aaa8a'}},
   steel_helm:{slot:'helmet',icon:'\u26D1',name:'Steel Helm',rarity:'common',stats:{def:15,hp:200},desc:'+15DEF +200HP',visual:{type:'steel_helm',color:'#5a5a5a',hilight:'#7a7a7a'}},
   chain_mail:{slot:'chest',icon:'\u26D3',name:'Chain Mail',rarity:'common',stats:{def:22,hp:300},desc:'+22DEF +300HP',visual:{type:'chain',color:'#5a5a5a',hilight:'#7a7a7a'}},
   steel_boots:{slot:'boots',icon:'\u{1F97E}',name:'Steel Boots',rarity:'common',stats:{def:8,moveSpeed:10},desc:'+8DEF +10Spd',visual:{type:'steel_boots',color:'#4a4a4a',hilight:'#6a6a6a'}},

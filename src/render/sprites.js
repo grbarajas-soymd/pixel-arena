@@ -46,9 +46,20 @@ export function drawHero(h){
   if(h.shieldActive){ctx.strokeStyle='rgba(68,221,187,0.3)';ctx.lineWidth=2;ctx.shadowColor='#44ddbb';ctx.shadowBlur=8;ctx.strokeRect(-22,-58,44,65);ctx.shadowBlur=0}
   if(h.ultActive&&h.type!=='assassin'){const col=h.type==='wizard'?'#44ddbb':'#ffaa44';ctx.strokeStyle=col+'40';ctx.lineWidth=2;ctx.shadowColor=col;ctx.shadowBlur=12;ctx.strokeRect(-20,-56,40,62);ctx.shadowBlur=0}
   if(h.blActive){ctx.strokeStyle='rgba(204,51,0,0.25)';ctx.lineWidth=1.5;ctx.shadowColor='#cc3300';ctx.shadowBlur=8;ctx.strokeRect(-18,-54,36,58);ctx.shadowBlur=0}
-  if(h.envenomed&&state.bt<h.envenomedEnd){ctx.strokeStyle='rgba(102,204,255,0.25)';ctx.lineWidth=1;ctx.shadowColor='#66ccff';ctx.shadowBlur=6;ctx.strokeRect(-16,-52,32,56);ctx.shadowBlur=0}
+  if(h.envenomed&&state.bt<h.envenomedEnd){ctx.strokeStyle='rgba(136,204,68,0.25)';ctx.lineWidth=1;ctx.shadowColor='#88cc44';ctx.shadowBlur=6;ctx.strokeRect(-16,-52,32,56);ctx.shadowBlur=0}
   if(h.deathMarkTarget&&state.bt<h.deathMarkEnd){ctx.strokeStyle='rgba(255,136,0,0.4)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(-22,-58,44,65);ctx.setLineDash([]);ctx.fillStyle='#ff8800';ctx.font='bold 11px "Cinzel"';ctx.textAlign='center';ctx.fillText('\u2620',0,-64)}
   if(stunned){const t2=state.bt/200;for(let i=0;i<3;i++){const a=t2+i*2.09;ctx.fillStyle='#e8d060';ctx.fillRect(-2+Math.cos(a)*14,-55+Math.sin(a)*6,4,4);ctx.fillStyle='#fff';ctx.fillRect(-1+Math.cos(a)*14,-54+Math.sin(a)*6,2,2)}}
+  // Status effect sprite overlays — glowing borders/tints synced to hero properties
+  if(h.burning&&state.bt<h.burnEnd){const bp=0.3+Math.sin(state.bt/150)*0.15;ctx.strokeStyle='rgba(255,102,34,'+bp+')';ctx.lineWidth=2;ctx.shadowColor='#ff6622';ctx.shadowBlur=10;ctx.strokeRect(-20,-56,40,62);ctx.shadowBlur=0}
+  if(h.vulnerable&&state.bt<h.vulnerableEnd){const vp=0.15+Math.sin(state.bt/200)*0.1;ctx.fillStyle='rgba(255,68,68,'+vp+')';ctx.fillRect(-20,-56,40,62)}
+  if(h.riposteActive&&state.bt<h.riposteEnd){ctx.strokeStyle='rgba(204,204,255,0.35)';ctx.lineWidth=1.5;ctx.shadowColor='#ccccff';ctx.shadowBlur=8;ctx.strokeRect(-20,-56,40,62);ctx.shadowBlur=0}
+  if(h.thornsActive&&state.bt<h.thornsEnd){ctx.strokeStyle='rgba(68,204,68,0.3)';ctx.lineWidth=1.5;ctx.shadowColor='#44cc44';ctx.shadowBlur=8;ctx.strokeRect(-19,-55,38,60);ctx.shadowBlur=0}
+  if(h.tranceActive&&state.bt<h.tranceEnd){const tp=0.25+Math.sin(state.bt/100)*0.15;ctx.strokeStyle='rgba(255,68,68,'+tp+')';ctx.lineWidth=2;ctx.shadowColor='#ff4444';ctx.shadowBlur=10;ctx.strokeRect(-21,-57,42,64);ctx.shadowBlur=0}
+  if(h.primalActive&&state.bt<h.primalEnd){const pp=0.2+Math.sin(state.bt/120)*0.1;ctx.strokeStyle='rgba(255,102,34,'+pp+')';ctx.lineWidth=2.5;ctx.shadowColor='#ff6622';ctx.shadowBlur=12;ctx.strokeRect(-22,-58,44,66);ctx.shadowBlur=0}
+  if(h.shadowDanceActive&&state.bt<h.shadowDanceEnd){ctx.strokeStyle='rgba(102,68,170,0.3)';ctx.lineWidth=2;ctx.shadowColor='#6644aa';ctx.shadowBlur=10;ctx.strokeRect(-21,-57,42,64);ctx.shadowBlur=0}
+  if(h.lastStandActive&&state.bt<h.lastStandEnd){const lp=0.3+Math.sin(state.bt/180)*0.15;ctx.strokeStyle='rgba(255,204,34,'+lp+')';ctx.lineWidth=2.5;ctx.shadowColor='#ffcc22';ctx.shadowBlur=12;ctx.strokeRect(-23,-59,46,68);ctx.shadowBlur=0}
+  if(h.freeSpellsActive&&state.bt<h.freeSpellsEnd){ctx.strokeStyle='rgba(170,136,255,0.3)';ctx.lineWidth=1.5;ctx.shadowColor='#aa88ff';ctx.shadowBlur=8;ctx.strokeRect(-19,-55,38,60);ctx.shadowBlur=0}
+  if(h.smokeBombActive){ctx.fillStyle='rgba(80,90,100,0.15)';ctx.fillRect(-22,-58,44,65)}
   ctx.globalAlpha=1;
   // Undo facing flip for HP bar and name so text isn't mirrored
   if(f<0)ctx.scale(-1,1);

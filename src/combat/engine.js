@@ -14,7 +14,8 @@ export const dst = (a, b) => Math.sqrt((a.x - b.x) ** 2 + ((a.y || GY) - (b.y ||
 const AF_DMG_REDUCTION = 0.30; // Arena followers take 30% less damage from hero attacks
 export const blN = h => h.bleedStacks.length;
 export const addBl = (t, time) => { t.bleedStacks.push({ hpSnap: t.hp, at: time, exp: time + 2000 }) };
-export function procBl(h, t, dt) { h.bleedStacks = h.bleedStacks.filter(s => t < s.exp); let d = 0; for (const s of h.bleedStacks) d += (s.hpSnap * .01) * (dt / 1000); if (d > 0) h.hp -= d; return d }
+// Tick bleed stacks (HP-snapshot DoT) and burn (flat fire DoT) per frame
+export function procBl(h, t, dt) { h.bleedStacks = h.bleedStacks.filter(s => t < s.exp); let d = 0; for (const s of h.bleedStacks) d += (s.hpSnap * .01) * (dt / 1000); if (d > 0) h.hp -= d; if (h.burning && t < h.burnEnd) { h.hp -= h.burnDmg * (dt / 1000) } return d }
 export function getMS(h) { let s = h.moveSpeed * (1 + h.moveSpeedBonus); if (h.slow > 0 && state.bt < h.slowEnd) { let sr = h.slow; if (h.type === 'barbarian') sr *= (1 - (CLASSES.barbarian.slowResist || 0)); s *= (1 - sr) } return s }
 export function isStunned(h) { return h.stunEnd && state.bt < h.stunEnd && !(h.type === 'barbarian' && CLASSES.barbarian.stunResist && Math.random() < CLASSES.barbarian.stunResist) }
 export function getRage(h) { if (h.type !== 'barbarian') return { d: 1, a: 1 }; const c = CLASSES.barbarian, m = 1 - h.hp / h.maxHp; return { d: 1 + m * (c.rageMaxDmg || 0), a: 1 + m * (c.rageMaxAS || 0) } }
@@ -23,7 +24,7 @@ export function effAS(h) {
   if (h.type === 'wizard') { let s = h.baseAS * (1 + h.castSpeedBonus); if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow); return s }
   if (h.type === 'assassin') { let s = h.baseAS; if (h.combo > 0) s *= (1 + h.combo * 0.06); if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow); return s }
   if (h.type === 'barbarian') { let s = h.baseAS * getRage(h).a; if (h.ultActive) s *= (1 + (CLASSES.barbarian.ultAS || 0)); if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow * (1 - (CLASSES.barbarian.slowResist || 0))); return s }
-  if (h.type === 'custom') { let s = h.baseAS; if (h.ultActive) s *= 1.3; if (h.combo > 0) s *= (1 + h.combo * 0.04); if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow); return s }
+  if (h.type === 'custom') { let s = h.baseAS; if (h.ultActive) s *= 1.3; if (h.primalActive && state.bt < h.primalEnd) s *= 1.8; if (h.combo > 0) s *= (1 + h.combo * 0.04); if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow); return s }
   let s = h.baseAS * (1 + h.moveSpeedBonus * .5); if (h.blActive) s *= (1 + .05 * blN(en(h))); if (h.ultActive) s *= 3; if (h.slow > 0 && state.bt < h.slowEnd) s *= (1 - h.slow); return s;
 }
 export function effEv(h) {
@@ -35,6 +36,7 @@ export function effEv(h) {
 export function calcDmg(a, d, isRanged, dist) {
   let dm = a.baseDmg * (1 - Math.min(d.def / 300, .8));
   if (d.shocked && state.bt < d.shockedEnd) dm *= 1.1;
+  if (d.vulnerable && state.bt < d.vulnerableEnd) dm *= (1 + (d.vulnerableAmp || 0.1));
   if (isRanged && dist < MELEE) dm *= RANGED_PEN;
   if (a.stealthed) dm *= 3.0;
   if (a.type === 'assassin' && dist <= a.meleeRange) dm *= 1.30;
@@ -100,7 +102,7 @@ export function doAttack(h, t) {
     state.projectiles.push({ x: h.x, y: (h.y || GY) - 30, tx, ty, speed: pSpeed, color: pCol, type: pType, time: 0, onHit: () => resolveHit(h, tg, t, d, true) });
     if (pType === 'bolt') SFX.bolt(); else if (pType === 'dagger') SFX.dagger(); else SFX.arrow();
   }
-  if (h.stealthed) { h.stealthed = false; addLog(t, `${h.name} breaks stealth!`, 'stealth') }
+  if (h.stealthed && !(h.shadowDanceActive && state.bt < h.shadowDanceEnd)) { h.stealthed = false; addLog(t, `${h.name} breaks stealth!`, 'stealth') }
   return true;
 }
 
@@ -119,18 +121,20 @@ function resolveHit(atk, tg, t, d, isRanged) {
   if (e.shieldActive) { const ab = Math.min(dm, e.shieldHp); e.shieldHp -= ab; const c = CLASSES[e.type]; atk.hp -= c.shieldReflect; atk.hurtAnim = 1; dm -= ab; spFloat(e.x, e.y - 60, `Shield -${Math.round(ab)}`, '#88ddff'); spSparks(e.x, e.y - 30, 4, '#88ddff'); addLog(t, `Shield ${Math.round(ab)}, reflect ${c.shieldReflect}`, 'shock'); if (e.shieldHp <= 0) { e.shieldActive = false; SFX.shieldBreak(); addLog(t, `Shield breaks!`, 'spell') } if (dm <= 0) { atk.totDmg += ab; return } }
   if (e.deathMarkTarget && state.bt < e.deathMarkEnd) e.deathMarkDmg += dm;
   e.hp -= dm; atk.totDmg += dm; e.hurtAnim = 1; if (atk.blActive) atk.blDmg += dm;
+  if (e.riposteActive && state.bt < e.riposteEnd) { e.riposteActive = false; atk.hp -= e.riposteDmg; atk.hurtAnim = 1; atk.stunEnd = state.bt + 300; spFloat(atk.x, atk.y - 60, 'RIPOSTE ' + e.riposteDmg, '#ccccff'); spSparks(atk.x, atk.y - 30, 6, '#ccccff'); addLog(state.bt, 'Riposte! ' + e.riposteDmg + ' counter', 'spell') }
+  if (e.thornsActive && state.bt < e.thornsEnd) { var thornsDm = Math.round(dm * e.thornsPct); atk.hp -= thornsDm; atk.hurtAnim = 1; spFloat(atk.x, atk.y - 55, 'THORNS ' + thornsDm, '#44cc44'); addLog(state.bt, 'Thorns ' + thornsDm, 'spell') }
   const col = atk.stealthed ? '#ffffff' : atk.color; spFloat(e.x, e.y - 60, `-${Math.round(dm)}`, col); addLog(t, `${atk.name} > ${e.name} ${Math.round(dm)}`, 'dmg');
   if (atk.type === 'ranger') { if (atk.atkCnt % 3 === 0) { addBl(e, t); spDrips(e.x, e.y - 20) } if (atk.ultActive) { addBl(e, t); spFire(e.x, e.y - 20, 3) } }
   if (atk.type === 'wizard') addCh(atk, 1);
   if (atk.type === 'assassin') { atk.combo = Math.min(atk.maxCombo, atk.combo + 1); if (!isRanged && atk.atkCnt % 2 === 0) { addBl(e, t); spDrips(e.x, e.y - 20) } if (atk.envenomed && state.bt < atk.envenomedEnd) { addBl(e, t); spPoison(e.x, e.y - 20, 3) } }
-  if (atk.type === 'custom') { if (atk.envenomed && state.bt < atk.envenomedEnd) { addBl(e, t); spPoison(e.x, e.y - 20, 2) } atk.combo = Math.min(atk.maxCombo || 5, (atk.combo || 0) + 0.5) }
+  if (atk.type === 'custom') { if (atk.envenomed && state.bt < atk.envenomedEnd) { addBl(e, t); spPoison(e.x, e.y - 20, 2) } if (atk.primalActive && state.bt < atk.primalEnd) { addBl(e, t); spDrips(e.x, e.y - 20) } atk.combo = Math.min(atk.maxCombo || 5, (atk.combo || 0) + 0.5) }
   if (atk.type === 'barbarian') { const c = CLASSES.barbarian; let ls = dm * (c.lifesteal + (atk.ultActive ? (c.ultLifesteal || 0) : 0)); if (ls > 0) { atk.hp = Math.min(atk.maxHp, atk.hp + ls); atk.totHeal += ls } }
   if (atk._stashLifesteal && atk._stashLifesteal > 0) { let sls = dm * atk._stashLifesteal; atk.hp = Math.min(atk.maxHp, atk.hp + sls); atk.totHeal += sls }
 }
 
 function killFollower(owner, t) { if (!owner.follower) return; owner.follower.alive = false; owner.followerAlive = false; spSparks(owner.follower.x, owner.follower.y - 15, 8, '#cc88ff'); addLog(t, `${owner.name}'s pet slain!`, 'summon'); if (owner.blActive) { owner.blEnd += 500 } }
 
-export function checkDeath(h, t) { if (h.hp <= 0) { h.hp = 0; state.over = true; SFX.death(); addLog(t, `\u2620 ${h.name} slain! ${en(h).name} WINS!`, 'death'); if (state._showWinFn) state._showWinFn(en(h)); return true } return false }
+export function checkDeath(h, t) { if (h.hp <= 0 && h.lastStandActive && state.bt < h.lastStandEnd) { h.hp = 1; return false } if (h.hp <= 0) { h.hp = 0; state.over = true; SFX.death(); addLog(t, `\u2620 ${h.name} slain! ${en(h).name} WINS!`, 'death'); if (state._showWinFn) state._showWinFn(en(h)); return true } return false }
 
 // =============== MAIN TICK ===============
 export function tick() {

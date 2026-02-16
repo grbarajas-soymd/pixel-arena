@@ -4,6 +4,7 @@ import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { blN, effAS, effEv, isStunned } from '../combat/engine.js';
 import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
 import { getIcon } from './icons.js';
+import { STATUS_EFFECTS } from '../data/statusEffects.js';
 import { attachTooltip, buildFollowerTooltipHtml } from '../tooltip.js';
 
 export function buildHUD(h,id){
@@ -28,6 +29,15 @@ export function buildHUD(h,id){
   p.className='hud-panel '+(id==='hudP1'?'p1':'p2');
 }
 
+// Build an arena buff/debuff badge using the status effects registry for
+// consistent colors and hover tooltips. Falls back to grey for unknown IDs.
+function buffSpan(id,label){
+  var e=STATUS_EFFECTS[id];
+  if(!e)return '<span class="buff" style="background:rgba(100,100,100,0.3);border-color:#888">'+label+'</span>';
+  return '<span class="buff" style="background:rgba('+hexToRgb(e.color)+',0.2);border-color:'+e.color+';color:'+e.color+'" title="'+e.name+': '+e.desc+'">'+e.icon+' '+label+'</span>';
+}
+function hexToRgb(hex){var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return r+','+g+','+b;}
+
 export function updateUI(){
   if(!state.h1||!state.h2)return;
   for(const[h,id]of[[state.h1,'hudP1'],[state.h2,'hudP2']]){
@@ -41,21 +51,31 @@ export function updateUI(){
     if(el('as'))el('as').textContent=effAS(h).toFixed(2)+'/s';
     if(el('ev'))el('ev').textContent=Math.round(effEv(h)*100)+'%';
     if(el('rng'))el('rng').textContent='Range: '+(h.type==='assassin'?h.meleeRange+'/'+h.throwRange:Math.round(h.attackRange));
+    // Active buffs/debuffs — registry-driven with hover tooltips
     let bf='';
-    if(blN(h)>0)bf+='<span class="buff bleed-b">Bleed x'+blN(h)+'</span>';
-    if(h.shocked&&state.bt<h.shockedEnd)bf+='<span class="buff shock-b">Shocked</span>';
-    if(isStunned(h))bf+='<span class="buff stun-b">STUNNED</span>';
-    if(h.shieldActive)bf+='<span class="buff shield-b">Shield '+Math.round(h.shieldHp)+'</span>';
-    if(h.ultActive)bf+='<span class="buff ult-b">'+(h.type==='wizard'?'\u26A1Storm':h.type==='ranger'?'\u{1F525}Rain':'')+'</span>';
-    if(h.blActive)bf+='<span class="buff bloodlust-b">Bloodlust</span>';
-    if(h.followerAlive)bf+='<span class="buff wolf-b">\u{1F525}Pet</span>';
-    if(h.stealthed)bf+='<span class="buff stealth-b">Stealth</span>';
-    if(h.envenomed&&state.bt<h.envenomedEnd)bf+='<span class="buff poison-b">Envenom</span>';
-    if(h.smokeBombActive)bf+='<span class="buff stealth-b">Smoke</span>';
-    if(h.combo>=1)bf+='<span class="buff combo-b">Combo x'+Math.floor(h.combo)+'</span>';
-    if(h.charge>0&&h.type==='wizard')bf+='<span class="buff shock-b">Chg x'+h.charge+'</span>';
-    if(h.slow>0&&state.bt<h.slowEnd)bf+='<span class="buff slow-b">Slow</span>';
-    if(h.deathMarkTarget&&state.bt<h.deathMarkEnd)bf+='<span class="buff marked-b">\u2620 Marked</span>';
+    if(blN(h)>0)bf+=buffSpan('bleed','Bleed x'+blN(h));
+    if(h.shocked&&state.bt<h.shockedEnd)bf+=buffSpan('shocked','Shocked');
+    if(isStunned(h))bf+=buffSpan('stunned','STUNNED');
+    if(h.shieldActive)bf+=buffSpan('shield','Shield '+Math.round(h.shieldHp));
+    if(h.ultActive)bf+=buffSpan('berserk',(h.type==='wizard'?'\u26A1Storm':h.type==='ranger'?'\u{1F525}Rain':'Ult'));
+    if(h.blActive)bf+=buffSpan('bloodlust','Bloodlust');
+    if(h.followerAlive)bf+='<span class="buff" style="background:rgba(255,102,34,0.2);border-color:#ff6622;color:#ff6622" title="Pet companion">\u{1F525} Pet</span>';
+    if(h.stealthed)bf+=buffSpan('stealth','Stealth');
+    if(h.envenomed&&state.bt<h.envenomedEnd)bf+=buffSpan('envenomed','Envenom');
+    if(h.smokeBombActive)bf+=buffSpan('smokeBomb','Smoke');
+    if(h.combo>=1)bf+='<span class="buff" style="background:rgba(255,204,34,0.2);border-color:#ffcc22;color:#ffcc22" title="Combo stacks">Combo x'+Math.floor(h.combo)+'</span>';
+    if(h.charge>0&&h.type==='wizard')bf+='<span class="buff" style="background:rgba(68,221,187,0.2);border-color:#44ddbb;color:#44ddbb" title="Charge stacks">Chg x'+h.charge+'</span>';
+    if(h.slow>0&&state.bt<h.slowEnd)bf+=buffSpan('frostSlow','Slow');
+    if(h.deathMarkTarget&&state.bt<h.deathMarkEnd)bf+=buffSpan('deathMark','\u2620 Marked');
+    if(h.burning&&state.bt<h.burnEnd)bf+=buffSpan('burn','Burning');
+    if(h.vulnerable&&state.bt<h.vulnerableEnd)bf+=buffSpan('vulnerable','Vulnerable');
+    if(h.riposteActive&&state.bt<h.riposteEnd)bf+=buffSpan('riposte','Riposte');
+    if(h.thornsActive&&state.bt<h.thornsEnd)bf+=buffSpan('thorns','Thorns');
+    if(h.tranceActive&&state.bt<h.tranceEnd)bf+=buffSpan('trance','Trance');
+    if(h.lastStandActive&&state.bt<h.lastStandEnd)bf+=buffSpan('lastStand','Last Stand');
+    if(h.primalActive&&state.bt<h.primalEnd)bf+=buffSpan('primalFury','Primal Fury');
+    if(h.freeSpellsActive&&state.bt<h.freeSpellsEnd)bf+=buffSpan('freeSpells','Free Spells');
+    if(h.shadowDanceActive&&state.bt<h.shadowDanceEnd)bf+=buffSpan('shadowDance','Shadow Dance');
     if(el('bf'))el('bf').innerHTML=bf;
     let sp='';
     for(const k in h.spells){const s=h.spells[k];const act=(k==='staticShield'&&h.shieldActive)||(k==='bloodlust'&&h.blActive)||(k==='ultimate'&&h.ultActive)||(k==='envenom'&&h.envenomed&&state.bt<h.envenomedEnd)||(k==='smokeBomb'&&h.smokeBombActive);const cost=s.cost||0;const res=h.type==='wizard'?h.mana:h.type==='assassin'?h.energy:999;const cd=s.used?'USED':s.cd>0?(s.cd/1000).toFixed(1)+'s':res<cost?'Low':'';const rdy=!s.used&&s.cd<=0&&res>=cost;sp+='<span class="spell-chip '+(act?'active-s':s.used?'used-s':rdy?'ready':'')+'">'+s.n+(cd?' <span class="spell-cd">'+cd+'</span>':'')+'</span>'}

@@ -11,6 +11,7 @@ import { drawHero } from '../render/sprites.js';
 import { buildHUD, updateUI } from '../render/ui.js';
 import { randomBiome, getBiome } from '../biomes.js';
 import { dgCombatVictory, dgDeath, generateRoom } from './dungeon.js';
+import { STATUS_EFFECTS, CATEGORY_COLORS } from '../data/statusEffects.js';
 import { initGround } from '../render/arena.js';
 
 // ===== COMBAT LOG HELPER =====
@@ -48,13 +49,27 @@ var deathMarkDmg=0;
 var deathMarkActive=false;
 var deathMarkRounds=0;
 var bloodlustActive=false;
+var monsterVulnerable=false;var monsterVulnerableAmp=0;
+var riposteReady=false;var riposteDmg=0;
+var tranceActive=false;var tranceDmgBonus=0;var tranceDefLoss=0;var tranceRounds=0;
+var thornsActive=false;var thornsPct=0;var thornsRounds=0;
+var shadowDanceRounds=0;var lastStandRounds=0;var primalFuryRounds=0;var freeSpellsRounds=0;var primalExtraUsed=false;
+var burnDmg=0;var burnTurnsLeft=0;
+var dgMouseX=-1,dgMouseY=-1; // canvas-space mouse coords for status tooltip hover
 var animAction_skillIdx=null;
 var animAction_skill=null;
 var animAction_ultIdx=null;
 var animAction_ult=null;
 var fleeResult=false;
 var autoBattle=false;
-var SKILL_DMG={0:260,1:140,9:200};
+function getSkillDmg(idx,src){
+  if(idx===0)return Math.round(180+(src.maxHp||1500)*0.05);
+  if(idx===1)return Math.round(90+(src.maxHp||1500)*0.03);
+  if(idx===9)return Math.round(src.baseDmg*1.5+(src.def||0));
+  if(idx===11)return Math.round(80+(src.def||0)*3);
+  if(idx===12)return Math.round(60+(src.maxHp||1500)*0.03);
+  return 0;
+}
 
 // ===== AP TIMELINE SYSTEM =====
 var combatants=[];       // [{id:'hero'|'monster'|'companion', ap:0, speed:number, alive:true}]
@@ -88,6 +103,7 @@ function calcDmg(attacker,defender){
   var raw=attacker.baseDmg*(1-Math.min(defender.def/300,0.8));
   raw*=(0.85+Math.random()*0.3);
   if(attacker===state.h1&&playerDmgBuff>0)raw*=(1+playerDmgBuff);
+  if(attacker===state.h1&&attacker.stealthed)raw*=3.0;
   if(Math.random()<(defender.evasion||0))return{amount:0,evaded:true,crit:false};
   var crit=false;
   if(attacker._stashCrit&&Math.random()<attacker._stashCrit){raw*=1.75;crit=true;}
@@ -157,6 +173,11 @@ export function initDgCombat(monster){
   playerInvulnRounds=0;playerExtraAttacks=0;
   deathMarkDmg=0;deathMarkActive=false;deathMarkRounds=0;
   bloodlustActive=false;fleeResult=false;
+  monsterVulnerable=false;monsterVulnerableAmp=0;riposteReady=false;riposteDmg=0;
+  tranceActive=false;tranceDmgBonus=0;tranceDefLoss=0;tranceRounds=0;
+  thornsActive=false;thornsPct=0;thornsRounds=0;
+  shadowDanceRounds=0;lastStandRounds=0;primalFuryRounds=0;freeSpellsRounds=0;primalExtraUsed=false;
+  burnDmg=0;burnTurnsLeft=0;
   animAction_skillIdx=null;animAction_skill=null;
   animAction_ultIdx=null;animAction_ult=null;
   playerStunnedByMonster=false;heroPoisonTurns=0;
@@ -212,6 +233,17 @@ export function initDgCombat(monster){
   buildActionUI();
   enableButtons(true);
   if(!state.groundTiles)initGround();
+  // Mouse tracking for status tooltips
+  var cvs=document.getElementById('arenaCanvas');
+  if(cvs&&!cvs._dgMouseBound){
+    cvs._dgMouseBound=true;
+    cvs.addEventListener('mousemove',function(e){
+      var r=cvs.getBoundingClientRect();
+      dgMouseX=(e.clientX-r.left)*(cvs.width/r.width);
+      dgMouseY=(e.clientY-r.top)*(cvs.height/r.height);
+    });
+    cvs.addEventListener('mouseleave',function(){dgMouseX=-1;dgMouseY=-1;});
+  }
   SFX.battleStart();
   showTurnText('Battle Start!');
   lastTime=performance.now();
@@ -290,7 +322,7 @@ function refreshButtonStates(){
     var sk0=si0!==null?ALL_SKILLS[si0]:null;
     if(!sk0){sk0Btn.disabled=true;sk0Btn.style.opacity='0.3';sk0Btn.style.pointerEvents='none';}
     else{
-      var c0=sk0.cost!==undefined?sk0.cost:30,ok0=c0<=0||res>=c0;
+      var c0=sk0.cost!==undefined?sk0.cost:30,ok0=c0<=0||res>=c0||freeSpellsRounds>0;
       sk0Btn.disabled=!ok0;sk0Btn.style.opacity=ok0?'1':'0.4';sk0Btn.style.pointerEvents=ok0?'auto':'none';
       sk0Btn.innerHTML=sk0.icon+' '+sk0.name+' <span style="font-size:.55rem;opacity:.7">('+c0+')</span>';
     }
@@ -301,7 +333,7 @@ function refreshButtonStates(){
     var sk1=si1!==null?ALL_SKILLS[si1]:null;
     if(!sk1){sk1Btn.disabled=true;sk1Btn.style.opacity='0.3';sk1Btn.style.pointerEvents='none';}
     else{
-      var c1=sk1.cost!==undefined?sk1.cost:30,ok1=c1<=0||res>=c1;
+      var c1=sk1.cost!==undefined?sk1.cost:30,ok1=c1<=0||res>=c1||freeSpellsRounds>0;
       sk1Btn.disabled=!ok1;sk1Btn.style.opacity=ok1?'1':'0.4';sk1Btn.style.pointerEvents=ok1?'auto':'none';
       sk1Btn.innerHTML=sk1.icon+' '+sk1.name+' <span style="font-size:.55rem;opacity:.7">('+c1+')</span>';
     }
@@ -362,8 +394,8 @@ function autoPickAction(){
     if(si===null||!ALL_SKILLS[si])continue;
     var sk=ALL_SKILLS[si];
     var cost=sk.cost||0;
-    if(cost>0&&res<cost)continue;
-    affordable.push({slot:i,idx:si,sk:sk,cost:cost,dmg:SKILL_DMG[si]||0});
+    if(cost>0&&res<cost&&freeSpellsRounds<=0)continue;
+    affordable.push({slot:i,idx:si,sk:sk,cost:cost,dmg:getSkillDmg(si,hero)});
   }
   // TELEGRAPH AWARENESS: If monster is charging, prioritize stun > shield > smokeBomb
   if(isCharging){
@@ -407,6 +439,18 @@ function autoPickAction(){
     if(id==='warCry'&&!hasStatus(monsterStatuses,'warcry')&&monsterTough){handleAction('skill'+bs.slot);return}
     // Summon Pet: use if no follower alive
     if(id==='sacrifice'&&!hero.followerAlive){handleAction('skill'+bs.slot);return}
+    // Rupture: pop bleeds if any active
+    if(id==='rupture'&&poisonTurnsLeft>0){handleAction('skill'+bs.slot);return}
+    // Marked for Death: vulnerable debuff
+    if(id==='markedForDeath'&&!monsterVulnerable&&monsterTough){handleAction('skill'+bs.slot);return}
+    // Lacerate: execute when enemy below 50% HP
+    if(id==='lacerate'&&monster.hp/monster.maxHp<0.5){handleAction('skill'+bs.slot);return}
+    // Riposte: counter stance if not already active
+    if(id==='riposte'&&!riposteReady&&monsterTough){handleAction('skill'+bs.slot);return}
+    // Battle Trance: convert DEF to DMG
+    if(id==='battleTrance'&&!tranceActive&&monsterTough){handleAction('skill'+bs.slot);return}
+    // Thorns: reflect damage
+    if(id==='thorns'&&!thornsActive&&monsterTough){handleAction('skill'+bs.slot);return}
   }
   // Default: basic attack
   handleAction('attack');
@@ -429,8 +473,9 @@ function handleAction(action){
     var sk=ALL_SKILLS[skillIdx];
     var cost=sk.cost!==undefined?sk.cost:30;
     var curRes=hero.resource!==undefined?hero.resource:(hero.mana||0);
-    if(cost>0&&curRes<cost)return;
-    if(cost>0){
+    var isFree=freeSpellsRounds>0;
+    if(cost>0&&curRes<cost&&!isFree)return;
+    if(cost>0&&!isFree){
       if(hero.resource!==undefined)hero.resource-=cost;
       if(hero.mana!==undefined)hero.mana=Math.max(0,hero.mana-cost);
     }
@@ -529,6 +574,7 @@ function applyMidpointEffect(){
       combatLog(tgt.name+' dodges '+src.name+'\'s attack!','miss');
     }else{
       var amt=result.amount;
+      if(monsterVulnerable&&src===state.h1&&amt>0)amt=Math.round(amt*(1+monsterVulnerableAmp));
       if(tgt===state.h1&&tgt.shieldActive&&tgt.shieldHp>0){
         var absorbed=Math.min(amt,tgt.shieldHp);
         tgt.shieldHp-=absorbed;amt-=absorbed;
@@ -553,6 +599,33 @@ function applyMidpointEffect(){
       addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+amt,col);
       SFX.hit();if(result.crit)SFX.crit();
       combatLog(src.name+' hits '+tgt.name+' for '+(result.crit?'CRIT ':'')+amt+' dmg','dmg');
+      // Riposte: counter monster attack
+      if(src!==state.h1&&riposteReady&&amt>0){
+        riposteReady=false;if(state.h1)state.h1.riposteActive=false;
+        for(var rpi=playerStatuses.length-1;rpi>=0;rpi--)if(playerStatuses[rpi].id==='riposte')playerStatuses.splice(rpi,1);
+        var rpDmg=Math.round(riposteDmg*(1-Math.min(src.def/300,0.8)));
+        src.hp-=rpDmg;src.hurtAnim=1;dmgDealt+=rpDmg;
+        addFloat(src.x,src.y-60,'RIPOSTE '+rpDmg,'#ccccff');
+        combatLog('Riposte counters for '+rpDmg+' dmg!','spell');
+      }
+      // Thorns: reflect damage
+      if(src!==state.h1&&thornsActive&&amt>0){
+        var thornsDmg=Math.round(amt*thornsPct);
+        src.hp-=thornsDmg;src.hurtAnim=1;dmgDealt+=thornsDmg;
+        addFloat(src.x,src.y-50,'THORNS '+thornsDmg,'#44cc44');
+        combatLog('Thorns reflect '+thornsDmg+' dmg!','spell');
+      }
+      // Last Stand: prevent hero death
+      if(tgt===state.h1&&tgt.hp<=0&&lastStandRounds>0){
+        tgt.hp=1;
+        addFloat(tgt.x,tgt.y-70,'LAST STAND!','#ffcc22');
+        combatLog('Last Stand prevents death!','ult');
+      }
+      // Primal Fury: apply poison on hero attacks
+      if(src===state.h1&&primalFuryRounds>0&&amt>0){
+        if(poisonTurnsLeft<4){poisonStacks++;poisonTurnsLeft=Math.min(4,poisonTurnsLeft+2);}
+        if(!hasStatus(monsterStatuses,'poison'))addStatus(monsterStatuses,'poison',99);
+      }
     }
     // Restore heavy strike damage after hit
     if(src._heavyStrikeRestore){src.baseDmg=src._heavyStrikeRestore;src._heavyStrikeRestore=null;}
@@ -565,7 +638,7 @@ function applyMidpointEffect(){
 function applySkillEffect(src,tgt){
   var idx=animAction_skillIdx,sk=animAction_skill;
   if(idx===null||!sk)return;
-  var baseDmg=SKILL_DMG[idx]||0;
+  var baseDmg=getSkillDmg(idx,src);
   if(baseDmg>0){
     var result=calcSkillDmg(src,tgt,baseDmg);
     if(result.evaded){addFloat(tgt.x,tgt.y-60,'DODGE!','#88ccff');SFX.dodge();combatLog(tgt.name+' dodges '+sk.name+'!','miss');}
@@ -575,50 +648,168 @@ function applySkillEffect(src,tgt){
       addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+sk.icon+' '+result.amount,result.crit?'#ffcc22':'#44ddbb');
       SFX.hit();if(result.crit)SFX.crit();
       combatLog(sk.name+' hits for '+(result.crit?'CRIT ':'')+result.amount+' dmg','spell');
-      if(idx===0){addStatus(monsterStatuses,'stunned','Stunned','\uD83D\uDCAB','#ffcc22',1);SFX.lightning();combatLog(tgt.name+' is stunned!','stun');}
+      if(idx===0){addStatus(monsterStatuses,'stunned',1);addStatus(monsterStatuses,'shocked',1);SFX.lightning();combatLog(tgt.name+' is stunned + shocked!','stun');}
     }
   }else{
     if(idx===2){
-      src.shieldActive=true;src.shieldHp=420*(1+(src.spellDmgBonus||0));
-      addStatus(playerStatuses,'shield','Shield','\uD83D\uDEE1\uFE0F','#44ddbb',2);
+      src.shieldActive=true;src.shieldHp=(320+(src.def||0)*4)*(1+(src.spellDmgBonus||0));
+      addStatus(playerStatuses,'shield',2);
       addFloat(src.x,src.y-60,'SHIELD +'+Math.round(src.shieldHp),'#44ddbb');SFX.shield();
       combatLog('Shield activated ('+Math.round(src.shieldHp)+' HP)','spell');
     }
     else if(idx===3){
-      addStatus(monsterStatuses,'marked','Marked','\uD83C\uDFAF','#ff8844',2);
-      tgt.evasion=Math.max(0,(tgt.evasion||0)-0.15);tgt.slow=0.2;
+      addStatus(monsterStatuses,'marked',2);
+      tgt.evasion=Math.max(0,(tgt.evasion||0)-0.15);tgt.slow=0.15+(src.baseAS||0.5)*0.1;
       addFloat(tgt.x,tgt.y-60,'MARKED!','#ff8844');
       combatLog(tgt.name+' is marked!','spell');
     }
     else if(idx===4){
       bloodlustActive=true;
-      addStatus(playerStatuses,'bloodlust','Bloodlust','\uD83E\uDE78','#cc3300',1);
+      addStatus(playerStatuses,'bloodlust',1);
       addFloat(src.x,src.y-60,'BLOODLUST!','#cc3300');SFX.fire();
       combatLog('Bloodlust activated!','spell');
     }
     else if(idx===6){
       src.stealthed=true;
-      addStatus(playerStatuses,'stealth','Stealth','\uD83D\uDCA8','#3388cc',1);
+      addStatus(playerStatuses,'stealth',1);
       addFloat(src.x,src.y-60,'STEALTH!','#3388cc');SFX.stealth();
       combatLog('Entered stealth!','stealth');
     }
     else if(idx===7){
       poisonStacks=1;poisonTurnsLeft=2;
-      addStatus(monsterStatuses,'poison','Poison','\u2620','#66ccff',2);
+      addStatus(monsterStatuses,'poison',2);
       addFloat(tgt.x,tgt.y-60,'POISONED!','#66ccff');SFX.poison();
       combatLog(tgt.name+' is poisoned!','poison');
     }
     else if(idx===8){
-      addStatus(playerStatuses,'smokeBomb','Smoke','\uD83D\uDCA3','#667788',1);
-      src.evasion=Math.min(0.8,(src.evasion||0)+0.45);
+      addStatus(playerStatuses,'smokeBomb',1);
+      var evaBonus=0.35+Math.min(0.20,(src.evasion||0));src.evasion=Math.min(0.8,(src.evasion||0)+evaBonus);
       addFloat(src.x,src.y-60,'+EVASION!','#667788');SFX.stealth();
       combatLog('Smoke bomb! +Evasion','spell');
     }
+    else if(idx===9){
+      // Charge: 150% of hero baseDmg
+      var chargeDmg=Math.round(src.baseDmg*1.5+(src.def||0));
+      var result=calcSkillDmg(src,tgt,chargeDmg);
+      if(result.evaded){addFloat(tgt.x,tgt.y-60,'DODGE!','#88ccff');SFX.dodge();combatLog(tgt.name+' dodges Charge!','miss');}
+      else{
+        tgt.hp-=result.amount;tgt.hurtAnim=1;
+        dmgDealt+=result.amount;if(deathMarkActive)deathMarkDmg+=result.amount;
+        addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+'\uD83D\uDCA5 '+result.amount,result.crit?'#ffcc22':'#cc4444');
+        SFX.hit();if(result.crit)SFX.crit();
+        combatLog('Charge hits for '+(result.crit?'CRIT ':'')+result.amount+' dmg','dmg');
+        addStatus(monsterStatuses,'stunned',1);combatLog(tgt.name+' is stunned by impact!','stun');
+      }
+    }
     else if(idx===10){
-      addStatus(monsterStatuses,'warcry','Slowed','\uD83D\uDCE2','#ffaa44',1);
-      tgt.baseDmg=Math.round(tgt.baseDmg*0.8);
+      addStatus(monsterStatuses,'warcry',1);
+      tgt.baseDmg=Math.round(tgt.baseDmg*(0.85-(src.def||0)*0.002));
       addFloat(tgt.x,tgt.y-60,'WAR CRY!','#ffaa44');SFX.warCry();
       combatLog('War Cry! '+tgt.name+' weakened','spell');
+    }
+    else if(idx===11){
+      // Frost Nova: damage + slow, if monster stunned/shocked → stun
+      var novaDmg=getSkillDmg(11,src);
+      var result=calcSkillDmg(src,tgt,novaDmg);
+      if(result.evaded){addFloat(tgt.x,tgt.y-60,'DODGE!','#88ccff');SFX.dodge();combatLog(tgt.name+' dodges Frost Nova!','miss');}
+      else{
+        tgt.hp-=result.amount;tgt.hurtAnim=1;
+        dmgDealt+=result.amount;if(deathMarkActive)deathMarkDmg+=result.amount;
+        addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+'\u2744 '+result.amount,result.crit?'#ffcc22':'#88ccff');
+        SFX.hit();if(result.crit)SFX.crit();
+        addStatus(monsterStatuses,'frostSlow',1);
+        combatLog('Frost Nova '+result.amount+' dmg + chill','spell');
+        // Shock combo: if monster has shocked status → stun 1 turn
+        var hasShock=false;for(var si=0;si<monsterStatuses.length;si++)if(monsterStatuses[si].id==='shocked')hasShock=true;
+        if(hasShock){addStatus(monsterStatuses,'frozen',1);playerStunnedByMonster=false;combatLog(tgt.name+' FROZEN!','stun');}
+      }
+    }
+    else if(idx===12){
+      // Arcane Drain: damage + self heal
+      var drainDmg=getSkillDmg(12,src);
+      var result=calcSkillDmg(src,tgt,drainDmg);
+      if(result.evaded){addFloat(tgt.x,tgt.y-60,'DODGE!','#aa88ff');SFX.dodge();combatLog(tgt.name+' dodges Drain!','miss');}
+      else{
+        tgt.hp-=result.amount;tgt.hurtAnim=1;
+        dmgDealt+=result.amount;if(deathMarkActive)deathMarkDmg+=result.amount;
+        var drainHeal=Math.round(40+(src.spellDmgBonus||0)*400);
+        src.hp=Math.min(src.maxHp,src.hp+drainHeal);
+        addFloat(tgt.x,tgt.y-60,'\u{1F49C} '+result.amount,'#aa88ff');
+        addFloat(src.x,src.y-50,'+'+drainHeal,'#44aa66');
+        combatLog('Arcane Drain '+result.amount+' dmg, heal '+drainHeal,'spell');
+      }
+    }
+    else if(idx===13){
+      // Rupture: pop poison stacks for burst
+      if(poisonTurnsLeft>0){
+        var stacks=poisonTurnsLeft;
+        var perStack=Math.round(30+(src.baseAS||0.5)*80);
+        var burstDmg=Math.round(stacks*perStack*(1-Math.min(tgt.def/300,0.8)));
+        tgt.hp-=burstDmg;tgt.hurtAnim=1;
+        dmgDealt+=burstDmg;if(deathMarkActive)deathMarkDmg+=burstDmg;
+        poisonStacks=0;poisonTurnsLeft=0;
+        for(var ri=monsterStatuses.length-1;ri>=0;ri--)if(monsterStatuses[ri].id==='poison')monsterStatuses.splice(ri,1);
+        addFloat(tgt.x,tgt.y-60,'\u{1FA78}x'+stacks+' '+burstDmg,'#cc4444');
+        combatLog('Rupture x'+stacks+' = '+burstDmg+' dmg!','dmg');
+      }else{
+        addFloat(src.x,src.y-60,'No bleeds!','#888');
+        combatLog('Rupture: no bleeds to pop','miss');
+      }
+    }
+    else if(idx===14){
+      // Marked for Death: vulnerable debuff
+      var amp=0.08+(src.baseAS||0.5)*0.08;
+      monsterVulnerable=true;monsterVulnerableAmp=amp;
+      tgt.vulnerable=true;tgt.vulnerableEnd=Infinity;
+      addStatus(monsterStatuses,'vulnerable',2);
+      addFloat(tgt.x,tgt.y-60,'VULNERABLE +'+Math.round(amp*100)+'%','#ff8844');
+      combatLog(tgt.name+' vulnerable! +'+Math.round(amp*100)+'% dmg taken','spell');
+    }
+    else if(idx===15){
+      // Lacerate: execute based on missing HP
+      var missingPct=1-tgt.hp/tgt.maxHp;
+      var lacDmg=Math.round(src.baseDmg*(0.5+(src.evasion||0)*2)*missingPct*(1-Math.min(tgt.def/300,0.8)));
+      if(lacDmg<1)lacDmg=1;
+      var result=calcSkillDmg(src,tgt,lacDmg);
+      if(result.evaded){addFloat(tgt.x,tgt.y-60,'DODGE!','#ff2222');SFX.dodge();combatLog(tgt.name+' dodges Lacerate!','miss');}
+      else{
+        tgt.hp-=result.amount;tgt.hurtAnim=1;
+        dmgDealt+=result.amount;if(deathMarkActive)deathMarkDmg+=result.amount;
+        addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+'\u{1F5E1} '+result.amount,'#ff2222');
+        SFX.hit();if(result.crit)SFX.crit();
+        combatLog('Lacerate '+result.amount+' ('+Math.round(missingPct*100)+'% missing HP)','dmg');
+        poisonTurnsLeft=Math.max(poisonTurnsLeft,1);poisonDmg=Math.max(poisonDmg,Math.round(src.baseDmg*0.3));
+        addStatus(monsterStatuses,'bleed',2);combatLog(tgt.name+' is bleeding!','debuff');
+      }
+    }
+    else if(idx===16){
+      // Riposte: counter stance
+      riposteReady=true;
+      riposteDmg=Math.round(src.baseDmg*0.8+(src.evasion||0)*400);
+      src.riposteActive=true;src.riposteEnd=Infinity;
+      addStatus(playerStatuses,'riposte',1);
+      addFloat(src.x,src.y-60,'RIPOSTE','#ccccff');
+      combatLog('Riposte stance! Counter '+riposteDmg+' dmg','spell');
+    }
+    else if(idx===17){
+      // Battle Trance: convert DEF to DMG
+      tranceDmgBonus=Math.round((src.def||0)*0.6);
+      tranceDefLoss=Math.round((src.def||0)*0.4);
+      src.baseDmg+=tranceDmgBonus;src.def-=tranceDefLoss;
+      tranceActive=true;tranceRounds=2;
+      src.tranceActive=true;src.tranceEnd=Infinity;
+      addStatus(playerStatuses,'trance',2);
+      addFloat(src.x,src.y-60,'TRANCE +'+tranceDmgBonus+' DMG','#ff4444');
+      combatLog('Battle Trance! +'+tranceDmgBonus+' DMG, -'+tranceDefLoss+' DEF','spell');
+    }
+    else if(idx===18){
+      // Thorns: reflect damage
+      var tPct=0.15+(src.def||0)*0.005;
+      thornsPct=Math.min(0.5,tPct);thornsActive=true;thornsRounds=2;
+      src.thornsActive=true;src.thornsEnd=Infinity;
+      addStatus(playerStatuses,'thorns',2);
+      addFloat(src.x,src.y-60,'THORNS '+Math.round(thornsPct*100)+'%','#44cc44');
+      combatLog('Thorns! Reflect '+Math.round(thornsPct*100)+'%','spell');
     }
   }
 }
@@ -631,7 +822,7 @@ function applyUltEffect(src,tgt){
     // Thunderstorm: 4x150dmg + 35% lifesteal
     var totalD=0,totalH=0;
     for(var i=0;i<4;i++){
-      var hd=150*(1+(src.spellDmgBonus||0))*(1-Math.min(tgt.def/300,0.8));
+      var hd=(90+(src.maxHp||1500)*0.04)*(1+(src.spellDmgBonus||0))*(1-Math.min(tgt.def/300,0.8));
       hd=Math.round(hd*(0.9+Math.random()*0.2));
       if(Math.random()>=(tgt.evasion||0)){
         tgt.hp-=hd;totalD+=hd;
@@ -647,29 +838,74 @@ function applyUltEffect(src,tgt){
   }
   else if(idx===1){
     // Rain of Fire: 1 round invuln + 1 extra attack + fire dmg
-    playerInvulnRounds=1;playerExtraAttacks=1;
-    addStatus(playerStatuses,'invuln','Invulnerable','\uD83D\uDD25','#ff8833',99);
+    playerInvulnRounds=1;playerExtraAttacks=1+Math.floor((src.baseAS||0.5)/1.25);
+    addStatus(playerStatuses,'invuln',99);
     addFloat(src.x,src.y-60,'RAIN OF FIRE!','#ff8833');
     var fireDmg=Math.round(src.baseDmg*2*(1-Math.min(tgt.def/300,0.8)));
     tgt.hp-=fireDmg;tgt.hurtAnim=1;dmgDealt+=fireDmg;
     addFloat(tgt.x,tgt.y-70,'\uD83D\uDD25 '+fireDmg,'#ff6622');SFX.fire();
-    combatLog('Rain of Fire! '+fireDmg+' dmg + invulnerability (1 round)','ult');
+    burnDmg=Math.round(src.baseDmg*0.5);burnTurnsLeft=3;
+    tgt.burning=true;tgt.burnEnd=Infinity;
+    addStatus(monsterStatuses,'burn',99);
+    combatLog('Rain of Fire! '+fireDmg+' dmg + burn + invulnerability (1 round)','ult');
   }
   else if(idx===2){
     // Death Mark: track 2 rounds, detonate at 75%
-    deathMarkActive=true;deathMarkDmg=0;deathMarkRounds=2;
-    addStatus(monsterStatuses,'deathMark','Death Mark','\u2620','#ff8800',99);
+    deathMarkActive=true;deathMarkDmg=0;deathMarkRounds=2+Math.floor((src.evasion||0)/0.2);
+    addStatus(monsterStatuses,'deathMark',99);
     addFloat(tgt.x,tgt.y-60,'\u2620 DEATH MARK!','#ff8800');
     src.combo=(src.combo||0)+3;
-    combatLog('Death Mark placed on '+tgt.name+'! (2 rounds)','ult');
+    combatLog('Death Mark placed on '+tgt.name+'! ('+deathMarkRounds+' rounds)','ult');
   }
   else if(idx===3){
     // Berserker Rage: +35% dmg for 2 rounds
-    playerDmgBuff=0.35;playerDmgBuffRounds=2;
-    addStatus(playerStatuses,'berserk','Berserker','\uD83D\uDC80','#ff4444',99);
+    playerDmgBuff=0.25+(src.def||0)*0.003;playerDmgBuffRounds=2+Math.floor((src.def||0)/30);
+    addStatus(playerStatuses,'berserk',99);
     addFloat(src.x,src.y-60,'BERSERKER RAGE!','#ff4444');
     src.ultActive=true;SFX.charge();
-    combatLog('Berserker Rage! +35% dmg for 2 rounds','ult');
+    combatLog('Berserker Rage! +'+Math.round(playerDmgBuff*100)+'% dmg for '+playerDmgBuffRounds+' rounds','ult');
+  }
+  else if(idx===4){
+    // Arcane Overload: burst damage + free spells
+    var burstDmg=Math.round((200+(src.maxHp||1500)*0.08)*(1+(src.spellDmgBonus||0))*(1-Math.min(tgt.def/300,0.8)));
+    tgt.hp-=burstDmg;tgt.hurtAnim=1;dmgDealt+=burstDmg;if(deathMarkActive)deathMarkDmg+=burstDmg;
+    freeSpellsRounds=2+Math.floor((src.maxHp||1500)/800);
+    addFloat(tgt.x,tgt.y-70,'\u2728 '+burstDmg,'#aa88ff');
+    addFloat(src.x,src.y-60,'FREE SPELLS!','#aa88ff');
+    src.freeSpellsActive=true;src.freeSpellsEnd=Infinity;
+    addStatus(playerStatuses,'freeSpells',99);
+    SFX.thunder();
+    burnDmg=Math.round(burstDmg*0.15);burnTurnsLeft=2;
+    tgt.burning=true;tgt.burnEnd=Infinity;
+    addStatus(monsterStatuses,'burn',99);
+    combatLog('Arcane Overload! '+burstDmg+' dmg + burn + free spells for '+freeSpellsRounds+' rounds!','ult');
+  }
+  else if(idx===5){
+    // Primal Fury: bleed on hit + extra attacks
+    primalFuryRounds=3+Math.floor((src.baseAS||0.5)/0.5);
+    src.primalActive=true;src.primalEnd=Infinity;
+    addStatus(playerStatuses,'primalFury',99);
+    addFloat(src.x,src.y-60,'PRIMAL FURY!','#ff6622');
+    SFX.charge();
+    combatLog('Primal Fury! Extra attacks + bleed for '+primalFuryRounds+' rounds!','ult');
+  }
+  else if(idx===6){
+    // Shadow Dance: persistent stealth
+    shadowDanceRounds=3+Math.floor((src.evasion||0)/0.15);
+    src.stealthed=true;src.shadowDanceActive=true;src.shadowDanceEnd=Infinity;
+    addStatus(playerStatuses,'shadowDance',99);
+    addFloat(src.x,src.y-60,'SHADOW DANCE!','#6644aa');
+    SFX.stealth();
+    combatLog('Shadow Dance! Stealth for '+shadowDanceRounds+' rounds!','ult');
+  }
+  else if(idx===7){
+    // Last Stand: can't die + heal after
+    lastStandRounds=2+Math.floor((src.def||0)/40);
+    src.lastStandActive=true;src.lastStandEnd=Infinity;
+    addStatus(playerStatuses,'lastStand',99);
+    addFloat(src.x,src.y-60,'LAST STAND!','#ffcc22');
+    SFX.warCry();
+    combatLog('Last Stand! Cannot die for '+lastStandRounds+' rounds!','ult');
   }
 }
 
@@ -691,20 +927,24 @@ function applyFleeEffect(){
 }
 
 // ===== STATUS HELPERS =====
-function addStatus(arr,id,name,icon,color,turns){
+// Adds or refreshes a status effect using the registry for metadata.
+// Replaces any existing instance of the same id (no stacking, just refresh).
+function addStatus(arr,id,turns){
+  var def=STATUS_EFFECTS[id];
+  if(!def){console.warn('Unknown status:',id);return;}
   for(var i=arr.length-1;i>=0;i--)if(arr[i].id===id)arr.splice(i,1);
-  arr.push({id:id,name:name,icon:icon,color:color,turnsLeft:turns});
+  arr.push({id:id,name:def.name,icon:def.icon,color:def.color,category:def.category,desc:def.desc,turnsLeft:turns});
 }
 
 function tickStatuses(arr){
   for(var i=arr.length-1;i>=0;i--){
     var s=arr[i];
     // Skip round-based statuses (managed by tickRoundDurations)
-    if(s.id==='invuln'||s.id==='berserk'||s.id==='deathMark'||s.id==='enraged'||s.id==='monsterPoison')continue;
+    if(s.id==='invuln'||s.id==='berserk'||s.id==='deathMark'||s.id==='enraged'||s.id==='monsterPoison'||s.id==='trance'||s.id==='thorns'||s.id==='vulnerable'||s.id==='shadowDance'||s.id==='lastStand'||s.id==='primalFury'||s.id==='freeSpells'||s.id==='burn')continue;
     s.turnsLeft--;
     if(s.turnsLeft<=0){
       if(s.id==='shield'&&state.h1){state.h1.shieldActive=false;state.h1.shieldHp=0;}
-      if(s.id==='stealth'&&state.h1){state.h1.stealthed=false;}
+      if(s.id==='stealth'&&state.h1&&shadowDanceRounds<=0){state.h1.stealthed=false;}
       if(s.id==='smokeBomb'&&state.h1){state.h1.evasion=Math.max(0,(state.h1.evasion||0)-0.45);}
       if(s.id==='bloodlust')bloodlustActive=false;
       if(s.id==='monsterPoison'){/* tracked separately by poisonTurnsLeft */}
@@ -784,7 +1024,7 @@ function advanceTurn(){
       setTimeout(function(){advanceTurn();},400);
       return;
     }
-    turnNum++;
+    turnNum++;primalExtraUsed=false;
     phase='pick';
     enableButtons(true);
     showTurnText('Turn '+turnNum+' \u2014 Choose your action!');
@@ -845,6 +1085,91 @@ function tickRoundDurations(){
   // Monster special cooldowns tick
   for(var si=0;si<monsterSpecials.length;si++){
     if(monsterSpecials[si].cd>0)monsterSpecials[si].cd--;
+  }
+  // Tick new round-based statuses
+  if(tranceRounds>0){
+    tranceRounds--;
+    if(tranceRounds<=0&&tranceActive){
+      tranceActive=false;
+      if(state.h1){state.h1.baseDmg-=tranceDmgBonus;state.h1.def+=tranceDefLoss;state.h1.tranceActive=false;}
+      tranceDmgBonus=0;tranceDefLoss=0;
+      for(var ti=playerStatuses.length-1;ti>=0;ti--)if(playerStatuses[ti].id==='trance')playerStatuses.splice(ti,1);
+      combatLog('Battle Trance fades','spell');
+    }
+  }
+  if(thornsRounds>0){
+    thornsRounds--;
+    if(thornsRounds<=0){
+      thornsActive=false;thornsPct=0;
+      if(state.h1)state.h1.thornsActive=false;
+      for(var thi=playerStatuses.length-1;thi>=0;thi--)if(playerStatuses[thi].id==='thorns')playerStatuses.splice(thi,1);
+      combatLog('Thorns fades','spell');
+    }
+  }
+  if(monsterVulnerable){
+    // Vulnerable lasts 2 rounds tracked by status turnsLeft — tick manually
+    var vulnFound=false;
+    for(var vi=monsterStatuses.length-1;vi>=0;vi--){
+      if(monsterStatuses[vi].id==='vulnerable'){
+        monsterStatuses[vi].turnsLeft--;
+        if(monsterStatuses[vi].turnsLeft<=0){monsterStatuses.splice(vi,1);monsterVulnerable=false;monsterVulnerableAmp=0;if(state.h2)state.h2.vulnerable=false;combatLog('Vulnerable fades','spell');}
+        vulnFound=true;break;
+      }
+    }
+    if(!vulnFound){monsterVulnerable=false;monsterVulnerableAmp=0;}
+  }
+  if(shadowDanceRounds>0){
+    shadowDanceRounds--;
+    if(shadowDanceRounds<=0){
+      if(state.h1){state.h1.stealthed=false;state.h1.shadowDanceActive=false;}
+      for(var sdi=playerStatuses.length-1;sdi>=0;sdi--)if(playerStatuses[sdi].id==='shadowDance')playerStatuses.splice(sdi,1);
+      combatLog('Shadow Dance fades','spell');
+    }else{
+      if(state.h1)state.h1.stealthed=true;
+    }
+  }
+  if(lastStandRounds>0){
+    lastStandRounds--;
+    if(lastStandRounds<=0){
+      if(state.h1){
+        var lsHeal=Math.round(state.h1.maxHp*0.2);
+        state.h1.hp=Math.min(state.h1.maxHp,state.h1.hp+lsHeal);
+        addFloat(state.h1.x,state.h1.y-60,'+'+lsHeal+' HP','#44aa66');
+        combatLog('Last Stand ends, heals '+lsHeal+'!','heal');
+        state.h1.lastStandActive=false;
+      }
+      for(var lsi=playerStatuses.length-1;lsi>=0;lsi--)if(playerStatuses[lsi].id==='lastStand')playerStatuses.splice(lsi,1);
+    }
+  }
+  if(primalFuryRounds>0){
+    primalFuryRounds--;
+    if(primalFuryRounds<=0){
+      if(state.h1)state.h1.primalActive=false;
+      for(var pfi=playerStatuses.length-1;pfi>=0;pfi--)if(playerStatuses[pfi].id==='primalFury')playerStatuses.splice(pfi,1);
+      combatLog('Primal Fury fades','spell');
+    }
+  }
+  if(freeSpellsRounds>0){
+    freeSpellsRounds--;
+    if(freeSpellsRounds<=0){
+      if(state.h1)state.h1.freeSpellsActive=false;
+      for(var fsi=playerStatuses.length-1;fsi>=0;fsi--)if(playerStatuses[fsi].id==='freeSpells')playerStatuses.splice(fsi,1);
+      combatLog('Free Spells fades','spell');
+    }
+  }
+  // Burn DoT on monster round
+  if(burnTurnsLeft>0&&state.h2){
+    state.h2.hp-=burnDmg;state.h2.hurtAnim=1;dmgDealt+=burnDmg;
+    if(deathMarkActive)deathMarkDmg+=burnDmg;
+    addFloat(state.h2.x,state.h2.y-50,'\uD83D\uDD25 '+burnDmg,'#ff6622');
+    combatLog('Burn deals '+burnDmg+' dmg','debuff');
+    burnTurnsLeft--;
+    if(burnTurnsLeft<=0){
+      burnDmg=0;
+      if(state.h2)state.h2.burning=false;
+      for(var bi=monsterStatuses.length-1;bi>=0;bi--)if(monsterStatuses[bi].id==='burn')monsterStatuses.splice(bi,1);
+      combatLog('Burn fades','spell');
+    }
   }
   // Mana regen on monster round
   var hero=state.h1;
@@ -930,7 +1255,7 @@ function applyCompanionAbility(){
     // Stun: damage + stun 1 turn
     var stunDmg=Math.round(companionDmg*1.5*(1-Math.min(monster.def/300,0.8)));
     monster.hp-=stunDmg;monster.hurtAnim=1;dmgDealt+=stunDmg;
-    addStatus(monsterStatuses,'stunned','Stunned','\uD83D\uDCAB','#ffcc22',1);
+    addStatus(monsterStatuses,'stunned',1);
     addFloat(monster.x,monster.y-60,'\uD83D\uDCAB STUN '+stunDmg,'#ffcc22');
     SFX.stun();combatLog(companionName+' stuns '+monster.name+' for '+stunDmg+'!','stun');
   }else if(name.indexOf('Hawk')>=0||name.indexOf('Wolf')>=0||name.indexOf('Panther')>=0||name.indexOf('Raptor')>=0||name.indexOf('Bear')>=0){
@@ -974,6 +1299,11 @@ function finishAnim(){
       phase='playerAnim';animAction='attack';animSource=hero;animTarget=monster;
       animTimer=0;animDuration=200;showTurnText('Rain of Fire: Extra attack!');return;
     }
+    if(primalFuryRounds>0&&animAction==='attack'&&!primalExtraUsed){
+      primalExtraUsed=true;
+      phase='playerAnim';animAction='attack';animSource=hero;animTarget=monster;
+      animTimer=0;animDuration=200;showTurnText('Primal Fury: Savage strike!');return;
+    }
     // Use AP system to determine next turn
     calcTimelinePreview();
     setTimeout(function(){advanceTurn();},100);
@@ -993,7 +1323,7 @@ function finishAnim(){
     }
     // Companion splash damage from monster attack
     if(companionAlive&&companionHp>0&&animAction==='monsterAttack'){
-      var splash=Math.round(monster.baseDmg*0.3*(1-Math.min(companionDef/300,0.8)));
+      var splash=Math.round(monster.baseDmg*0.4*(1-Math.min(companionDef/300,0.8)));
       if(splash>0){
         companionHp-=splash;
         addFloat(hero.x+30,hero.y+10,companionIcon+' -'+splash,'#cc66ff');
@@ -1074,7 +1404,7 @@ function executeMonsterSpecial(specId,hero,monster){
     if(!monsterEnraged){
       monsterEnraged=true;monsterEnragedRounds=2;
       monster.baseDmg=Math.round(monster.baseDmg*1.5);
-      addStatus(monsterStatuses,'enraged','Enraged','\uD83D\uDCA2','#ff4444',99);
+      addStatus(monsterStatuses,'enraged',99);
     }
     addFloat(monster.x,monster.y-60,'\uD83D\uDCA2 ENRAGE!','#ff4444');SFX.charge();
     combatLog(monster.name+' is enraged! +50% damage!','spell');
@@ -1086,7 +1416,7 @@ function executeMonsterSpecial(specId,hero,monster){
   else if(specId==='poisonSpit'){
     // 3 rounds poison on hero, replaces attack
     heroPoisonTurns=3;
-    addStatus(playerStatuses,'monsterPoison','Poisoned','\u2620','#88cc44',99);
+    addStatus(playerStatuses,'monsterPoison',99);
     addFloat(hero.x,hero.y-60,'\u2620 POISONED!','#88cc44');SFX.poison();
     combatLog(monster.name+' poisons '+hero.name+'!','poison');
     showTurnText('\u2620 '+monster.name+' spits venom!');
@@ -1273,8 +1603,25 @@ function dgRender(now){
     ctx.fillText(companionIcon+' '+companionName,state.h1.x+18,state.h1.y+2);
   }
   // Status icons
+  statusHitboxes=[];
   drawStatuses(ctx,playerStatuses,state.h1);
   drawStatuses(ctx,monsterStatuses,state.h2);
+  // Status tooltip on hover
+  if(dgMouseX>=0&&dgMouseY>=0){
+    for(var shi=0;shi<statusHitboxes.length;shi++){
+      var hb=statusHitboxes[shi];
+      if(dgMouseX>=hb.x&&dgMouseX<=hb.x+hb.w&&dgMouseY>=hb.y&&dgMouseY<=hb.y+hb.h){
+        var ttW=140,ttH=36,ttX=Math.min(hb.x,CW-ttW-4),ttY2=hb.y-ttH-4;
+        ctx.fillStyle='rgba(0,0,0,0.85)';ctx.strokeStyle=hb.border;ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(ttX,ttY2,ttW,ttH,4);ctx.fill();ctx.stroke();
+        ctx.fillStyle=hb.color;ctx.font='bold 10px "Cinzel"';ctx.textAlign='left';ctx.textBaseline='top';
+        ctx.fillText(hb.name,ttX+6,ttY2+4);
+        ctx.fillStyle='#ccc';ctx.font='9px "Cinzel"';
+        ctx.fillText(hb.desc,ttX+6,ttY2+18);
+        break;
+      }
+    }
+  }
   // Floating numbers
   for(var fli=0;fli<floats.length;fli++){
     var f=floats[fli];
@@ -1369,16 +1716,35 @@ function dgRender(now){
 }
 
 // ===== DRAW STATUS ICONS =====
+// Renders category-colored pills below each fighter with icon + turn counter.
+// Stores hitbox rects for canvas tooltip hover detection in dgRender.
+var statusHitboxes=[];
 function drawStatuses(ctx,statuses,hero){
   if(!hero||statuses.length===0)return;
-  var startX=hero.x-(statuses.length*18)/2;
-  var y=hero.y+14;
+  var pw=24,ph=20,gap=2;
+  var totalW=statuses.length*pw+(statuses.length-1)*gap;
+  var startX=hero.x-totalW/2;
+  var y=hero.y+16;
   for(var i=0;i<statuses.length;i++){
     var s=statuses[i];
-    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(startX+i*18-1,y-1,16,14);
-    ctx.fillStyle=s.color;ctx.font='10px sans-serif';ctx.textAlign='center';
-    ctx.fillText(s.icon,startX+i*18+7,y+10);
-    ctx.fillStyle='#fff';ctx.font='bold 7px "Cinzel"';
-    ctx.fillText(s.turnsLeft,startX+i*18+13,y+4);
+    var px=startX+i*(pw+gap);
+    var cat=CATEGORY_COLORS[s.category]||CATEGORY_COLORS.debuff;
+    // pill background
+    ctx.fillStyle=cat.bg;ctx.strokeStyle=cat.border;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(px,y,pw,ph,3);ctx.fill();ctx.stroke();
+    // subtle glow
+    ctx.shadowColor=s.color;ctx.shadowBlur=4;
+    ctx.fillStyle=s.color;ctx.font='13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.icon,px+pw/2,y+ph/2+1);
+    ctx.shadowBlur=0;
+    // turn counter (hide for permanent buffs)
+    if(s.turnsLeft<90){
+      ctx.fillStyle='rgba(0,0,0,0.7)';
+      ctx.beginPath();ctx.arc(px+pw-2,y+3,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 8px "Cinzel"';ctx.textBaseline='middle';
+      ctx.fillText(s.turnsLeft,px+pw-2,y+4);
+    }
+    // store hitbox for tooltip
+    statusHitboxes.push({x:px,y:y,w:pw,h:ph,name:s.name,desc:s.desc,color:s.color,border:cat.border});
   }
 }

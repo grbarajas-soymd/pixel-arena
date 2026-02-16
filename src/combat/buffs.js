@@ -72,8 +72,11 @@ function barbAI(b, t) {
 // =============== CUSTOM AI ===============
 function customAI(h, t) {
   if (isStunned(h)) return; h.resource = Math.min(h.maxResource, (h.resource || 0) + (h.resourceRegen || 2) * (TK / 1000));
-  if (h.customUltId !== null && ALL_ULTS[h.customUltId] && h.spells.ultimate && !h.spells.ultimate.used) { try { if (ALL_ULTS[h.customUltId].ai(h, t)) return } catch (e) { } }
-  for (var i = 0; i < (h.customSkillIds || []).length; i++) { var sk = h.customSkillIds[i], spell = h.spells[sk.key]; if (!spell || spell.cd > 0) continue; var origSkill0 = h.spells.skill0; h.spells.skill0 = spell; try { if (ALL_SKILLS[sk.idx].ai(h, t)) { h.spells.skill0 = origSkill0; return } } catch (e) { } h.spells.skill0 = origSkill0 }
+  var freeMode = h.freeSpellsActive && state.bt < h.freeSpellsEnd, savedRes = freeMode ? h.resource : -1;
+  if (freeMode) h.resource = 9999;
+  if (h.customUltId !== null && ALL_ULTS[h.customUltId] && h.spells.ultimate && !h.spells.ultimate.used) { try { if (ALL_ULTS[h.customUltId].ai(h, t)) { if (freeMode) h.resource = savedRes; return } } catch (e) { } }
+  for (var i = 0; i < (h.customSkillIds || []).length; i++) { var sk = h.customSkillIds[i], spell = h.spells[sk.key]; if (!spell || spell.cd > 0) continue; var origSkill0 = h.spells.skill0; h.spells.skill0 = spell; try { if (ALL_SKILLS[sk.idx].ai(h, t)) { h.spells.skill0 = origSkill0; if (freeMode) h.resource = savedRes; return } } catch (e) { } h.spells.skill0 = origSkill0 }
+  if (freeMode) h.resource = savedRes;
 }
 
 // =============== BUFF EXPIRY ===============
@@ -82,9 +85,9 @@ export function procExp(h, t) {
   if (h.type === 'wizard') { if (h.shieldActive && t >= h.shieldEnd) { h.shieldActive = false } if (h.ultActive && t >= h.ultEnd) { h.ultActive = false } }
   if (h.type === 'assassin') { if (h.stealthed && t >= h.stealthEnd) h.stealthed = false; if (h.envenomed && t >= h.envenomedEnd) h.envenomed = false; if (h.smokeBombActive && t >= h.smokeBombEnd) h.smokeBombActive = false; if (h.combo > 0 && h.atkCd > 200) h.combo = Math.max(0, h.combo - 0.5 * (TK / 1000)) }
   if (h.type === 'barbarian') { if (h.ultActive && t >= h.ultEnd) h.ultActive = false }
-  if (h.type === 'custom') { if (h.blActive && t >= h.blEnd) { h.blActive = false; var hl = h.blDmg * .35; h.hp = Math.min(h.maxHp, h.hp + hl); h.totHeal += hl; spFloat(h.x, h.y - 60, '+' + Math.round(hl), '#44aa66') } if (h.shieldActive && t >= h.shieldEnd) h.shieldActive = false; if (h.ultActive && t >= h.ultEnd) h.ultActive = false; if (h.stealthed && t >= h.stealthEnd) h.stealthed = false; if (h.envenomed && t >= h.envenomedEnd) h.envenomed = false; if (h.smokeBombActive && t >= h.smokeBombEnd) h.smokeBombActive = false }
+  if (h.type === 'custom') { if (h.blActive && t >= h.blEnd) { h.blActive = false; var hl = h.blDmg * .35; h.hp = Math.min(h.maxHp, h.hp + hl); h.totHeal += hl; spFloat(h.x, h.y - 60, '+' + Math.round(hl), '#44aa66') } if (h.shieldActive && t >= h.shieldEnd) h.shieldActive = false; if (h.ultActive && t >= h.ultEnd) h.ultActive = false; if (h.stealthed && t >= h.stealthEnd) h.stealthed = false; if (h.envenomed && t >= h.envenomedEnd) h.envenomed = false; if (h.smokeBombActive && t >= h.smokeBombEnd) h.smokeBombActive = false; if (h.tranceActive && t >= h.tranceEnd) { h.tranceActive = false; h.baseDmg -= (h.tranceDmg || 0); h.def += (h.tranceDefLoss || 0) } if (h.riposteActive && t >= h.riposteEnd) h.riposteActive = false; if (h.thornsActive && t >= h.thornsEnd) h.thornsActive = false; if (h.shadowDanceActive && t >= h.shadowDanceEnd) { h.shadowDanceActive = false; h.stealthed = false } if (h.lastStandActive && t >= h.lastStandEnd) { h.lastStandActive = false; var lsHeal = Math.round(h.maxHp * 0.2); h.hp = Math.min(h.maxHp, h.hp + lsHeal); h.totHeal = (h.totHeal || 0) + lsHeal; spFloat(h.x, h.y - 60, '+' + lsHeal, '#44aa66') } if (h.primalActive && t >= h.primalEnd) h.primalActive = false; if (h.freeSpellsActive && t >= h.freeSpellsEnd) h.freeSpellsActive = false }
   if (h.deathMarkTarget && t >= h.deathMarkEnd) { h.deathMarkTarget = false; const burst = h.deathMarkDmg * (CLASSES.assassin.deathMarkDmg || 0.85); h.hp -= burst; h.hurtAnim = 1; spFloat(h.x, h.y - 70, `\u2620${Math.round(burst)}`, '#ff4400'); spSparks(h.x, h.y - 30, 10, '#ff8800'); addLog(t, `Death Mark pops ${Math.round(burst)}!`, 'ult') }
-  if (h.slow > 0 && t >= h.slowEnd) h.slow = 0; if (h.shocked && t >= h.shockedEnd) h.shocked = false;
+  if (h.slow > 0 && t >= h.slowEnd) h.slow = 0; if (h.shocked && t >= h.shockedEnd) h.shocked = false; if (h.vulnerable && t >= h.vulnerableEnd) { h.vulnerable = false; h.vulnerableAmp = 0 } if (h.burning && t >= h.burnEnd) h.burning = false
 }
 
 export function procRes(h, dt) { if (h.type === 'wizard') { h.mana = Math.min(h.maxMana, h.mana + h.manaRegen * (dt / 1000)); if (h.charge > 0) { h.chargeDecayTimer += dt; if (h.chargeDecayTimer >= 4000) { h.chargeDecayTimer = 0; h.charge = Math.max(0, h.charge - 1) } } } if (h.type === 'assassin') h.energy = Math.min(h.maxEnergy, h.energy + h.energyRegen * (dt / 1000)) }
