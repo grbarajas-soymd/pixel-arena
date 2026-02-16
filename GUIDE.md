@@ -187,7 +187,7 @@ Gear comes in 6 rarities:
 | Dragonscale | Legendary | Chest | +40 DEF, +1000 HP, -5 Spd | Best tank chest |
 | Stormstriders | Legendary | Boots | +65 Spd, +8% Eva, +0.1 AS | Best boots |
 
-**Tip:** When a gear drop appears, the game shows a comparison against your currently equipped item in that slot. Look at the stat differences before deciding to equip or stash.
+**Tip:** Hover over any gear item (or long-press on mobile) to see a detailed tooltip with full stats and a comparison vs your currently equipped item in that slot. Green numbers mean the new item is better, red means worse. This works everywhere — equipment slots, gear bag, dungeon merchant, and loot drops.
 
 ---
 
@@ -331,6 +331,8 @@ Here you can:
 
 Your stat totals update live as you change gear. The preview canvas shows your hero sprite.
 
+**Tooltips:** Hover over any equipment slot, skill, or follower card to see detailed stats. On mobile, long-press (~0.4s) to show the tooltip, then release to dismiss it.
+
 ---
 
 ## Controls
@@ -345,6 +347,7 @@ Your stat totals update live as you change gear. The preview canvas shows your h
 | **Biome button** | Change the battle arena appearance |
 | **Sound button** | Toggle sound effects |
 | **Deploy** (dungeon sidebar) | Switch which captured follower is your active combat companion |
+| **Hover / Long-press** | Show detailed tooltip on gear, skills, followers, and items |
 
 ---
 
@@ -354,7 +357,7 @@ Your stat totals update live as you change gear. The preview canvas shows your h
 Save potions for the boss. Use shrines when you find them — the permanent stat buffs add up fast. Rest rooms are free healing. Capture a follower early — their passive buffs and combat companion help significantly. Watch for monster telegraphs and save stun skills to cancel dangerous specials.
 
 **Q: Should I equip or stash gear drops?**
-Check the comparison popup. If the new item is better in your key stats (DMG for damage dealers, HP/DEF for survival), equip it. Stash is useful if you want to keep your current item and try the new one later.
+Hover (or long-press on mobile) the gear to see a full stat comparison vs your equipped item — green stats are upgrades, red are downgrades. If the new item is better in your key stats (DMG for damage dealers, HP/DEF for survival), equip it. Stash is useful if you want to keep your current item and try the new one later. You can also hover gear in the merchant shop and your gear bag to compare before making decisions.
 
 **Q: Which skills should I pick?**
 For beginners: **Charge + War Cry** (both free, no resource management). For more damage: **Chain Lightning + Charge** (burst + gap close). For survival: **Static Shield + any damage skill**. For burst: **Shadow Step + Envenom** (rogue combo).
