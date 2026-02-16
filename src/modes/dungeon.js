@@ -24,7 +24,7 @@ function _attachMerchantGearTooltips(container){
 var DG_MONSTERS=[
   {name:'Goblin Scout',icon:'\u{1F47A}',hp:350,dmg:35,def:5,tier:1,monsterType:'humanoid',colors:{body:'#4a6a2a',accent:'#6a4a1a',eye:'#ffcc00'},specials:['heavyStrike']},
   {name:'Cave Bat',icon:'\u{1F987}',hp:220,dmg:45,def:2,tier:1,monsterType:'beast',colors:{body:'#3a2a2a',accent:'#5a3a3a',eye:'#ff4444'},specials:['enrage']},
-  {name:'Slime',icon:'\u{1F7E2}',hp:450,dmg:25,def:10,tier:1,monsterType:'blob',colors:{body:'#3a8a3a',accent:'#2a6a2a',eye:'#ffffff'},specials:['heal']},
+  {name:'Slime',icon:'\u{1F7E2}',hp:260,dmg:25,def:5,tier:1,monsterType:'blob',colors:{body:'#3a8a3a',accent:'#2a6a2a',eye:'#ffffff'},specials:['heal']},
   {name:'Skeleton',icon:'\u{1F480}',hp:380,dmg:40,def:8,tier:1,monsterType:'humanoid',colors:{body:'#8a8a7a',accent:'#5a5a4a',eye:'#ffdd44'},specials:['heavyStrike']},
   {name:'Orc Warrior',icon:'\u{1F479}',hp:700,dmg:65,def:18,tier:2,monsterType:'humanoid',colors:{body:'#4a5a2a',accent:'#6a3a1a',eye:'#ff6622'},specials:['heavyStrike','enrage']},
   {name:'Dark Mage',icon:'\u{1F9D9}',hp:500,dmg:90,def:10,tier:2,monsterType:'humanoid',colors:{body:'#3a2a5a',accent:'#5a3a7a',eye:'#cc66ff'},specials:['heal','warStomp']},

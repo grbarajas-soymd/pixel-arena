@@ -1094,8 +1094,8 @@ function executeMonsterSpecial(specId,hero,monster){
     setTimeout(function(){finishAnim();},300);return;
   }
   else if(specId==='heal'){
-    // Heal 20% maxHP, replaces attack
-    var healAmt=Math.round(monster.maxHp*0.2);
+    // Heal 15% maxHP, replaces attack
+    var healAmt=Math.round(monster.maxHp*0.15);
     monster.hp=Math.min(monster.maxHp,monster.hp+healAmt);
     addFloat(monster.x,monster.y-60,'+'+healAmt+' HP','#44aa66');SFX.heal();
     combatLog(monster.name+' regenerates '+healAmt+' HP!','heal');
