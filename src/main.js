@@ -25,7 +25,7 @@ import {
   dgUseShrine, dgBuyItem,
   generateRoom, dgProceedToLoot, dgProceedToCapture, endDungeonRun, dgVictory,
   _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear,
-  dgDeployFollower
+  dgDeployFollower, showCombatLogPopup, closeCombatLogPopup
 } from './modes/dungeon.js';
 
 // Custom character editor
@@ -389,6 +389,8 @@ window._dgActualGenerateRoom = _dgActualGenerateRoom;
 window.dgEquipGearDrop = dgEquipGearDrop;
 window.dgStashGearDrop = dgStashGearDrop;
 window.dgDeployFollower = dgDeployFollower;
+window.showCombatLogPopup = showCombatLogPopup;
+window.closeCombatLogPopup = closeCombatLogPopup;
 window.registerPlayer = registerPlayer;
 window.uploadBuild = uploadBuild;
 window.refreshOpponents = refreshOpponents;

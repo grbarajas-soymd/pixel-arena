@@ -604,5 +604,39 @@ body.is-mobile .game-tooltip{max-width:260px;pointer-events:auto}
 }
 .save-toast.show{opacity:1}
 
+/* Combat log popup */
+.cl-popup-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:500;
+  background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;
+}
+.cl-popup{
+  background:#1a1a0e;border:2px solid var(--panel-border);
+  max-width:500px;width:90%;max-height:80vh;display:flex;flex-direction:column;
+  font-family:'Cinzel',serif;
+}
+.cl-popup-header{
+  padding:10px 14px;font-size:.55rem;color:var(--gold);
+  border-bottom:1px solid var(--panel-border);position:relative;
+}
+.cl-popup-close{
+  position:absolute;top:6px;right:8px;background:none;border:none;
+  color:#aa5a5a;font-size:.5rem;cursor:pointer;padding:2px 6px;
+}
+.cl-popup-close:hover{color:#ff4444}
+.cl-popup-stats{
+  padding:6px 14px;font-size:.42rem;border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.cl-popup-entries{
+  padding:8px 14px;overflow-y:auto;flex:1;max-height:60vh;
+  scrollbar-width:thin;scrollbar-color:#3a2e1e transparent;
+}
+.cl-entry{font-size:.4rem;line-height:1.6;color:#ccccaa}
+.cl-turn{color:#666;font-size:.38rem;margin-right:4px}
+.cl-log-btn{
+  background:rgba(0,0,0,0.3)!important;border:1px solid var(--panel-border)!important;
+  color:var(--parch-dk)!important;font-size:.42rem!important;
+}
+.cl-log-btn:hover{border-color:var(--gold)!important;color:var(--gold)!important}
+
 /* Scrollbar global */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3a2e1e;border-radius:2px}

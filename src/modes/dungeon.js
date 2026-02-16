@@ -192,6 +192,7 @@ function dgUpdateProgress(){
 function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn,titleClass){
   var rc=document.getElementById('dgRoomContent');
   var r=state.dgRun;
+  var logBtn=(r._lastCombatLog&&r._lastCombatLog.length)?'<button class="dg-choice cl-log-btn" onclick="showCombatLogPopup()">\u{1F4DC} Combat Log</button>':'';
   rc.innerHTML='<div class="dg-intermission">'+
     '<div class="dg-im-title '+(titleClass||'')+'" style="color:'+(titleColor||'var(--parch)')+'">'+title+'</div>'+
     '<div class="dg-im-summary">'+bodyHtml+'</div>'+
@@ -201,7 +202,7 @@ function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn,titleClas
       '<span class="dg-im-stat" style="color:#88aacc">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:#cc66ff">Followers: '+r.followers.length+'</span>'+
     '</div>'+
-    '<div class="dg-choices"><button class="dg-choice gold-c" onclick="'+nextFn+'">'+(nextLabel||'\u27A1\uFE0F Continue')+'</button></div>'+
+    '<div class="dg-choices"><button class="dg-choice gold-c" onclick="'+nextFn+'">'+(nextLabel||'\u27A1\uFE0F Continue')+'</button>'+logBtn+'</div>'+
   '</div>';
   dgUpdateProgress();updateDgUI();
 }
@@ -842,7 +843,9 @@ export function dgDeath(){
       '<br><br>Followers kept: <b>'+kept.length+'/'+r.followers.length+'</b>'+
       (kept.length>0?'<br>'+followerList:'')+
     '</div>'+
-    '<div class="dg-choices"><button class="dg-choice" onclick="endDungeonRun()">\u21A9 Return</button></div></div>';
+    '<div class="dg-choices"><button class="dg-choice" onclick="endDungeonRun()">\u21A9 Return</button>'+
+    ((r._lastCombatLog&&r._lastCombatLog.length)?'<button class="dg-choice cl-log-btn" onclick="showCombatLogPopup()">\u{1F4DC} Combat Log</button>':'')+
+    '</div></div>';
   updateDgUI();
 }
 
@@ -873,7 +876,9 @@ export function dgVictory(){
       '<br><br>Bonus: <span style="color:'+RARITY_COLORS[bonus.rarity]+';font-size:.55rem">'+bonus.icon+' '+bonus.name+' ('+bonus.rarity+')</span>!'+
       bonusGearHtml+
     '</div>'+
-    '<div class="dg-choices"><button class="dg-choice gold-c" onclick="endDungeonRun()">\u{1F3C6} Return Victorious</button></div></div>';
+    '<div class="dg-choices"><button class="dg-choice gold-c" onclick="endDungeonRun()">\u{1F3C6} Return Victorious</button>'+
+    ((r._lastCombatLog&&r._lastCombatLog.length)?'<button class="dg-choice cl-log-btn" onclick="showCombatLogPopup()">\u{1F4DC} Combat Log</button>':'')+
+    '</div></div>';
   updateDgUI();
 }
 
@@ -891,4 +896,40 @@ export function abandonDungeon(){
   if(!confirm('Abandon run? You keep followers and gear found so far.'))return;
   state.dgRun.followers.forEach(function(f){if(!f._brought)state.p1Collection.push(f)});
   endDungeonRun();
+}
+
+// =============== COMBAT LOG POPUP ===============
+export function showCombatLogPopup(){
+  var r=state.dgRun;
+  if(!r||!r._lastCombatLog||!r._lastCombatLog.length)return;
+  var existing=document.getElementById('combatLogPopup');
+  if(existing)existing.remove();
+  var cls={dmg:'#ff8844',heal:'#5a9a5a',spell:'#aa88ff',miss:'#888888',death:'#ff4444',ult:'#ffcc22',stun:'#ffcc22',bleed:'#cc4444',summon:'#44cccc',poison:'#88cc44'};
+  var stats=r._lastCombatStats||{};
+  var html='<div class="cl-popup-header">'+
+    (stats.monsterIcon||'\u2694')+' <b>'+((stats.monsterName)||'Combat')+'</b> \u2014 '+
+    (stats.turns||'?')+' turns'+
+    '<button class="cl-popup-close" onclick="closeCombatLogPopup()">\u2716</button>'+
+    '</div>'+
+    '<div class="cl-popup-stats">'+
+    '<span style="color:#ff8844">Dealt: '+(stats.dmgDealt||0)+'</span> \u2022 '+
+    '<span style="color:#aa5a5a">Taken: '+(stats.dmgTaken||0)+'</span>'+
+    '</div>'+
+    '<div class="cl-popup-entries">';
+  r._lastCombatLog.forEach(function(e){
+    var col=cls[e.typ]||'#ccccaa';
+    html+='<div class="cl-entry"><span class="cl-turn">[T'+e.t+']</span> <span style="color:'+col+'">'+e.txt+'</span></div>';
+  });
+  html+='</div>';
+  var popup=document.createElement('div');
+  popup.id='combatLogPopup';
+  popup.className='cl-popup-overlay';
+  popup.innerHTML='<div class="cl-popup">'+html+'</div>';
+  popup.addEventListener('click',function(ev){if(ev.target===popup)closeCombatLogPopup()});
+  document.body.appendChild(popup);
+}
+
+export function closeCombatLogPopup(){
+  var el=document.getElementById('combatLogPopup');
+  if(el)el.remove();
 }

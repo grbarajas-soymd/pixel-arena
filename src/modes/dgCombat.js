@@ -1132,6 +1132,7 @@ function endCombat(result){
     monsterName:state._dgCombatMonster?state._dgCombatMonster.name:'Unknown',
     monsterIcon:state._dgCombatMonster?state._dgCombatMonster.icon:'\u2694'
   };
+  run._lastCombatLog=state.logs?state.logs.slice():[];
   run.totalDmgDealt=(run.totalDmgDealt||0)+Math.round(dmgDealt);
   run.totalDmgTaken=(run.totalDmgTaken||0)+Math.round(dmgTaken);
   state.h1=null;state.h2=null;state.over=false;
