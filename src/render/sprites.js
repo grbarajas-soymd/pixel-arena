@@ -1012,8 +1012,240 @@ function drawAccessoryLayer(h){
   }
 }
 
+// ====== MONSTER SPRITE TEMPLATES ======
+function drawMonsterHumanoid(h,cols,stunned){
+  var ctx=state.ctx;
+  var c=cols||{body:'#4a6a2a',accent:'#6a4a1a',eye:'#ffcc00'};
+  // Feet
+  px3d(-9,0,6,4,darken(c.body,0.3));px3d(3,0,6,4,darken(c.body,0.3));
+  // Legs
+  px3d(-7,-4,5,6,darken(c.body,0.15));px3d(2,-4,5,6,darken(c.body,0.15));
+  // Body
+  px3d(-11,-20,22,18,c.body);
+  px(-3,-18,1,14,darken(c.body,0.2));px(2,-18,1,14,darken(c.body,0.2));
+  px(0,-19,1,12,lighten(c.body,0.15));
+  // Collar
+  px3d(-9,-22,18,4,c.accent);px(-8,-22,16,1,lighten(c.accent,0.25));
+  // Arms
+  px3d(-13,-18,4,10,darken(c.body,0.1));px3d(9,-18,4,10,darken(c.body,0.1));
+  // Belt
+  px3d(-9,-4,18,3,c.accent);px(-1,-3,2,2,lighten(c.accent,0.3));
+  // Head
+  px3d(-7,-35,14,13,lighten(c.body,0.2));
+  px(-6,-35,12,1,lighten(c.body,0.35));
+  // Eyes
+  px(-4,-30,3,3,'#111');px(1,-30,3,3,'#111');
+  px(-3,-29,2,2,c.eye);px(2,-29,2,2,c.eye);
+  ctx.shadowColor=c.eye;ctx.shadowBlur=2;
+  px(-3,-29,1,1,lighten(c.eye,0.4));px(2,-29,1,1,lighten(c.eye,0.4));
+  ctx.shadowBlur=0;
+  // Mouth
+  px(-3,-25,6,2,darken(c.body,0.4));px(-2,-24,4,1,'#ddd');
+  // Helmet/head armor
+  px3d(-8,-40,16,7,c.accent);px3d(-6,-42,12,4,darken(c.accent,0.15));
+  px(-7,-40,14,1,lighten(c.accent,0.2));
+  // Weapon — sword on right side
+  px(12,-40,2,36,darken(c.accent,0.1));px(13,-40,1,36,lighten(c.accent,0.25));
+  px3d(10,-42,6,4,c.accent);
+  px(14,-40,2,6,lighten(c.accent,0.35));
+  // Shoulder pads
+  px3d(-13,-16,4,5,c.accent);px3d(9,-16,4,5,c.accent);
+}
+
+function drawMonsterBeast(h,cols,stunned){
+  var ctx=state.ctx;
+  var c=cols||{body:'#5a3a2a',accent:'#3a2a1a',eye:'#ff4444'};
+  // Feet — wide, heavy
+  px3d(-12,0,8,5,darken(c.body,0.3));px3d(4,0,8,5,darken(c.body,0.3));
+  // Claws
+  px(-12,-1,2,3,'#ddd');px(-8,-1,2,3,'#ddd');px(5,-1,2,3,'#ddd');px(9,-1,2,3,'#ddd');
+  // Legs — thick
+  px3d(-10,-6,7,8,darken(c.body,0.15));px3d(3,-6,7,8,darken(c.body,0.15));
+  // Hunched body — wider
+  px3d(-14,-24,28,20,c.body);
+  px(-14,-24,1,20,darken(c.body,0.25));px(13,-24,1,20,lighten(c.body,0.1));
+  // Muscle highlights
+  px(-8,-20,6,6,lighten(c.body,0.12));px(2,-20,6,6,lighten(c.body,0.12));
+  px(0,-22,1,14,lighten(c.body,0.1));
+  // Chest fur/mark
+  px(-4,-16,8,6,c.accent);px(-3,-15,6,4,lighten(c.accent,0.15));
+  // Arms — thick, hanging
+  px3d(-17,-22,5,14,c.body);px(-17,-22,1,14,darken(c.body,0.25));
+  px(-16,-18,2,4,lighten(c.body,0.12));
+  px3d(12,-22,5,14,c.body);px(16,-22,1,14,lighten(c.body,0.12));
+  // Arm claws
+  px(-17,-8,2,3,'#ddd');px(-14,-8,2,3,'#ddd');px(13,-8,2,3,'#ddd');px(16,-8,2,3,'#ddd');
+  // Head — slightly above body, brutish
+  px3d(-9,-38,18,16,lighten(c.body,0.1));
+  px(-8,-38,16,1,lighten(c.body,0.25));
+  // Brow ridge
+  px3d(-8,-38,16,4,darken(c.body,0.2));
+  // Eyes — angry, small
+  px(-5,-33,3,2,c.eye);px(3,-33,3,2,c.eye);
+  ctx.shadowColor=c.eye;ctx.shadowBlur=3;
+  px(-4,-33,1,1,lighten(c.eye,0.5));px(4,-33,1,1,lighten(c.eye,0.5));
+  ctx.shadowBlur=0;
+  // Snout / jaw
+  px3d(-5,-27,10,5,lighten(c.body,0.15));
+  px(-4,-24,8,2,darken(c.body,0.3));px(-3,-23,6,1,'#ddd');
+  // Horns/ears
+  px3d(-9,-42,4,6,c.accent);px3d(5,-42,4,6,c.accent);
+  px(-8,-44,2,3,lighten(c.accent,0.2));px(6,-44,2,3,lighten(c.accent,0.2));
+}
+
+function drawMonsterBlob(h,cols,stunned){
+  var ctx=state.ctx;
+  var c=cols||{body:'#3a8a3a',accent:'#2a6a2a',eye:'#ffffff'};
+  // Pulsing bob
+  var pulse=Math.sin((state.bt||0)/400)*2;
+  // Body — amorphous round shape
+  ctx.fillStyle=c.body;
+  ctx.beginPath();ctx.ellipse(0,-12+pulse,18,16+pulse*0.5,0,0,Math.PI*2);ctx.fill();
+  // Inner glow
+  ctx.fillStyle=lighten(c.body,0.2);
+  ctx.beginPath();ctx.ellipse(-3,-15+pulse,10,10,0,0,Math.PI*2);ctx.fill();
+  // Highlight spot
+  ctx.fillStyle=lighten(c.body,0.4);
+  ctx.beginPath();ctx.ellipse(-6,-20+pulse,4,3,-.3,0,Math.PI*2);ctx.fill();
+  // Outline darker edge
+  ctx.strokeStyle=c.accent;ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(0,-12+pulse,18,16+pulse*0.5,0,0,Math.PI*2);ctx.stroke();
+  // Eyes
+  ctx.fillStyle=c.eye;
+  ctx.beginPath();ctx.ellipse(-5,-16+pulse,3,4,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(5,-16+pulse,3,4,0,0,Math.PI*2);ctx.fill();
+  // Pupils
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(-4,-15+pulse,1.5,2,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(6,-15+pulse,1.5,2,0,0,Math.PI*2);ctx.fill();
+  // Mouth — sinister smile
+  ctx.strokeStyle=darken(c.body,0.4);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(0,-8+pulse,6,0.2,Math.PI-0.2);ctx.stroke();
+  // Drip pseudopods at base
+  ctx.fillStyle=c.accent;
+  ctx.fillRect(-12,2+pulse,5,4);ctx.fillRect(7,2+pulse,5,4);ctx.fillRect(-3,4+pulse,6,3);
+}
+
+function drawMonsterWinged(h,cols,stunned){
+  var ctx=state.ctx;
+  var c=cols||{body:'#6a2a2a',accent:'#8a3a1a',eye:'#ff6622'};
+  var wingFlap=Math.sin((state.bt||0)/200)*4;
+  // Tail
+  ctx.strokeStyle=c.accent;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(0,-4);ctx.quadraticCurveTo(16,5,22,-2+wingFlap*0.5);ctx.stroke();
+  px(20,-4+wingFlap*0.3,4,2,lighten(c.accent,0.2));
+  // Feet — clawed
+  px3d(-8,0,6,4,darken(c.body,0.3));px3d(2,0,6,4,darken(c.body,0.3));
+  px(-9,-1,2,3,'#ddd');px(-4,-1,2,3,'#ddd');px(2,-1,2,3,'#ddd');px(7,-1,2,3,'#ddd');
+  // Legs
+  px3d(-7,-5,5,7,darken(c.body,0.15));px3d(2,-5,5,7,darken(c.body,0.15));
+  // Body — sleek
+  px3d(-10,-22,20,20,c.body);
+  px(-10,-22,1,20,darken(c.body,0.2));px(9,-22,1,20,lighten(c.body,0.1));
+  // Belly lighter
+  px(-5,-14,10,8,lighten(c.body,0.15));
+  px(-4,-13,8,6,lighten(c.body,0.2));
+  // Wings — spread
+  ctx.fillStyle=c.accent;
+  // Left wing
+  ctx.save();ctx.translate(-10,-20);ctx.rotate((-0.4+wingFlap*0.03));
+  ctx.fillRect(-20,-4,22,6);
+  ctx.fillStyle=darken(c.accent,0.2);
+  ctx.fillRect(-22,-2,6,10);ctx.fillRect(-16,0,6,8);ctx.fillRect(-10,2,6,6);
+  ctx.fillStyle=lighten(c.accent,0.15);
+  ctx.fillRect(-18,-4,18,2);
+  ctx.restore();
+  // Right wing
+  ctx.fillStyle=c.accent;
+  ctx.save();ctx.translate(10,-20);ctx.rotate((0.4-wingFlap*0.03));
+  ctx.fillRect(-2,-4,22,6);
+  ctx.fillStyle=darken(c.accent,0.2);
+  ctx.fillRect(16,-2,6,10);ctx.fillRect(10,0,6,8);ctx.fillRect(4,2,6,6);
+  ctx.fillStyle=lighten(c.accent,0.15);
+  ctx.fillRect(0,-4,18,2);
+  ctx.restore();
+  // Head — angular
+  px3d(-7,-36,14,14,lighten(c.body,0.1));
+  px(-6,-36,12,1,lighten(c.body,0.25));
+  // Eyes — fierce
+  px(-4,-30,3,2,c.eye);px(2,-30,3,2,c.eye);
+  ctx.shadowColor=c.eye;ctx.shadowBlur=3;
+  px(-3,-30,1,1,lighten(c.eye,0.4));px(3,-30,1,1,lighten(c.eye,0.4));
+  ctx.shadowBlur=0;
+  // Snout
+  px3d(-4,-25,8,4,lighten(c.body,0.15));
+  px(-3,-23,6,1,darken(c.body,0.4));px(-2,-22,4,1,'#ddd');
+  // Horns
+  px3d(-8,-40,3,6,c.accent);px3d(5,-40,3,6,c.accent);
+  px(-7,-43,2,4,lighten(c.accent,0.2));px(6,-43,2,4,lighten(c.accent,0.2));
+  // Neck spines
+  px(0,-36,2,3,c.accent);px(-2,-34,2,2,c.accent);px(2,-34,2,2,c.accent);
+}
+
+function drawMonsterGhost(h,cols,stunned){
+  var ctx=state.ctx;
+  var c=cols||{body:'#8888aa',accent:'#6666aa',eye:'#ffffff'};
+  var hover=Math.sin((state.bt||0)/500)*4;
+  var waver=Math.sin((state.bt||0)/300)*2;
+  // Translucent body
+  ctx.globalAlpha=0.6;
+  // Main body — fading downward
+  var grd=ctx.createLinearGradient(0,-40+hover,0,10+hover);
+  grd.addColorStop(0,c.body);grd.addColorStop(0.7,c.accent);grd.addColorStop(1,'rgba(100,100,160,0)');
+  ctx.fillStyle=grd;
+  ctx.beginPath();
+  ctx.moveTo(-14,-30+hover);
+  ctx.quadraticCurveTo(-16,-15+hover,-10,5+hover);
+  ctx.lineTo(-6,8+hover+waver);
+  ctx.lineTo(-2,4+hover);
+  ctx.lineTo(2,8+hover-waver);
+  ctx.lineTo(6,4+hover+waver);
+  ctx.lineTo(10,8+hover);
+  ctx.quadraticCurveTo(16,-15+hover,14,-30+hover);
+  ctx.quadraticCurveTo(10,-44+hover,0,-44+hover);
+  ctx.quadraticCurveTo(-10,-44+hover,-14,-30+hover);
+  ctx.fill();
+  // Inner glow
+  ctx.fillStyle=lighten(c.body,0.3);
+  ctx.beginPath();ctx.ellipse(-2,-24+hover,6,8,-.2,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=0.8;
+  // Eyes — hollow, glowing
+  ctx.fillStyle=c.eye;
+  ctx.beginPath();ctx.ellipse(-5,-30+hover,3,4,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(5,-30+hover,3,4,0,0,Math.PI*2);ctx.fill();
+  // Eye inner
+  ctx.fillStyle=c.accent;
+  ctx.beginPath();ctx.ellipse(-5,-30+hover,1.5,2,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(5,-30+hover,1.5,2,0,0,Math.PI*2);ctx.fill();
+  // Ghostly eye glow
+  ctx.shadowColor=c.eye;ctx.shadowBlur=8;
+  ctx.fillStyle=c.eye;
+  ctx.beginPath();ctx.ellipse(-5,-30+hover,1,1,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(5,-30+hover,1,1,0,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // Mouth — open wail
+  ctx.fillStyle=darken(c.body,0.5);
+  ctx.beginPath();ctx.ellipse(0,-22+hover,4,3,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+
+export function drawMonster(h,stunned){
+  var mt=h.monsterType||'humanoid';
+  var cols=h.monsterColors||null;
+  if(mt==='beast')drawMonsterBeast(h,cols,stunned);
+  else if(mt==='blob')drawMonsterBlob(h,cols,stunned);
+  else if(mt==='winged')drawMonsterWinged(h,cols,stunned);
+  else if(mt==='ghost')drawMonsterGhost(h,cols,stunned);
+  else drawMonsterHumanoid(h,cols,stunned);
+}
+
 export function drawCustomPixel(h,stunned){
   var ctx=state.ctx;
+  // Monsters with monsterType use dedicated monster sprites
+  if(h.monsterType){
+    drawMonster(h,stunned);
+    return;
+  }
   // Monsters and NPCs without equipment fall back to class sprites
   if(!h.equipment){
     var sp=h.customSprite||'wizard';

@@ -149,9 +149,9 @@ function getMonsterSprite(name) {
 
 export function mkDungeonMonster(m, side) {
   var isLeft = side === 'left';
-  var sprite = getMonsterSprite(m.name);
   return {
-    type: 'custom', customSprite: sprite,
+    type: 'custom', monsterType: m.monsterType || 'humanoid',
+    monsterColors: m.colors || null,
     name: m.name, monsterIcon: m.icon,
     color: '#ff4444', colorDark: '#6a1a1a', colorLight: '#ff8888', side: side,
     x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,

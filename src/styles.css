@@ -413,6 +413,8 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
 .dg-action-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 14px;border:2px solid;border-radius:2px;background:rgba(20,16,10,0.85);cursor:pointer;transition:all 0.15s;font-family:'Cinzel',serif;min-width:72px;color:inherit}
 .dg-action-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 12px currentColor}
 .dg-action-btn:disabled{opacity:0.3;cursor:default}
+.dg-deploy-btn{display:inline-block;padding:1px 6px;margin-left:4px;font-size:.4rem;font-family:'Cinzel',serif;color:#bb88ff;border:1px solid #bb88ff;border-radius:2px;background:rgba(140,100,180,0.15);cursor:pointer;transition:all 0.15s}
+.dg-deploy-btn:hover{background:rgba(140,100,180,0.35);box-shadow:0 0 6px #bb88ff}
 .dga-icon{font-size:1.2rem}
 .dga-label{font-size:.42rem}
 

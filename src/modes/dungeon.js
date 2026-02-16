@@ -14,21 +14,21 @@ import { getIcon } from '../render/icons.js';
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
 
 var DG_MONSTERS=[
-  {name:'Goblin Scout',icon:'\u{1F47A}',hp:350,dmg:35,def:5,tier:1},
-  {name:'Cave Bat',icon:'\u{1F987}',hp:220,dmg:45,def:2,tier:1},
-  {name:'Slime',icon:'\u{1F7E2}',hp:450,dmg:25,def:10,tier:1},
-  {name:'Skeleton',icon:'\u{1F480}',hp:380,dmg:40,def:8,tier:1},
-  {name:'Orc Warrior',icon:'\u{1F479}',hp:700,dmg:65,def:18,tier:2},
-  {name:'Dark Mage',icon:'\u{1F9D9}',hp:500,dmg:90,def:10,tier:2},
-  {name:'Troll',icon:'\u{1F9CC}',hp:900,dmg:55,def:25,tier:2},
-  {name:'Ghost',icon:'\u{1F47B}',hp:450,dmg:75,def:6,tier:2,evasion:0.2},
-  {name:'Minotaur',icon:'\u{1F402}',hp:1400,dmg:110,def:30,tier:3},
-  {name:'Lich',icon:'\u2620\uFE0F',hp:950,dmg:140,def:15,tier:3},
-  {name:'Stone Golem',icon:'\u{1F5FF}',hp:1800,dmg:85,def:50,tier:3},
-  {name:'Wyvern',icon:'\u{1F409}',hp:1100,dmg:130,def:22,tier:3},
-  {name:'Dragon',icon:'\u{1F432}',hp:2500,dmg:170,def:40,tier:4},
-  {name:'Demon Lord',icon:'\u{1F608}',hp:2200,dmg:190,def:35,tier:4},
-  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:3200,dmg:150,def:45,tier:4},
+  {name:'Goblin Scout',icon:'\u{1F47A}',hp:350,dmg:35,def:5,tier:1,monsterType:'humanoid',colors:{body:'#4a6a2a',accent:'#6a4a1a',eye:'#ffcc00'},specials:['heavyStrike']},
+  {name:'Cave Bat',icon:'\u{1F987}',hp:220,dmg:45,def:2,tier:1,monsterType:'beast',colors:{body:'#3a2a2a',accent:'#5a3a3a',eye:'#ff4444'},specials:['enrage']},
+  {name:'Slime',icon:'\u{1F7E2}',hp:450,dmg:25,def:10,tier:1,monsterType:'blob',colors:{body:'#3a8a3a',accent:'#2a6a2a',eye:'#ffffff'},specials:['heal']},
+  {name:'Skeleton',icon:'\u{1F480}',hp:380,dmg:40,def:8,tier:1,monsterType:'humanoid',colors:{body:'#8a8a7a',accent:'#5a5a4a',eye:'#ffdd44'},specials:['heavyStrike']},
+  {name:'Orc Warrior',icon:'\u{1F479}',hp:700,dmg:65,def:18,tier:2,monsterType:'humanoid',colors:{body:'#4a5a2a',accent:'#6a3a1a',eye:'#ff6622'},specials:['heavyStrike','enrage']},
+  {name:'Dark Mage',icon:'\u{1F9D9}',hp:500,dmg:90,def:10,tier:2,monsterType:'humanoid',colors:{body:'#3a2a5a',accent:'#5a3a7a',eye:'#cc66ff'},specials:['heal','warStomp']},
+  {name:'Troll',icon:'\u{1F9CC}',hp:900,dmg:55,def:25,tier:2,monsterType:'beast',colors:{body:'#4a6a4a',accent:'#3a4a2a',eye:'#88ff44'},specials:['heal','enrage']},
+  {name:'Ghost',icon:'\u{1F47B}',hp:450,dmg:75,def:6,tier:2,evasion:0.2,monsterType:'ghost',colors:{body:'#8888bb',accent:'#6666aa',eye:'#ffffff'},specials:['poisonSpit']},
+  {name:'Minotaur',icon:'\u{1F402}',hp:1400,dmg:110,def:30,tier:3,monsterType:'beast',colors:{body:'#6a3a2a',accent:'#4a2a1a',eye:'#ff2222'},specials:['heavyStrike','warStomp']},
+  {name:'Lich',icon:'\u2620\uFE0F',hp:950,dmg:140,def:15,tier:3,monsterType:'humanoid',colors:{body:'#2a3a4a',accent:'#4a5a6a',eye:'#44ffcc'},specials:['poisonSpit','heal']},
+  {name:'Stone Golem',icon:'\u{1F5FF}',hp:1800,dmg:85,def:50,tier:3,monsterType:'beast',colors:{body:'#5a5a5a',accent:'#3a3a3a',eye:'#ffaa22'},specials:['warStomp','enrage']},
+  {name:'Wyvern',icon:'\u{1F409}',hp:1100,dmg:130,def:22,tier:3,monsterType:'winged',colors:{body:'#6a4a2a',accent:'#8a5a2a',eye:'#ff6622'},specials:['enrage','poisonSpit']},
+  {name:'Dragon',icon:'\u{1F432}',hp:2500,dmg:170,def:40,tier:4,monsterType:'winged',colors:{body:'#6a2a2a',accent:'#8a3a1a',eye:'#ff4400'},specials:['enrage','heavyStrike']},
+  {name:'Demon Lord',icon:'\u{1F608}',hp:2200,dmg:190,def:35,tier:4,monsterType:'humanoid',colors:{body:'#4a1a2a',accent:'#6a2a3a',eye:'#ff2244'},specials:['warStomp','poisonSpit']},
+  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:3200,dmg:150,def:45,tier:4,monsterType:'winged',colors:{body:'#2a4a3a',accent:'#3a6a4a',eye:'#44ff88'},specials:['heal','enrage']},
 ];
 
 export function buildDungeonPicker(){
@@ -58,6 +58,7 @@ export function startDungeon(){
     bonusDmg:0,bonusDef:0,bonusHp:0,bonusAS:0,
     mana:maxMana,maxMana:maxMana,manaRegen:manaRegen,
     spellCost:spellCost,
+    deployedFollower:null,
     roomHistory:[],
     totalKills:0,totalDmgDealt:0,totalDmgTaken:0,
     _lastCombatStats:null,
@@ -98,7 +99,15 @@ function updateDgUI(){
   else{var ih='';r.items.forEach(function(it){ih+='<div class="dg-inv-item"><span class="dg-inv-icon">'+getIcon(it,16)+'</span><span>'+it.name+'</span></div>'});inv.innerHTML=ih}
   var fc=document.getElementById('dgFollowers');
   if(r.followers.length===0)fc.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">None yet</div>';
-  else{var fh='';r.followers.forEach(function(f){fh+='<div class="dg-inv-item"><span class="dg-inv-icon">'+getIcon(f,16)+'</span><span class="dg-loot-name '+f.rarity+'">'+f.name+'</span></div>'});fc.innerHTML=fh}
+  else{var fh='';r.followers.forEach(function(f,fi){
+    var isDeployed=r.deployedFollower===f;
+    fh+='<div class="dg-inv-item" style="'+(isDeployed?'border-left:2px solid #bb88ff;padding-left:4px':'')+'">'+
+      '<span class="dg-inv-icon">'+getIcon(f,16)+'</span>'+
+      '<span class="dg-loot-name '+f.rarity+'">'+f.name+'</span>'+
+      (isDeployed?' <span style="color:#bb88ff;font-size:.45rem">\u2694 ACTIVE</span>':
+        ' <button class="dg-deploy-btn" onclick="dgDeployFollower('+fi+')">Deploy</button>')+
+    '</div>';
+  });fc.innerHTML=fh}
 }
 
 function dgUpdateProgress(){
@@ -280,7 +289,7 @@ function dgShowFollowerCapture(f,afterFn){
       '<div class="fim-icon loot-reveal-icon">'+getIcon(f,32)+'</div>'+
       '<div class="fim-name loot-reveal-name" style="color:'+rcol+'">'+f.name+'</div>'+
       '<div class="fim-rarity loot-reveal-rarity" style="color:'+rcol+'">'+f.rarity+'</div>'+
-      '<div class="fim-buff loot-reveal-stats">Arena Buff: '+f.buffDesc+'</div>'+
+      '<div class="fim-buff loot-reveal-stats">Buff: '+f.buffDesc+'</div>'+
       abilityLine+wagerLine+
       '<div class="loot-reveal-stats" style="font-size:.45rem;color:var(--parch-dk);margin-top:4px">Combat: '+f.combatHp+'HP / '+f.combatDmg+'DMG / '+f.combatAS+'AS / '+f.combatDef+'DEF</div>'+
       contextHtml+powerHtml+
@@ -299,8 +308,17 @@ function dgShowFollowerCapture(f,afterFn){
 
 export function dgKeepFollower(){
   if(!state.dgRun._pendingCaptureFollower)return;
-  state.dgRun.followers.push(state.dgRun._pendingCaptureFollower);
-  dgLog('Kept '+state.dgRun._pendingCaptureFollower.name+'! ('+state.dgRun._pendingCaptureFollower.rarity+')','loot');
+  var f=state.dgRun._pendingCaptureFollower;
+  state.dgRun.followers.push(f);
+  dgLog('Kept '+f.name+'! ('+f.rarity+')','loot');
+  // Apply passive buffs
+  var buffDesc=applyFollowerBuffToRun(f,state.dgRun);
+  if(buffDesc)dgLog('Buff: '+buffDesc,'good');
+  // Auto-deploy first captured follower
+  if(!state.dgRun.deployedFollower){
+    state.dgRun.deployedFollower=f;
+    dgLog('Auto-deployed '+f.name+' as combat companion!','good');
+  }
   var afterFn=state.dgRun._pendingCaptureAfter;
   state.dgRun._pendingCaptureFollower=null;
   updateDgUI();
@@ -316,6 +334,28 @@ export function dgSellFollower(){
   state.dgRun._pendingCaptureFollower=null;
   updateDgUI();
   if(afterFn)afterFn();else setTimeout(generateRoom,300);
+}
+
+function applyFollowerBuffToRun(f,run){
+  if(!f||!f.buff||!run)return '';
+  var parts=[];
+  var b=f.buff;
+  if(b.baseDmg){run.bonusDmg+=b.baseDmg;parts.push('+'+b.baseDmg+' DMG');}
+  if(b.def){run.bonusDef+=b.def;parts.push('+'+b.def+' DEF');}
+  if(b.hp){run.maxHp+=b.hp;run.hp+=b.hp;run.bonusHp+=b.hp;parts.push('+'+b.hp+' HP');}
+  if(b.baseAS){run.bonusAS+=b.baseAS;parts.push('+'+b.baseAS.toFixed(2)+' AS');}
+  if(b.evasion){run.evasion=Math.min(0.8,(run.evasion||0)+b.evasion);parts.push('+'+Math.round(b.evasion*100)+'% EVA');}
+  if(b.crit){run.crit=(run.crit||0)+b.crit;parts.push('+'+Math.round(b.crit*100)+'% CRIT');}
+  if(b.lifesteal){run.lifesteal=(run.lifesteal||0)+b.lifesteal;parts.push('+'+Math.round(b.lifesteal*100)+'% Lifesteal');}
+  return parts.join(', ');
+}
+
+export function dgDeployFollower(idx){
+  var run=state.dgRun;
+  if(!run||!run.followers[idx])return;
+  run.deployedFollower=run.followers[idx];
+  dgLog('Deployed '+run.deployedFollower.name+' as combat companion!','good');
+  updateDgUI();
 }
 
 export function generateRoom(){

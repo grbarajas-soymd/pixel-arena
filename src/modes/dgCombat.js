@@ -41,11 +41,12 @@ var monsterStatuses=[];
 var poisonStacks=0;
 var poisonTurnsLeft=0;
 var playerDmgBuff=0;
-var playerDmgBuffTurns=0;
-var playerInvulnTurns=0;
+var playerDmgBuffRounds=0;
+var playerInvulnRounds=0;
 var playerExtraAttacks=0;
 var deathMarkDmg=0;
 var deathMarkActive=false;
+var deathMarkRounds=0;
 var bloodlustActive=false;
 var animAction_skillIdx=null;
 var animAction_skill=null;
@@ -54,6 +55,33 @@ var animAction_ult=null;
 var fleeResult=false;
 var autoBattle=false;
 var SKILL_DMG={0:260,1:140,9:200};
+
+// ===== AP TIMELINE SYSTEM =====
+var combatants=[];       // [{id:'hero'|'monster'|'companion', ap:0, speed:number, alive:true}]
+var timelinePreview=[];  // Next 8 upcoming turn IDs for display
+var currentActor=null;   // Who is currently acting
+var monsterRoundCount=0; // Track rounds by monster turns (for round-based durations)
+var playerStunnedByMonster=false; // If hero is stunned, skip their turn
+
+// Monster specials state
+var monsterSpecials=[];    // [{id:'heavyStrike', cd:0, maxCd:4}]
+var monsterChargingSpecial=null; // {id:'heavyStrike', telegraph:'winds up a heavy blow!'}
+var DG_SPECIALS={
+  heavyStrike:{cd:4,telegraph:'winds up a heavy blow!',icon:'\u2694\uFE0F'},
+  enrage:{cd:5,telegraph:'roars with fury!',icon:'\uD83D\uDCA2'},
+  poisonSpit:{cd:4,telegraph:'gathers venom!',icon:'\u2620'},
+  heal:{cd:5,telegraph:'begins to regenerate!',icon:'\u{1F49A}'},
+  warStomp:{cd:5,telegraph:'stomps the ground!',icon:'\uD83D\uDCA5'}
+};
+var monsterEnraged=false;
+var monsterEnragedRounds=0;
+
+// Companion state
+var heroPoisonTurns=0; // Monster poison on hero (separate from hero poison on monster)
+
+var companionHp=0,companionMaxHp=0,companionAlive=false;
+var companionAbilityCd=0,companionAbilityMaxCd=3;
+var companionData=null,companionDmg=0,companionDef=0,companionAS=0,companionName='',companionIcon='';
 
 // ===== DAMAGE FORMULAS =====
 function calcDmg(attacker,defender){
@@ -125,14 +153,47 @@ export function initDgCombat(monster){
   dmgDealt=0;dmgTaken=0;ultUsed=false;
   playerStatuses=[];monsterStatuses=[];
   poisonStacks=0;poisonTurnsLeft=0;
-  playerDmgBuff=0;playerDmgBuffTurns=0;
-  playerInvulnTurns=0;playerExtraAttacks=0;
-  deathMarkDmg=0;deathMarkActive=false;
+  playerDmgBuff=0;playerDmgBuffRounds=0;
+  playerInvulnRounds=0;playerExtraAttacks=0;
+  deathMarkDmg=0;deathMarkActive=false;deathMarkRounds=0;
   bloodlustActive=false;fleeResult=false;
   animAction_skillIdx=null;animAction_skill=null;
   animAction_ultIdx=null;animAction_ult=null;
+  playerStunnedByMonster=false;heroPoisonTurns=0;
+  monsterChargingSpecial=null;monsterEnraged=false;monsterEnragedRounds=0;
   hero._origX=hero.x;
   monsterHero._origX=monsterHero.x;
+  // AP timeline init
+  var heroSpeed=Math.min(200,Math.max(60,Math.round((run.baseAS+run.bonusAS)*100)));
+  var monsterSpeed=Math.min(200,Math.max(60,Math.round((0.8+(monster.tier-1)*0.15)*100)));
+  combatants=[
+    {id:'hero',ap:0,speed:heroSpeed,alive:true},
+    {id:'monster',ap:0,speed:monsterSpeed,alive:true}
+  ];
+  // Companion init
+  companionAlive=false;companionData=null;companionHp=0;companionMaxHp=0;
+  companionDmg=0;companionDef=0;companionAS=0;companionName='';companionIcon='';
+  companionAbilityCd=0;companionAbilityMaxCd=3;
+  if(run.deployedFollower){
+    var df=run.deployedFollower;
+    companionData=df;companionName=df.name;companionIcon=df.icon||'\uD83D\uDC3E';
+    companionMaxHp=df.combatHp||200;companionHp=companionMaxHp;
+    companionDmg=df.combatDmg||20;companionDef=df.combatDef||5;
+    companionAS=df.combatAS||0.8;companionAlive=true;
+    var compSpeed=Math.min(200,Math.max(60,Math.round(companionAS*100)));
+    combatants.push({id:'companion',ap:0,speed:compSpeed,alive:true});
+  }
+  // Monster specials init
+  monsterSpecials=[];
+  if(monster.specials){
+    monster.specials.forEach(function(sid){
+      var spec=DG_SPECIALS[sid];
+      if(spec)monsterSpecials.push({id:sid,cd:spec.cd,maxCd:spec.cd,telegraph:spec.telegraph,icon:spec.icon});
+    });
+  }
+  monsterRoundCount=0;
+  currentActor=null;
+  calcTimelinePreview();
   document.getElementById('dungeonScreen').style.display='none';
   document.getElementById('battleScreen').style.display='block';
   var ctrls=document.querySelector('#battleScreen .ctrls');
@@ -152,9 +213,11 @@ export function initDgCombat(monster){
   enableButtons(true);
   if(!state.groundTiles)initGround();
   SFX.battleStart();
-  showTurnText('Turn '+turnNum+' \u2014 Choose your action!');
+  showTurnText('Battle Start!');
   lastTime=performance.now();
   rafId=requestAnimationFrame(dgRender);
+  // Start AP-based turn system — first turn after short delay
+  setTimeout(function(){advanceTurn();},400);
 }
 
 // ===== ACTION BUTTON UI =====
@@ -176,6 +239,11 @@ function buildActionUI(){
     {id:'dgPotBtn',label:'\uD83E\uDDEA Potion ('+(run?run.potions:0)+')',color:'#44aa66',action:'potion'},
     {id:'dgFleeBtn',label:'\uD83C\uDFC3 Flee',color:'#888888',action:'flee'},
   ];
+  // Add companion ability button if companion alive
+  if(companionAlive&&companionData){
+    var compAbilName=companionData.abilityName||'Ability';
+    buttons.splice(5,0,{id:'dgCompBtn',label:'\uD83D\uDC3E '+compAbilName,color:'#bb88ff',action:'companion_ability'});
+  }
   buttons.forEach(function(b){
     var btn=document.createElement('button');
     btn.id=b.id;btn.className='dg-action-btn';
@@ -248,6 +316,13 @@ function refreshButtonStates(){
     var canPot=pots>0&&hero.hp<hero.maxHp;
     potBtn.disabled=!canPot;potBtn.style.opacity=canPot?'1':'0.4';potBtn.style.pointerEvents=canPot?'auto':'none';
   }
+  // Companion ability button
+  var compBtn=document.getElementById('dgCompBtn');
+  if(compBtn){
+    var canComp=companionAlive&&companionAbilityCd<=0;
+    compBtn.disabled=!canComp;compBtn.style.opacity=canComp?'1':'0.4';compBtn.style.pointerEvents=canComp?'auto':'none';
+    if(companionAbilityCd>0)compBtn.innerHTML='\uD83D\uDC3E '+(companionData?companionData.abilityName||'Ability':'Ability')+' <span style="font-size:.55rem;opacity:.7">(CD:'+companionAbilityCd+')</span>';
+  }
 }
 
 // ===== AUTO BATTLE =====
@@ -268,6 +343,7 @@ function autoPickAction(){
   if(!hero||!monster||!run)return;
   var res=hero.resource!==undefined?hero.resource:(hero.mana||0);
   var hpPct=hero.hp/hero.maxHp;
+  var isCharging=!!monsterChargingSpecial;
   // Use potion if HP low
   if(hpPct<0.35&&run.potions>0){handleAction('potion');return}
   // Use ultimate if available and HP below threshold
@@ -283,6 +359,19 @@ function autoPickAction(){
     var cost=sk.cost||0;
     if(cost>0&&res<cost)continue;
     affordable.push({slot:i,idx:si,sk:sk,cost:cost,dmg:SKILL_DMG[si]||0});
+  }
+  // TELEGRAPH AWARENESS: If monster is charging, prioritize stun > shield > smokeBomb
+  if(isCharging){
+    // Try stun skills first (chain lightning idx=0 stuns)
+    for(var sti=0;sti<affordable.length;sti++){
+      if(affordable[sti].idx===0){handleAction('skill'+affordable[sti].slot);return}
+    }
+    // Try shield/smokeBomb to survive
+    for(var di=0;di<affordable.length;di++){
+      var did=affordable[di].sk.id;
+      if(did==='staticShield'&&!hero.shieldActive){handleAction('skill'+affordable[di].slot);return}
+      if(did==='smokeBomb'&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+affordable[di].slot);return}
+    }
   }
   // Prioritize: damage skills first, then utility/buffs contextually
   var dmgSkills=affordable.filter(function(s){return s.dmg>0});
@@ -366,6 +455,21 @@ function handleAction(action){
     showTurnText(hero.name+' drinks a potion!');
     SFX.heal();
   }
+  else if(action==='companion_ability'){
+    if(!companionAlive||companionAbilityCd>0)return;
+    companionAbilityCd=companionAbilityMaxCd;
+    applyCompanionAbility();
+    // Check kill
+    if(monster.hp<=0){
+      monster.hp=0;showTurnText(monster.name+' has been defeated!');SFX.win();
+      combatLog(monster.name+' defeated!','death');
+      for(var ci=0;ci<combatants.length;ci++)if(combatants[ci].id==='monster')combatants[ci].alive=false;
+      phase='done';setTimeout(function(){endCombat(true);},500);return;
+    }
+    // Don't consume hero turn — just triggers companion ability
+    refreshButtonStates();
+    return;
+  }
   else if(action==='flee'){
     phase='playerAnim';animAction='flee';
     animSource=hero;animTarget=null;
@@ -425,7 +529,7 @@ function applyMidpointEffect(){
         if(tgt.shieldHp<=0){tgt.shieldActive=false;SFX.shieldBreak();addFloat(tgt.x,tgt.y-50,'SHIELD BREAK!','#ff6644');combatLog('Shield shattered!','spell');}
         else{addFloat(tgt.x,tgt.y-50,'Absorbed '+absorbed,'#44ddbb');combatLog('Shield absorbs '+absorbed+' dmg','spell');}
       }
-      if(playerInvulnTurns>0&&tgt===state.h1){
+      if(playerInvulnRounds>0&&tgt===state.h1){
         addFloat(tgt.x,tgt.y-60,'INVULNERABLE!','#ffcc22');amt=0;
         combatLog(tgt.name+' is invulnerable!','heal');
       }
@@ -444,6 +548,8 @@ function applyMidpointEffect(){
       SFX.hit();if(result.crit)SFX.crit();
       combatLog(src.name+' hits '+tgt.name+' for '+(result.crit?'CRIT ':'')+amt+' dmg','dmg');
     }
+    // Restore heavy strike damage after hit
+    if(src._heavyStrikeRestore){src.baseDmg=src._heavyStrikeRestore;src._heavyStrikeRestore=null;}
   }
   else if(animAction==='skill')applySkillEffect(src,tgt);
   else if(animAction==='ultimate')applyUltEffect(src,tgt);
@@ -468,19 +574,19 @@ function applySkillEffect(src,tgt){
   }else{
     if(idx===2){
       src.shieldActive=true;src.shieldHp=420*(1+(src.spellDmgBonus||0));
-      addStatus(playerStatuses,'shield','Shield','\uD83D\uDEE1\uFE0F','#44ddbb',3);
+      addStatus(playerStatuses,'shield','Shield','\uD83D\uDEE1\uFE0F','#44ddbb',2);
       addFloat(src.x,src.y-60,'SHIELD +'+Math.round(src.shieldHp),'#44ddbb');SFX.shield();
       combatLog('Shield activated ('+Math.round(src.shieldHp)+' HP)','spell');
     }
     else if(idx===3){
-      addStatus(monsterStatuses,'marked','Marked','\uD83C\uDFAF','#ff8844',3);
+      addStatus(monsterStatuses,'marked','Marked','\uD83C\uDFAF','#ff8844',2);
       tgt.evasion=Math.max(0,(tgt.evasion||0)-0.15);tgt.slow=0.2;
       addFloat(tgt.x,tgt.y-60,'MARKED!','#ff8844');
       combatLog(tgt.name+' is marked!','spell');
     }
     else if(idx===4){
       bloodlustActive=true;
-      addStatus(playerStatuses,'bloodlust','Bloodlust','\uD83E\uDE78','#cc3300',2);
+      addStatus(playerStatuses,'bloodlust','Bloodlust','\uD83E\uDE78','#cc3300',1);
       addFloat(src.x,src.y-60,'BLOODLUST!','#cc3300');SFX.fire();
       combatLog('Bloodlust activated!','spell');
     }
@@ -491,19 +597,19 @@ function applySkillEffect(src,tgt){
       combatLog('Entered stealth!','stealth');
     }
     else if(idx===7){
-      poisonStacks=1;poisonTurnsLeft=3;
-      addStatus(monsterStatuses,'poison','Poison','\u2620','#66ccff',3);
+      poisonStacks=1;poisonTurnsLeft=2;
+      addStatus(monsterStatuses,'poison','Poison','\u2620','#66ccff',2);
       addFloat(tgt.x,tgt.y-60,'POISONED!','#66ccff');SFX.poison();
       combatLog(tgt.name+' is poisoned!','poison');
     }
     else if(idx===8){
-      addStatus(playerStatuses,'smokeBomb','Smoke','\uD83D\uDCA3','#667788',2);
+      addStatus(playerStatuses,'smokeBomb','Smoke','\uD83D\uDCA3','#667788',1);
       src.evasion=Math.min(0.8,(src.evasion||0)+0.45);
       addFloat(src.x,src.y-60,'+EVASION!','#667788');SFX.stealth();
       combatLog('Smoke bomb! +Evasion','spell');
     }
     else if(idx===10){
-      addStatus(monsterStatuses,'warcry','Slowed','\uD83D\uDCE2','#ffaa44',2);
+      addStatus(monsterStatuses,'warcry','Slowed','\uD83D\uDCE2','#ffaa44',1);
       tgt.baseDmg=Math.round(tgt.baseDmg*0.8);
       addFloat(tgt.x,tgt.y-60,'WAR CRY!','#ffaa44');SFX.warCry();
       combatLog('War Cry! '+tgt.name+' weakened','spell');
@@ -511,18 +617,19 @@ function applySkillEffect(src,tgt){
   }
 }
 
-// ===== ULTIMATE EFFECTS =====
+// ===== ULTIMATE EFFECTS (round-based rebalanced) =====
 function applyUltEffect(src,tgt){
   var idx=animAction_ultIdx;
   if(idx===null)return;
   if(idx===0){
+    // Thunderstorm: 4x150dmg + 35% lifesteal
     var totalD=0,totalH=0;
-    for(var i=0;i<5;i++){
-      var hd=200*(1+(src.spellDmgBonus||0))*(1-Math.min(tgt.def/300,0.8));
+    for(var i=0;i<4;i++){
+      var hd=150*(1+(src.spellDmgBonus||0))*(1-Math.min(tgt.def/300,0.8));
       hd=Math.round(hd*(0.9+Math.random()*0.2));
       if(Math.random()>=(tgt.evasion||0)){
         tgt.hp-=hd;totalD+=hd;
-        var hl=Math.round(hd*0.42);
+        var hl=Math.round(hd*0.35);
         src.hp=Math.min(src.maxHp,src.hp+hl);totalH+=hl;
       }
     }
@@ -533,27 +640,30 @@ function applyUltEffect(src,tgt){
     combatLog('Thunderstorm deals '+totalD+' dmg, heals '+totalH+'!','ult');
   }
   else if(idx===1){
-    playerInvulnTurns=2;playerExtraAttacks=2;
-    addStatus(playerStatuses,'invuln','Invulnerable','\uD83D\uDD25','#ff8833',2);
+    // Rain of Fire: 1 round invuln + 1 extra attack + fire dmg
+    playerInvulnRounds=1;playerExtraAttacks=1;
+    addStatus(playerStatuses,'invuln','Invulnerable','\uD83D\uDD25','#ff8833',99);
     addFloat(src.x,src.y-60,'RAIN OF FIRE!','#ff8833');
     var fireDmg=Math.round(src.baseDmg*2*(1-Math.min(tgt.def/300,0.8)));
     tgt.hp-=fireDmg;tgt.hurtAnim=1;dmgDealt+=fireDmg;
     addFloat(tgt.x,tgt.y-70,'\uD83D\uDD25 '+fireDmg,'#ff6622');SFX.fire();
-    combatLog('Rain of Fire! '+fireDmg+' dmg + invulnerability','ult');
+    combatLog('Rain of Fire! '+fireDmg+' dmg + invulnerability (1 round)','ult');
   }
   else if(idx===2){
-    deathMarkActive=true;deathMarkDmg=0;
-    addStatus(monsterStatuses,'deathMark','Death Mark','\u2620','#ff8800',3);
+    // Death Mark: track 2 rounds, detonate at 75%
+    deathMarkActive=true;deathMarkDmg=0;deathMarkRounds=2;
+    addStatus(monsterStatuses,'deathMark','Death Mark','\u2620','#ff8800',99);
     addFloat(tgt.x,tgt.y-60,'\u2620 DEATH MARK!','#ff8800');
     src.combo=(src.combo||0)+3;
-    combatLog('Death Mark placed on '+tgt.name+'!','ult');
+    combatLog('Death Mark placed on '+tgt.name+'! (2 rounds)','ult');
   }
   else if(idx===3){
-    playerDmgBuff=0.4;playerDmgBuffTurns=3;
-    addStatus(playerStatuses,'berserk','Berserker','\uD83D\uDC80','#ff4444',3);
+    // Berserker Rage: +35% dmg for 2 rounds
+    playerDmgBuff=0.35;playerDmgBuffRounds=2;
+    addStatus(playerStatuses,'berserk','Berserker','\uD83D\uDC80','#ff4444',99);
     addFloat(src.x,src.y-60,'BERSERKER RAGE!','#ff4444');
     src.ultActive=true;SFX.charge();
-    combatLog('Berserker Rage! +40% dmg for 3 turns','ult');
+    combatLog('Berserker Rage! +35% dmg for 2 rounds','ult');
   }
 }
 
@@ -582,24 +692,16 @@ function addStatus(arr,id,name,icon,color,turns){
 
 function tickStatuses(arr){
   for(var i=arr.length-1;i>=0;i--){
-    arr[i].turnsLeft--;
-    if(arr[i].turnsLeft<=0){
-      var s=arr[i];
+    var s=arr[i];
+    // Skip round-based statuses (managed by tickRoundDurations)
+    if(s.id==='invuln'||s.id==='berserk'||s.id==='deathMark'||s.id==='enraged'||s.id==='monsterPoison')continue;
+    s.turnsLeft--;
+    if(s.turnsLeft<=0){
       if(s.id==='shield'&&state.h1){state.h1.shieldActive=false;state.h1.shieldHp=0;}
       if(s.id==='stealth'&&state.h1){state.h1.stealthed=false;}
       if(s.id==='smokeBomb'&&state.h1){state.h1.evasion=Math.max(0,(state.h1.evasion||0)-0.45);}
-      if(s.id==='invuln')playerInvulnTurns=0;
-      if(s.id==='berserk'){playerDmgBuff=0;playerDmgBuffTurns=0;if(state.h1)state.h1.ultActive=false;}
       if(s.id==='bloodlust')bloodlustActive=false;
-      if(s.id==='deathMark'){
-        if(deathMarkActive&&deathMarkDmg>0&&state.h2){
-          var burst=Math.round(deathMarkDmg*0.85);
-          state.h2.hp-=burst;state.h2.hurtAnim=1;dmgDealt+=burst;
-          addFloat(state.h2.x,state.h2.y-70,'\u2620 BURST '+burst,'#ff8800');SFX.hitHard();
-          combatLog('Death Mark detonates for '+burst+' dmg!','ult');
-        }
-        deathMarkActive=false;deathMarkDmg=0;
-      }
+      if(s.id==='monsterPoison'){/* tracked separately by poisonTurnsLeft */}
       arr.splice(i,1);
     }
   }
@@ -608,6 +710,236 @@ function tickStatuses(arr){
 function hasStatus(arr,id){
   for(var i=0;i<arr.length;i++)if(arr[i].id===id)return true;
   return false;
+}
+
+// ===== AP TIMELINE FUNCTIONS =====
+function calcTimelinePreview(){
+  // Simulate forward to find next 8 turns
+  var preview=[];
+  var simAP={};
+  for(var i=0;i<combatants.length;i++){
+    if(combatants[i].alive)simAP[combatants[i].id]=combatants[i].ap;
+  }
+  for(var step=0;step<200&&preview.length<8;step++){
+    var acted=null,bestAP=-1;
+    for(var ci=0;ci<combatants.length;ci++){
+      var c=combatants[ci];
+      if(!c.alive||!simAP.hasOwnProperty(c.id))continue;
+      simAP[c.id]+=c.speed;
+      if(simAP[c.id]>=100&&simAP[c.id]>bestAP){bestAP=simAP[c.id];acted=c.id;}
+    }
+    if(acted){simAP[acted]-=100;preview.push(acted);}
+  }
+  timelinePreview=preview;
+}
+
+function advanceTurn(){
+  var hero=state.h1,monster=state.h2;
+  if(!hero||!monster||phase==='done')return;
+  // Tick AP for all living combatants
+  var maxIter=200,acted=null;
+  for(var iter=0;iter<maxIter;iter++){
+    var bestAP=-1,bestId=null;
+    for(var i=0;i<combatants.length;i++){
+      var c=combatants[i];
+      if(!c.alive)continue;
+      c.ap+=c.speed;
+      if(c.ap>=100&&c.ap>bestAP){bestAP=c.ap;bestId=c.id;}
+    }
+    if(bestId){
+      // Priority on ties: hero > companion > monster
+      for(var j=0;j<combatants.length;j++){
+        var cj=combatants[j];
+        if(!cj.alive||cj.ap<100)continue;
+        if(cj.ap===bestAP){
+          if(cj.id==='hero'){bestId='hero';break;}
+          if(cj.id==='companion'&&bestId==='monster'){bestId='companion';}
+        }
+      }
+      // Deduct AP
+      for(var k=0;k<combatants.length;k++){
+        if(combatants[k].id===bestId){combatants[k].ap-=100;break;}
+      }
+      acted=bestId;
+      break;
+    }
+  }
+  if(!acted)return;
+  currentActor=acted;
+  calcTimelinePreview();
+
+  if(acted==='hero'){
+    // Check if hero is stunned by monster
+    if(playerStunnedByMonster){
+      playerStunnedByMonster=false;
+      showTurnText('Stunned! Turn skipped!');
+      combatLog(hero.name+' is stunned, skips turn!','stun');
+      addFloat(hero.x,hero.y-60,'STUNNED!','#ffcc22');
+      setTimeout(function(){advanceTurn();},400);
+      return;
+    }
+    turnNum++;
+    phase='pick';
+    enableButtons(true);
+    showTurnText('Turn '+turnNum+' \u2014 Choose your action!');
+    updateUI();
+    if(autoBattle)setTimeout(autoPickAction,150);
+  }
+  else if(acted==='monster'){
+    monsterRoundCount++;
+    // Tick round-based durations on monster turn
+    tickRoundDurations();
+    startMonsterTurn();
+  }
+  else if(acted==='companion'){
+    doCompanionTurn();
+  }
+}
+
+function tickRoundDurations(){
+  // Tick round-based player buff durations
+  if(playerDmgBuffRounds>0){
+    playerDmgBuffRounds--;
+    if(playerDmgBuffRounds<=0){playerDmgBuff=0;if(state.h1)state.h1.ultActive=false;
+      for(var i=playerStatuses.length-1;i>=0;i--)if(playerStatuses[i].id==='berserk')playerStatuses.splice(i,1);
+    }
+  }
+  if(playerInvulnRounds>0){
+    playerInvulnRounds--;
+    if(playerInvulnRounds<=0){
+      for(var j=playerStatuses.length-1;j>=0;j--)if(playerStatuses[j].id==='invuln')playerStatuses.splice(j,1);
+    }
+  }
+  if(deathMarkRounds>0){
+    deathMarkRounds--;
+    if(deathMarkRounds<=0&&deathMarkActive){
+      // Detonate death mark
+      if(deathMarkDmg>0&&state.h2){
+        var burst=Math.round(deathMarkDmg*0.75);
+        state.h2.hp-=burst;state.h2.hurtAnim=1;dmgDealt+=burst;
+        addFloat(state.h2.x,state.h2.y-70,'\u2620 BURST '+burst,'#ff8800');SFX.hitHard();
+        combatLog('Death Mark detonates for '+burst+' dmg!','ult');
+      }
+      deathMarkActive=false;deathMarkDmg=0;
+      for(var k=monsterStatuses.length-1;k>=0;k--)if(monsterStatuses[k].id==='deathMark')monsterStatuses.splice(k,1);
+    }
+  }
+  // Tick status turn counters on monster round
+  tickStatuses(playerStatuses);
+  tickStatuses(monsterStatuses);
+  // Monster enrage duration
+  if(monsterEnraged){
+    monsterEnragedRounds--;
+    if(monsterEnragedRounds<=0){
+      monsterEnraged=false;
+      if(state.h2)state.h2.baseDmg=Math.round(state.h2.baseDmg/1.5);
+      for(var ei=monsterStatuses.length-1;ei>=0;ei--)if(monsterStatuses[ei].id==='enraged')monsterStatuses.splice(ei,1);
+    }
+  }
+  // Monster special cooldowns tick
+  for(var si=0;si<monsterSpecials.length;si++){
+    if(monsterSpecials[si].cd>0)monsterSpecials[si].cd--;
+  }
+  // Mana regen on monster round
+  var hero=state.h1;
+  if(hero){
+    var regen=hero.resourceRegen||hero.manaRegen||2;
+    if(hero.resource!==undefined)hero.resource=Math.min(hero.maxResource||hero.maxMana||100,(hero.resource||0)+regen*2);
+    if(hero.mana!==undefined)hero.mana=hero.resource!==undefined?hero.resource:Math.min(hero.maxMana||100,(hero.mana||0)+regen*2);
+  }
+  // Hero poison tick (from monster poisonSpit)
+  if(heroPoisonTurns>0&&state.h1&&state.h1.hp>0&&state.h2){
+    var heroPoisonDmg=Math.round(state.h2.baseDmg*0.25);
+    state.h1.hp-=heroPoisonDmg;dmgTaken+=heroPoisonDmg;
+    addFloat(state.h1.x,state.h1.y-50,'\u2620 '+heroPoisonDmg,'#88cc44');
+    combatLog('Poison deals '+heroPoisonDmg+' to '+state.h1.name,'poison');
+    heroPoisonTurns--;
+    if(heroPoisonTurns<=0){
+      for(var hpi=playerStatuses.length-1;hpi>=0;hpi--)if(playerStatuses[hpi].id==='monsterPoison'){playerStatuses.splice(hpi,1);break;}
+    }
+  }
+  // Monster poison tick on monster round (from hero envenom)
+  if(poisonTurnsLeft>0&&state.h2&&state.h2.hp>0){
+    var poisonDmg=Math.round((state.h1?state.h1.baseDmg:50)*0.3);
+    state.h2.hp-=poisonDmg;dmgDealt+=poisonDmg;
+    addFloat(state.h2.x,state.h2.y-50,'\u2620 '+poisonDmg,'#66ccff');
+    combatLog('Poison deals '+poisonDmg+' to '+state.h2.name,'poison');
+    poisonTurnsLeft--;
+    if(poisonTurnsLeft<=0){
+      poisonStacks=0;
+      for(var pi=monsterStatuses.length-1;pi>=0;pi--)if(monsterStatuses[pi].id==='poison'){monsterStatuses.splice(pi,1);break;}
+    }
+  }
+}
+
+function doCompanionTurn(){
+  if(!companionAlive||companionHp<=0){advanceTurn();return;}
+  var monster=state.h2;
+  if(!monster||monster.hp<=0){advanceTurn();return;}
+  // Companion auto-attack
+  var raw=companionDmg*(1-Math.min(monster.def/300,0.8));
+  raw*=(0.85+Math.random()*0.3);
+  var amt=Math.round(raw);
+  monster.hp-=amt;monster.hurtAnim=1;dmgDealt+=amt;
+  if(deathMarkActive)deathMarkDmg+=amt;
+  addFloat(monster.x,monster.y-50,companionIcon+' '+amt,'#bb88ff');
+  SFX.followerAtk();
+  combatLog(companionName+' attacks for '+amt+' dmg','dmg');
+  // Check ability
+  if(companionAbilityCd<=0&&companionData){
+    companionAbilityCd=companionAbilityMaxCd;
+    applyCompanionAbility();
+  }else{
+    companionAbilityCd--;
+  }
+  // Check kill
+  if(monster.hp<=0){
+    monster.hp=0;showTurnText(monster.name+' has been defeated!');SFX.win();
+    combatLog(monster.name+' defeated!','death');
+    phase='done';setTimeout(function(){endCombat(true);},500);return;
+  }
+  calcTimelinePreview();
+  setTimeout(function(){advanceTurn();},200);
+}
+
+function applyCompanionAbility(){
+  if(!companionData)return;
+  var name=companionData.name||'';
+  var hero=state.h1,monster=state.h2;
+  if(!hero||!monster)return;
+  // Name-based ability switch
+  if(name.indexOf('Turtle')>=0||name.indexOf('Golem')>=0||name.indexOf('Crystal')>=0){
+    // Shield: grant hero shield
+    var shieldAmt=Math.round(companionMaxHp*0.3);
+    hero.shieldActive=true;hero.shieldHp=(hero.shieldHp||0)+shieldAmt;
+    addFloat(hero.x,hero.y-60,'\uD83D\uDEE1\uFE0F +'+shieldAmt,'#44ddbb');
+    SFX.shield();combatLog(companionName+' shields hero for '+shieldAmt+'!','spell');
+  }else if(name.indexOf('Mole')>=0||name.indexOf('Sprite')>=0||name.indexOf('Wisp')>=0){
+    // Heal: heal hero 10% maxHP
+    var heal=Math.round(hero.maxHp*0.1);
+    hero.hp=Math.min(hero.maxHp,hero.hp+heal);
+    addFloat(hero.x,hero.y-60,'\u{1F49A} +'+heal,'#44aa66');
+    SFX.heal();combatLog(companionName+' heals hero for '+heal+'!','heal');
+  }else if(name.indexOf('Fox')>=0||name.indexOf('Frog')>=0||name.indexOf('Elemental')>=0){
+    // Stun: damage + stun 1 turn
+    var stunDmg=Math.round(companionDmg*1.5*(1-Math.min(monster.def/300,0.8)));
+    monster.hp-=stunDmg;monster.hurtAnim=1;dmgDealt+=stunDmg;
+    addStatus(monsterStatuses,'stunned','Stunned','\uD83D\uDCAB','#ffcc22',1);
+    addFloat(monster.x,monster.y-60,'\uD83D\uDCAB STUN '+stunDmg,'#ffcc22');
+    SFX.stun();combatLog(companionName+' stuns '+monster.name+' for '+stunDmg+'!','stun');
+  }else if(name.indexOf('Hawk')>=0||name.indexOf('Wolf')>=0||name.indexOf('Panther')>=0||name.indexOf('Raptor')>=0||name.indexOf('Bear')>=0){
+    // Big damage: 3x companionDmg
+    var bigDmg=Math.round(companionDmg*3*(1-Math.min(monster.def/300,0.8)));
+    monster.hp-=bigDmg;monster.hurtAnim=1;dmgDealt+=bigDmg;
+    addFloat(monster.x,monster.y-60,'\uD83D\uDCA5 '+bigDmg,'#ff6644');
+    SFX.hitHard();combatLog(companionName+' deals '+bigDmg+' heavy damage!','dmg');
+  }else{
+    // Default: 2x companionDmg
+    var defDmg=Math.round(companionDmg*2*(1-Math.min(monster.def/300,0.8)));
+    monster.hp-=defDmg;monster.hurtAnim=1;dmgDealt+=defDmg;
+    addFloat(monster.x,monster.y-60,companionIcon+' '+defDmg,'#bb88ff');
+    SFX.followerAbility();combatLog(companionName+' ability deals '+defDmg+'!','spell');
+  }
 }
 
 // ===== FINISH ANIMATION =====
@@ -623,6 +955,7 @@ function finishAnim(){
       monster.hp=0;
       showTurnText(monster.name+' has been defeated!');SFX.win();
       combatLog(monster.name+' defeated!','death');
+      for(var mi=0;mi<combatants.length;mi++)if(combatants[mi].id==='monster')combatants[mi].alive=false;
       phase='done';setTimeout(function(){endCombat(true);},500);return;
     }
     if(bloodlustActive&&animAction==='attack'){
@@ -635,42 +968,39 @@ function finishAnim(){
       phase='playerAnim';animAction='attack';animSource=hero;animTarget=monster;
       animTimer=0;animDuration=200;showTurnText('Rain of Fire: Extra attack!');return;
     }
-    setTimeout(startMonsterTurn,100);
+    // Use AP system to determine next turn
+    calcTimelinePreview();
+    setTimeout(function(){advanceTurn();},100);
   }
   else if(phase==='monsterAnim'){
-    if(poisonTurnsLeft>0&&monster.hp>0){
-      var poisonDmg=Math.round(hero.baseDmg*0.3);
-      monster.hp-=poisonDmg;dmgDealt+=poisonDmg;
-      addFloat(monster.x,monster.y-50,'\u2620 '+poisonDmg,'#66ccff');
-      combatLog('Poison deals '+poisonDmg+' to '+monster.name,'poison');
-      poisonTurnsLeft--;
-      if(poisonTurnsLeft<=0){
-        poisonStacks=0;
-        for(var pi=monsterStatuses.length-1;pi>=0;pi--)if(monsterStatuses[pi].id==='poison'){monsterStatuses.splice(pi,1);break;}
-      }
-    }
     if(monster.hp<=0){
       monster.hp=0;showTurnText(monster.name+' has been defeated!');SFX.win();
       combatLog(monster.name+' defeated!','death');
+      for(var mi2=0;mi2<combatants.length;mi2++)if(combatants[mi2].id==='monster')combatants[mi2].alive=false;
       phase='done';setTimeout(function(){endCombat(true);},500);return;
     }
     if(hero.hp<=0){
       hero.hp=0;showTurnText(hero.name+' has fallen...');SFX.death();
       combatLog(hero.name+' has fallen!','death');
+      for(var hi=0;hi<combatants.length;hi++)if(combatants[hi].id==='hero')combatants[hi].alive=false;
       phase='done';setTimeout(function(){endCombat(false);},500);return;
     }
-    tickStatuses(playerStatuses);
-    tickStatuses(monsterStatuses);
-    var regen=hero.resourceRegen||hero.manaRegen||2;
-    if(hero.resource!==undefined)hero.resource=Math.min(hero.maxResource||hero.maxMana||100,(hero.resource||0)+regen*2);
-    if(hero.mana!==undefined)hero.mana=hero.resource!==undefined?hero.resource:Math.min(hero.maxMana||100,(hero.mana||0)+regen*2);
-    if(playerDmgBuffTurns>0){playerDmgBuffTurns--;if(playerDmgBuffTurns<=0){playerDmgBuff=0;if(hero)hero.ultActive=false;}}
-    if(playerInvulnTurns>0)playerInvulnTurns--;
-    turnNum++;phase='pick';
-    enableButtons(true);
-    showTurnText('Turn '+turnNum+' \u2014 Choose your action!');
-    updateUI();
-    if(autoBattle)setTimeout(autoPickAction,150);
+    // Companion splash damage from monster attack
+    if(companionAlive&&companionHp>0&&animAction==='monsterAttack'){
+      var splash=Math.round(monster.baseDmg*0.3*(1-Math.min(companionDef/300,0.8)));
+      if(splash>0){
+        companionHp-=splash;
+        addFloat(hero.x+30,hero.y+10,companionIcon+' -'+splash,'#cc66ff');
+        if(companionHp<=0){
+          companionHp=0;companionAlive=false;
+          for(var ci=0;ci<combatants.length;ci++)if(combatants[ci].id==='companion')combatants[ci].alive=false;
+          addFloat(hero.x+30,hero.y,companionName+' fell!','#ff4444');
+          SFX.followerDeath();combatLog(companionName+' has fallen!','death');
+        }
+      }
+    }
+    calcTimelinePreview();
+    setTimeout(function(){advanceTurn();},100);
   }
 }
 
@@ -682,14 +1012,103 @@ function startMonsterTurn(){
     showTurnText(monster.name+' is stunned!');
     combatLog(monster.name+' is stunned, skips turn!','stun');
     for(var si=monsterStatuses.length-1;si>=0;si--)if(monsterStatuses[si].id==='stunned'){monsterStatuses.splice(si,1);break;}
+    // Cancel charged special on stun
+    if(monsterChargingSpecial){
+      addFloat(monster.x,monster.y-70,'CANCELLED!','#44ddbb');
+      combatLog(monster.name+'\'s '+monsterChargingSpecial.id+' was cancelled by stun!','stun');
+      monsterChargingSpecial=null;
+    }
     phase='monsterAnim';
     setTimeout(function(){finishAnim();},150);
     return;
   }
+  // Execute charged special if one is pending
+  if(monsterChargingSpecial){
+    var spec=monsterChargingSpecial;
+    monsterChargingSpecial=null;
+    executeMonsterSpecial(spec.id,hero,monster);
+    return;
+  }
+  // Check if any special is ready to telegraph
+  var readySpecial=null;
+  for(var spi=0;spi<monsterSpecials.length;spi++){
+    if(monsterSpecials[spi].cd<=0){readySpecial=monsterSpecials[spi];break;}
+  }
+  if(readySpecial){
+    // Telegraph the special — show warning, reset cooldown, still attack this turn
+    monsterChargingSpecial={id:readySpecial.id,telegraph:readySpecial.telegraph,icon:readySpecial.icon};
+    readySpecial.cd=readySpecial.maxCd;
+    showTurnText('\u26A0 '+monster.name+' '+readySpecial.telegraph);
+    combatLog('\u26A0 '+monster.name+' '+readySpecial.telegraph,'spell');
+    addFloat(monster.x,monster.y-70,'\u26A0 '+readySpecial.icon,'#ff6644');
+  }
+  // Normal attack
   phase='monsterAnim';animAction='monsterAttack';
   animSource=monster;animTarget=hero;
   animTimer=0;animDuration=250;
-  showTurnText(monster.name+' attacks!');
+  if(!readySpecial)showTurnText(monster.name+' attacks!');
+}
+
+function executeMonsterSpecial(specId,hero,monster){
+  phase='monsterAnim';
+  if(specId==='heavyStrike'){
+    // 2x damage attack
+    animAction='monsterAttack';animSource=monster;animTarget=hero;
+    animTimer=0;animDuration=350;
+    // Temporarily double damage
+    var origDmg=monster.baseDmg;
+    monster.baseDmg=Math.round(origDmg*2);
+    showTurnText('\uD83D\uDCA5 '+monster.name+' Heavy Strike!');
+    combatLog(monster.name+' unleashes a heavy strike!','spell');
+    // Restore after midpoint hit — use a flag
+    monster._heavyStrikeRestore=origDmg;
+  }
+  else if(specId==='enrage'){
+    // +50% damage for 2 rounds + still attacks
+    if(!monsterEnraged){
+      monsterEnraged=true;monsterEnragedRounds=2;
+      monster.baseDmg=Math.round(monster.baseDmg*1.5);
+      addStatus(monsterStatuses,'enraged','Enraged','\uD83D\uDCA2','#ff4444',99);
+    }
+    addFloat(monster.x,monster.y-60,'\uD83D\uDCA2 ENRAGE!','#ff4444');SFX.charge();
+    combatLog(monster.name+' is enraged! +50% damage!','spell');
+    // Still attack
+    animAction='monsterAttack';animSource=monster;animTarget=hero;
+    animTimer=0;animDuration=250;
+    showTurnText('\uD83D\uDCA2 '+monster.name+' enrages and attacks!');
+  }
+  else if(specId==='poisonSpit'){
+    // 3 rounds poison on hero, replaces attack
+    heroPoisonTurns=3;
+    addStatus(playerStatuses,'monsterPoison','Poisoned','\u2620','#88cc44',99);
+    addFloat(hero.x,hero.y-60,'\u2620 POISONED!','#88cc44');SFX.poison();
+    combatLog(monster.name+' poisons '+hero.name+'!','poison');
+    showTurnText('\u2620 '+monster.name+' spits venom!');
+    // No attack animation, skip straight to finish
+    setTimeout(function(){finishAnim();},300);return;
+  }
+  else if(specId==='heal'){
+    // Heal 20% maxHP, replaces attack
+    var healAmt=Math.round(monster.maxHp*0.2);
+    monster.hp=Math.min(monster.maxHp,monster.hp+healAmt);
+    addFloat(monster.x,monster.y-60,'+'+healAmt+' HP','#44aa66');SFX.heal();
+    combatLog(monster.name+' regenerates '+healAmt+' HP!','heal');
+    showTurnText('\u{1F49A} '+monster.name+' regenerates!');
+    setTimeout(function(){finishAnim();},300);return;
+  }
+  else if(specId==='warStomp'){
+    // Stun hero 1 turn (dodgeable by evasion), replaces attack
+    if(Math.random()<(hero.evasion||0)){
+      addFloat(hero.x,hero.y-60,'DODGED STOMP!','#88ccff');SFX.dodge();
+      combatLog(hero.name+' dodges the war stomp!','miss');
+    }else{
+      playerStunnedByMonster=true;
+      addFloat(hero.x,hero.y-60,'\uD83D\uDCA5 STUNNED!','#ffcc22');SFX.stun();
+      combatLog(monster.name+' stuns '+hero.name+' with a war stomp!','stun');
+    }
+    showTurnText('\uD83D\uDCA5 '+monster.name+' war stomps!');
+    setTimeout(function(){finishAnim();},300);return;
+  }
 }
 
 // ===== END COMBAT =====
@@ -837,10 +1256,14 @@ function dgRender(now){
   // Draw fighters
   if(state.h1)drawHero(state.h1);
   if(state.h2)drawHero(state.h2);
-  // Monster icon
-  if(state.h2&&state.h2.monsterIcon){
-    ctx.font='24px sans-serif';ctx.textAlign='center';
-    ctx.fillText(state.h2.monsterIcon,state.h2.x,state.h2.y-85);
+  // Companion HP bar
+  if(companionAlive&&state.h1){
+    var chpP=Math.max(0,companionHp/companionMaxHp);
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(state.h1.x+18,state.h1.y+5,40,6);
+    ctx.fillStyle=chpP>0.3?'#bb88ff':'#cc3300';ctx.fillRect(state.h1.x+19,state.h1.y+6,Math.round(38*chpP),4);
+    ctx.strokeStyle='#6a4a8a';ctx.lineWidth=0.5;ctx.strokeRect(state.h1.x+17.5,state.h1.y+4.5,41,7);
+    ctx.fillStyle='#bb88ff';ctx.font='bold 7px "Cinzel"';ctx.textAlign='left';
+    ctx.fillText(companionIcon+' '+companionName,state.h1.x+18,state.h1.y+2);
   }
   // Status icons
   drawStatuses(ctx,playerStatuses,state.h1);
@@ -866,14 +1289,49 @@ function dgRender(now){
   // Turn counter
   ctx.fillStyle='rgba(0,0,0,0.4)';ctx.font='bold 10px "Cinzel"';ctx.textAlign='center';
   ctx.fillText('Turn '+turnNum,CW/2,AY-5);
+  // Timeline bar
+  var tlY=AY+38,tlX=CW/2-timelinePreview.length*20;
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.fillRect(tlX-4,tlY-2,timelinePreview.length*40+8,22);
+  ctx.strokeStyle='rgba(200,180,120,0.3)';ctx.lineWidth=1;
+  ctx.strokeRect(tlX-4.5,tlY-2.5,timelinePreview.length*40+9,23);
+  ctx.font='bold 8px "Cinzel"';ctx.fillStyle='#8a7a5a';ctx.textAlign='center';
+  ctx.fillText('TURN ORDER',CW/2,tlY-4);
+  for(var tli=0;tli<timelinePreview.length;tli++){
+    var tlid=timelinePreview[tli];
+    var tlBx=tlX+tli*40;
+    var isCurrent=tli===0;
+    // Background box
+    var boxCol=tlid==='hero'?'rgba(100,160,100,0.4)':tlid==='companion'?'rgba(140,100,180,0.4)':'rgba(180,80,60,0.4)';
+    ctx.fillStyle=boxCol;ctx.fillRect(tlBx,tlY,36,16);
+    if(isCurrent){ctx.strokeStyle='#ffcc44';ctx.lineWidth=1.5;ctx.strokeRect(tlBx-0.5,tlY-0.5,37,17);ctx.lineWidth=1;}
+    // Icon
+    ctx.font=isCurrent?'12px sans-serif':'10px sans-serif';ctx.textAlign='center';
+    var icon=tlid==='hero'?'\u2694\uFE0F':tlid==='companion'?companionIcon:((state.h2&&state.h2.monsterIcon)||'\uD83D\uDC80');
+    ctx.fillText(icon,tlBx+18,tlY+13);
+    // Charging indicator on monster turns
+    if(tlid==='monster'&&monsterChargingSpecial){
+      var flashA=Math.sin(state.bt/150)*0.3+0.7;
+      ctx.globalAlpha=flashA;ctx.fillStyle='#ff4444';ctx.font='8px sans-serif';
+      ctx.fillText('\u26A0',tlBx+32,tlY+6);ctx.globalAlpha=1;
+    }
+  }
+  // Telegraph warning
+  if(monsterChargingSpecial&&state.h2){
+    var twFlash=Math.sin(state.bt/150)*0.3+0.7;
+    ctx.globalAlpha=twFlash;
+    ctx.fillStyle='#ff4444';ctx.font='bold 11px "Cinzel"';ctx.textAlign='center';
+    ctx.fillText('\u26A0 '+state.h2.name+' '+monsterChargingSpecial.telegraph,CW/2,GY+35);
+    ctx.globalAlpha=1;
+  }
   // Phase indicator
   if(phase==='pick'){
     var pickP=Math.sin(state.bt/300)*0.2+0.8;
     ctx.globalAlpha=pickP;ctx.fillStyle='#6a9a6a';ctx.font='bold 11px "Cinzel"';
-    ctx.fillText('\u25B6 YOUR TURN',CW/2,AY+45);ctx.globalAlpha=1;
+    ctx.fillText('\u25B6 YOUR TURN',CW/2,tlY+32);ctx.globalAlpha=1;
   }else if(phase==='monsterAnim'){
     ctx.fillStyle='#ff6644';ctx.font='bold 11px "Cinzel"';
-    ctx.fillText('\uD83D\uDC80 ENEMY TURN',CW/2,AY+45);
+    ctx.fillText('\uD83D\uDC80 ENEMY TURN',CW/2,tlY+32);
   }
   rafId=requestAnimationFrame(dgRender);
 }

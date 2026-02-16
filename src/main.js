@@ -21,7 +21,8 @@ import {
   dgTakeTreasure, dgTriggerTrap, dgDodgeTrap, dgRest, dgSkipRest,
   dgUseShrine, dgBuyItem,
   generateRoom, dgProceedToLoot, dgProceedToCapture, endDungeonRun, dgVictory,
-  _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear
+  _dgActualGenerateRoom, dgEquipGearDrop, dgStashGearDrop, dgBuyGear,
+  dgDeployFollower
 } from './modes/dungeon.js';
 
 // Custom character editor
@@ -130,6 +131,7 @@ window.dgVictory = dgVictory;
 window._dgActualGenerateRoom = _dgActualGenerateRoom;
 window.dgEquipGearDrop = dgEquipGearDrop;
 window.dgStashGearDrop = dgStashGearDrop;
+window.dgDeployFollower = dgDeployFollower;
 window.registerPlayer = registerPlayer;
 window.uploadBuild = uploadBuild;
 window.refreshOpponents = refreshOpponents;
