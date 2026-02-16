@@ -203,19 +203,27 @@ export function rollGearInstance(itemKey) {
 /** Resolve gear entry — handles both legacy string keys and new instance objects */
 export function resolveGear(entry) {
   if (!entry) return null;
-  // Legacy string key
+  // Legacy string key — roll it into a proper instance
   if (typeof entry === 'string') {
-    var tmpl = ITEMS[entry];
-    if (!tmpl) return null;
-    return { baseKey: entry, stats: Object.assign({}, tmpl.stats), desc: tmpl.desc, quality: 50, _legacy: true };
+    var rolled = rollGearInstance(entry);
+    if (!rolled) return null;
+    return rolled;
   }
-  // Instance object with null stats (migrated legacy)
+  // Instance object with null stats (migrated legacy) — roll proper stats
   if (entry._legacy && !entry.stats) {
-    var tmpl2 = ITEMS[entry.baseKey];
-    if (!tmpl2) return null;
-    entry.stats = Object.assign({}, tmpl2.stats);
-    entry.desc = tmpl2.desc;
-    entry.quality = 50;
+    var rolled2 = rollGearInstance(entry.baseKey);
+    if (rolled2) {
+      entry.stats = rolled2.stats;
+      entry.desc = rolled2.desc;
+      entry.quality = rolled2.quality;
+      delete entry._legacy;
+    } else {
+      var tmpl2 = ITEMS[entry.baseKey];
+      if (!tmpl2) return null;
+      entry.stats = Object.assign({}, tmpl2.stats);
+      entry.desc = tmpl2.desc;
+      entry.quality = 50;
+    }
   }
   return entry;
 }

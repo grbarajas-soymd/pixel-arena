@@ -1,7 +1,7 @@
 // =============== PERSISTENCE (localStorage) ===============
 import { state, FIXED_BASE_STATS } from './gameState.js';
 import { FOLLOWER_TEMPLATES } from './data/followers.js';
-import { STARTER_GEAR, STARTER_LOADOUTS, ITEMS } from './data/items.js';
+import { STARTER_GEAR, STARTER_LOADOUTS, ITEMS, rollGearInstance } from './data/items.js';
 
 var SAVE_KEY='pixel-arena-save';
 var MAX_SLOTS=4;
@@ -179,7 +179,9 @@ export function loadCharacterSlot(slotIndex){
   var hasAny=false;
   for(var k in state.customChar.equipment){if(state.customChar.equipment[k])hasAny=true}
   if(!hasAny){
-    state.customChar.equipment=Object.assign({},STARTER_GEAR);
+    var fallback={};
+    for(var fk in STARTER_GEAR){fallback[fk]=rollGearInstance(STARTER_GEAR[fk])}
+    state.customChar.equipment=fallback;
   }
 
   state.p1Collection=slot.p1Collection||[];
@@ -215,6 +217,11 @@ export function createCharacterSlot(name,archetypeKey){
 
   var charName=name&&name.trim()?name.trim():loadout.name;
   var now=new Date().toISOString();
+  // Roll starter gear instances
+  var rolledEquip={};
+  for(var ek in loadout.equipment){
+    rolledEquip[ek]=rollGearInstance(loadout.equipment[ek]);
+  }
   var slot={
     id:'char_'+Date.now(),
     createdAt:now,
@@ -223,7 +230,7 @@ export function createCharacterSlot(name,archetypeKey){
     sprite:loadout.sprite,
     customChar:{
       name:charName,
-      equipment:Object.assign({},loadout.equipment),
+      equipment:rolledEquip,
       skills:[loadout.skills[0],loadout.skills[1]],
       ultimate:loadout.ultimate,
       sprite:loadout.sprite,
