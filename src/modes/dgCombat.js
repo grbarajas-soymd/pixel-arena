@@ -381,24 +381,25 @@ function autoPickAction(){
     dmgSkills.sort(function(a,b){return b.dmg-a.dmg});
     handleAction('skill'+dmgSkills[0].slot);return;
   }
-  // Use buff/utility skills smartly based on context
+  // Use buff/utility skills smartly — only against tough enemies (tier 2+)
+  var monsterTough=monster.maxHp>500;
   for(var bi=0;bi<buffSkills.length;bi++){
     var bs=buffSkills[bi];
     var id=bs.sk.id;
     // Shield: use when HP below 65% and no shield active
     if(id==='staticShield'&&hpPct<0.65&&!hero.shieldActive){handleAction('skill'+bs.slot);return}
-    // Hunter's Mark: always useful
-    if(id==='huntersMark'){handleAction('skill'+bs.slot);return}
-    // Bloodlust: use for attack speed boost
+    // Hunter's Mark: only vs tough enemies
+    if(id==='huntersMark'&&monsterTough){handleAction('skill'+bs.slot);return}
+    // Bloodlust: use for extra attack (always worth it)
     if(id==='bloodlust'&&!bloodlustActive){handleAction('skill'+bs.slot);return}
-    // Shadow Step: use for stealth
-    if(id==='shadowStep'&&!hero.stealthed){handleAction('skill'+bs.slot);return}
-    // Envenom: use for poison
-    if(id==='envenom'&&poisonTurnsLeft<=0){handleAction('skill'+bs.slot);return}
+    // Shadow Step: only vs tough enemies when not stealthed
+    if(id==='shadowStep'&&!hero.stealthed&&monsterTough){handleAction('skill'+bs.slot);return}
+    // Envenom: only vs tough enemies
+    if(id==='envenom'&&poisonTurnsLeft<=0&&monsterTough){handleAction('skill'+bs.slot);return}
     // Smoke Bomb: use when HP below 55%
     if(id==='smokeBomb'&&hpPct<0.55&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+bs.slot);return}
-    // War Cry: use to debuff enemy
-    if(id==='warCry'&&!hasStatus(monsterStatuses,'warcry')){handleAction('skill'+bs.slot);return}
+    // War Cry: only vs tough enemies
+    if(id==='warCry'&&!hasStatus(monsterStatuses,'warcry')&&monsterTough){handleAction('skill'+bs.slot);return}
     // Summon Pet: use if no follower alive
     if(id==='sacrifice'&&!hero.followerAlive){handleAction('skill'+bs.slot);return}
   }
@@ -413,7 +414,7 @@ function handleAction(action){
   if(!hero||!monster||!run)return;
   if(action==='attack'){
     phase='playerAnim';animAction='attack';animSource=hero;animTarget=monster;
-    animTimer=0;animDuration=250;enableButtons(false);
+    animTimer=0;animDuration=autoBattle?150:250;enableButtons(false);
     showTurnText(hero.name+' attacks!');
   }
   else if(action==='skill0'||action==='skill1'){
@@ -431,7 +432,7 @@ function handleAction(action){
     phase='playerAnim';animAction='skill';
     animAction_skillIdx=skillIdx;animAction_skill=sk;
     animSource=hero;animTarget=monster;
-    animTimer=0;animDuration=350;enableButtons(false);
+    animTimer=0;animDuration=autoBattle?200:350;enableButtons(false);
     showTurnText(hero.name+' casts '+sk.name+'!');
   }
   else if(action==='ultimate'){
@@ -442,7 +443,7 @@ function handleAction(action){
     phase='playerAnim';animAction='ultimate';
     animAction_ultIdx=ultIdx;animAction_ult=ultData;
     animSource=hero;animTarget=monster;
-    animTimer=0;animDuration=500;enableButtons(false);
+    animTimer=0;animDuration=autoBattle?300:500;enableButtons(false);
     showTurnText('\u2B50 '+hero.name+' unleashes '+ultData.name+'! \u2B50');
     SFX.ult();
   }
@@ -783,7 +784,7 @@ function advanceTurn(){
     enableButtons(true);
     showTurnText('Turn '+turnNum+' \u2014 Choose your action!');
     updateUI();
-    if(autoBattle)setTimeout(autoPickAction,150);
+    if(autoBattle)setTimeout(autoPickAction,80);
   }
   else if(acted==='monster'){
     monsterRoundCount++;
@@ -899,7 +900,7 @@ function doCompanionTurn(){
     phase='done';setTimeout(function(){endCombat(true);},500);return;
   }
   calcTimelinePreview();
-  setTimeout(function(){advanceTurn();},200);
+  setTimeout(function(){advanceTurn();},autoBattle?80:200);
 }
 
 function applyCompanionAbility(){
@@ -1045,7 +1046,7 @@ function startMonsterTurn(){
   // Normal attack
   phase='monsterAnim';animAction='monsterAttack';
   animSource=monster;animTarget=hero;
-  animTimer=0;animDuration=250;
+  animTimer=0;animDuration=autoBattle?150:250;
   if(!readySpecial)showTurnText(monster.name+' attacks!');
 }
 
@@ -1290,30 +1291,55 @@ function dgRender(now){
   ctx.fillStyle='rgba(0,0,0,0.4)';ctx.font='bold 10px "Cinzel"';ctx.textAlign='center';
   ctx.fillText('Turn '+turnNum,CW/2,AY-5);
   // Timeline bar
-  var tlY=AY+38,tlX=CW/2-timelinePreview.length*20;
-  ctx.fillStyle='rgba(0,0,0,0.35)';
-  ctx.fillRect(tlX-4,tlY-2,timelinePreview.length*40+8,22);
-  ctx.strokeStyle='rgba(200,180,120,0.3)';ctx.lineWidth=1;
-  ctx.strokeRect(tlX-4.5,tlY-2.5,timelinePreview.length*40+9,23);
-  ctx.font='bold 8px "Cinzel"';ctx.fillStyle='#8a7a5a';ctx.textAlign='center';
-  ctx.fillText('TURN ORDER',CW/2,tlY-4);
-  for(var tli=0;tli<timelinePreview.length;tli++){
+  var tlCount=Math.min(timelinePreview.length,8);
+  var tlSlotW=52,tlGap=3,tlTotalW=tlCount*(tlSlotW+tlGap)-tlGap;
+  var tlY=AY+36,tlX=CW/2-tlTotalW/2;
+  // Background panel
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(tlX-6,tlY-14,tlTotalW+12,36);
+  ctx.strokeStyle='rgba(200,180,120,0.25)';ctx.lineWidth=1;
+  ctx.strokeRect(tlX-6.5,tlY-14.5,tlTotalW+13,37);
+  // Label
+  ctx.font='bold 7px "Cinzel"';ctx.fillStyle='#8a7a5a';ctx.textAlign='center';
+  ctx.fillText('TURN ORDER',CW/2,tlY-7);
+  var heroName=state.h1?state.h1.name:'Hero';
+  var monName=state.h2?state.h2.name:'Enemy';
+  for(var tli=0;tli<tlCount;tli++){
     var tlid=timelinePreview[tli];
-    var tlBx=tlX+tli*40;
+    var tlBx=tlX+tli*(tlSlotW+tlGap);
     var isCurrent=tli===0;
-    // Background box
-    var boxCol=tlid==='hero'?'rgba(100,160,100,0.4)':tlid==='companion'?'rgba(140,100,180,0.4)':'rgba(180,80,60,0.4)';
-    ctx.fillStyle=boxCol;ctx.fillRect(tlBx,tlY,36,16);
-    if(isCurrent){ctx.strokeStyle='#ffcc44';ctx.lineWidth=1.5;ctx.strokeRect(tlBx-0.5,tlY-0.5,37,17);ctx.lineWidth=1;}
-    // Icon
-    ctx.font=isCurrent?'12px sans-serif':'10px sans-serif';ctx.textAlign='center';
-    var icon=tlid==='hero'?'\u2694\uFE0F':tlid==='companion'?companionIcon:((state.h2&&state.h2.monsterIcon)||'\uD83D\uDC80');
-    ctx.fillText(icon,tlBx+18,tlY+13);
+    // Slot colors
+    var bgCol,borderCol,textCol,label;
+    if(tlid==='hero'){
+      bgCol=isCurrent?'rgba(80,180,80,0.5)':'rgba(60,120,60,0.35)';
+      borderCol='#66cc66';textCol='#88ff88';label='YOU';
+    }else if(tlid==='companion'){
+      bgCol=isCurrent?'rgba(160,100,200,0.5)':'rgba(120,70,160,0.35)';
+      borderCol='#bb88ff';textCol='#cc99ff';label=companionName.length>6?companionName.substring(0,6):companionName;
+    }else{
+      bgCol=isCurrent?'rgba(200,60,40,0.5)':'rgba(150,50,40,0.35)';
+      borderCol='#ff6644';textCol='#ff8866';label=monName.length>6?monName.substring(0,6):monName;
+    }
+    // Draw slot
+    ctx.fillStyle=bgCol;ctx.fillRect(tlBx,tlY,tlSlotW,18);
+    ctx.strokeStyle=isCurrent?'#ffcc44':borderCol;ctx.lineWidth=isCurrent?2:1;
+    ctx.strokeRect(tlBx+0.5,tlY+0.5,tlSlotW-1,17);
+    // Icon + label
+    ctx.textAlign='center';
+    var icon=tlid==='hero'?'\u2694\uFE0F':tlid==='companion'?(companionIcon||'\uD83D\uDC3E'):((state.h2&&state.h2.monsterIcon)||'\uD83D\uDC80');
+    ctx.font='10px sans-serif';ctx.fillText(icon,tlBx+12,tlY+14);
+    ctx.font=isCurrent?'bold 8px "Cinzel"':'7px "Cinzel"';ctx.fillStyle=textCol;
+    ctx.textAlign='left';ctx.fillText(label,tlBx+22,tlY+13);
     // Charging indicator on monster turns
     if(tlid==='monster'&&monsterChargingSpecial){
       var flashA=Math.sin(state.bt/150)*0.3+0.7;
-      ctx.globalAlpha=flashA;ctx.fillStyle='#ff4444';ctx.font='8px sans-serif';
-      ctx.fillText('\u26A0',tlBx+32,tlY+6);ctx.globalAlpha=1;
+      ctx.globalAlpha=flashA;ctx.fillStyle='#ff4444';ctx.font='9px sans-serif';
+      ctx.textAlign='center';ctx.fillText('\u26A0',tlBx+tlSlotW-6,tlY+6);ctx.globalAlpha=1;
+    }
+    // Arrow between slots
+    if(tli<tlCount-1){
+      ctx.fillStyle='rgba(200,180,120,0.3)';ctx.textAlign='center';ctx.font='8px sans-serif';
+      ctx.fillText('\u25B8',tlBx+tlSlotW+1,tlY+12);
     }
   }
   // Telegraph warning
@@ -1327,11 +1353,11 @@ function dgRender(now){
   // Phase indicator
   if(phase==='pick'){
     var pickP=Math.sin(state.bt/300)*0.2+0.8;
-    ctx.globalAlpha=pickP;ctx.fillStyle='#6a9a6a';ctx.font='bold 11px "Cinzel"';
-    ctx.fillText('\u25B6 YOUR TURN',CW/2,tlY+32);ctx.globalAlpha=1;
+    ctx.globalAlpha=pickP;ctx.fillStyle='#88ff88';ctx.font='bold 12px "Cinzel"';ctx.textAlign='center';
+    ctx.fillText('\u25B6 YOUR TURN \u2014 Choose an action!',CW/2,tlY+34);ctx.globalAlpha=1;
   }else if(phase==='monsterAnim'){
-    ctx.fillStyle='#ff6644';ctx.font='bold 11px "Cinzel"';
-    ctx.fillText('\uD83D\uDC80 ENEMY TURN',CW/2,tlY+32);
+    ctx.fillStyle='#ff6644';ctx.font='bold 12px "Cinzel"';ctx.textAlign='center';
+    ctx.fillText('\uD83D\uDC80 ENEMY TURN',CW/2,tlY+34);
   }
   rafId=requestAnimationFrame(dgRender);
 }

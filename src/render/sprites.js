@@ -50,6 +50,8 @@ export function drawHero(h){
   if(h.deathMarkTarget&&state.bt<h.deathMarkEnd){ctx.strokeStyle='rgba(255,136,0,0.4)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(-22,-58,44,65);ctx.setLineDash([]);ctx.fillStyle='#ff8800';ctx.font='bold 11px "Cinzel"';ctx.textAlign='center';ctx.fillText('\u2620',0,-64)}
   if(stunned){const t2=state.bt/200;for(let i=0;i<3;i++){const a=t2+i*2.09;ctx.fillStyle='#e8d060';ctx.fillRect(-2+Math.cos(a)*14,-55+Math.sin(a)*6,4,4);ctx.fillStyle='#fff';ctx.fillRect(-1+Math.cos(a)*14,-54+Math.sin(a)*6,2,2)}}
   ctx.globalAlpha=1;
+  // Undo facing flip for HP bar and name so text isn't mirrored
+  if(f<0)ctx.scale(-1,1);
   const hpP=Math.max(0,h.hp/h.maxHp);
   ctx.fillStyle='#2a1a0a';ctx.fillRect(-18,-72,36,6);
   ctx.fillStyle=hpP>.3?h.color:'#cc3300';ctx.fillRect(-17,-71,Math.round(34*hpP),4);
