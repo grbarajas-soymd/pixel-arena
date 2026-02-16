@@ -55,6 +55,7 @@ var tranceActive=false;var tranceDmgBonus=0;var tranceDefLoss=0;var tranceRounds
 var thornsActive=false;var thornsPct=0;var thornsRounds=0;
 var shadowDanceRounds=0;var lastStandRounds=0;var primalFuryRounds=0;var freeSpellsRounds=0;var primalExtraUsed=false;
 var burnDmg=0;var burnTurnsLeft=0;
+var bleedTurnsLeft=0;
 var dgMouseX=-1,dgMouseY=-1; // canvas-space mouse coords for status tooltip hover
 var animAction_skillIdx=null;
 var animAction_skill=null;
@@ -68,6 +69,7 @@ function getSkillDmg(idx,src){
   if(idx===9)return Math.round(src.baseDmg*1.5+(src.def||0));
   if(idx===11)return Math.round(80+(src.def||0)*3);
   if(idx===12)return Math.round(60+(src.maxHp||1500)*0.03);
+  if(idx===15)return Math.round(src.baseDmg*(0.5+(src.evasion||0)*2)*0.3);
   return 0;
 }
 
@@ -88,6 +90,33 @@ var DG_SPECIALS={
   heal:{cd:5,telegraph:'begins to regenerate!',icon:'\u{1F49A}'},
   warStomp:{cd:5,telegraph:'stomps the ground!',icon:'\uD83D\uDCA5'}
 };
+var DG_TELEGRAPH_INFO={
+  heavyStrike:{desc:'Deals 2x normal damage!',severity:'danger',
+    counters:[
+      {skillIds:[16],text:'Use Riposte to counter-attack!',icon:'\u{1F6E1}'},
+      {skillIds:[0],text:'Stun to cancel the attack!',icon:'\u26A1'},
+      {skillIds:[2,8],text:'Shield or Smoke to survive!',icon:'\u{1F6E1}'}
+    ]},
+  warStomp:{desc:'Stuns you for 1 turn!',severity:'warning',
+    counters:[
+      {skillIds:[0],text:'Stun to cancel!',icon:'\u26A1'},
+      {skillIds:[8],text:'Smoke Bomb for dodge chance!',icon:'\u{1F4A3}'}
+    ]},
+  enrage:{desc:'Doubles damage for 2 turns!',severity:'warning',
+    counters:[
+      {skillIds:[0],text:'Stun to cancel!',icon:'\u26A1'},
+      {skillIds:[2],text:'Shield to absorb hits!',icon:'\u{1F6E1}'}
+    ]},
+  heal:{desc:'Restores 30% HP!',severity:'caution',
+    counters:[
+      {skillIds:[0],text:'Stun to cancel the heal!',icon:'\u26A1'}
+    ]},
+  poisonSpit:{desc:'Poisons you for 3 turns!',severity:'warning',
+    counters:[
+      {skillIds:[0],text:'Stun to cancel!',icon:'\u26A1'},
+      {skillIds:[8],text:'Smoke Bomb for dodge chance!',icon:'\u{1F4A3}'}
+    ]}
+};
 var monsterEnraged=false;
 var monsterEnragedRounds=0;
 
@@ -97,6 +126,93 @@ var heroPoisonTurns=0; // Monster poison on hero (separate from hero poison on m
 var companionHp=0,companionMaxHp=0,companionAlive=false;
 var companionAbilityCd=0,companionAbilityMaxCd=3;
 var companionData=null,companionDmg=0,companionDef=0,companionAS=0,companionName='',companionIcon='';
+
+// ===== TELEGRAPH PANEL & COUNTER HIGHLIGHTS =====
+function getPlayerCounterHints(specId){
+  var info=DG_TELEGRAPH_INFO[specId];
+  if(!info)return[];
+  var equipped=[];
+  for(var i=0;i<2;i++){
+    var si=state.customChar.skills[i];
+    if(si!==null)equipped.push(si);
+  }
+  var hints=[];
+  for(var ci=0;ci<info.counters.length;ci++){
+    var c=info.counters[ci];
+    var hasOne=false;
+    for(var ei=0;ei<equipped.length;ei++){
+      for(var si2=0;si2<c.skillIds.length;si2++){
+        if(equipped[ei]===c.skillIds[si2]){hasOne=true;break;}
+      }
+      if(hasOne)break;
+    }
+    if(hasOne)hints.push(c);
+  }
+  return hints;
+}
+function showTelegraphPanel(specId){
+  removeTelegraphPanel();
+  var info=DG_TELEGRAPH_INFO[specId];
+  if(!info)return;
+  var spec=DG_SPECIALS[specId];
+  var hints=getPlayerCounterHints(specId);
+  var panel=document.createElement('div');
+  panel.id='dgTelegraphPanel';
+  panel.className='dg-telegraph-panel dg-telegraph-'+info.severity;
+  var sevColors={danger:'#ff4444',warning:'#ff8844',caution:'#ccaa00'};
+  var col=sevColors[info.severity]||'#ff8844';
+  var html='<div class="dg-tele-header" style="color:'+col+'">\u26A0 '+(spec?spec.icon:'')+' '+specId.replace(/([A-Z])/g,' $1').toUpperCase()+' \u26A0</div>';
+  html+='<div class="dg-tele-desc">'+info.desc+'</div>';
+  if(hints.length>0){
+    html+='<div class="dg-tele-hints">';
+    for(var i=0;i<hints.length;i++){
+      html+='<div class="dg-tele-hint">'+hints[i].icon+' '+hints[i].text+'</div>';
+    }
+    html+='</div>';
+  }
+  html+='<div class="dg-tele-hint">\u{1F9EA} Use Potion to pre-heal!</div>';
+  panel.innerHTML=html;
+  var cvs=document.getElementById('arenaCanvas');
+  if(cvs&&cvs.parentNode){
+    var actDiv=document.getElementById('dgTurnActions');
+    if(actDiv)cvs.parentNode.insertBefore(panel,actDiv);
+    else cvs.parentNode.insertBefore(panel,cvs.nextSibling);
+  }
+  highlightCounterButtons(hints);
+}
+function highlightCounterButtons(hints){
+  // Build set of counter skill indices
+  var counterIds={};
+  for(var i=0;i<hints.length;i++){
+    for(var j=0;j<hints[i].skillIds.length;j++)counterIds[hints[i].skillIds[j]]=true;
+  }
+  // Also always highlight potion
+  var potBtn=document.getElementById('dgPotBtn');
+  if(potBtn&&!potBtn.disabled)potBtn.classList.add('dg-counter-highlight');
+  // Check each skill button
+  for(var si=0;si<2;si++){
+    var skillIdx=state.customChar.skills[si];
+    if(skillIdx===null)continue;
+    if(counterIds[skillIdx]){
+      var btn=document.getElementById(si===0?'dgSk0Btn':'dgSk1Btn');
+      if(btn&&!btn.disabled){
+        btn.classList.add('dg-counter-highlight');
+        if(btn.innerHTML.indexOf('COUNTER')===-1)btn.innerHTML+=' <span class="dg-counter-label">COUNTER!</span>';
+      }
+    }
+  }
+}
+function removeTelegraphPanel(){
+  var panel=document.getElementById('dgTelegraphPanel');
+  if(panel)panel.remove();
+  // Clear counter highlights
+  var btns=document.querySelectorAll('.dg-counter-highlight');
+  for(var i=0;i<btns.length;i++){
+    btns[i].classList.remove('dg-counter-highlight');
+    var labels=btns[i].querySelectorAll('.dg-counter-label');
+    for(var j=0;j<labels.length;j++)labels[j].remove();
+  }
+}
 
 // ===== DAMAGE FORMULAS =====
 function calcDmg(attacker,defender){
@@ -177,7 +293,7 @@ export function initDgCombat(monster){
   tranceActive=false;tranceDmgBonus=0;tranceDefLoss=0;tranceRounds=0;
   thornsActive=false;thornsPct=0;thornsRounds=0;
   shadowDanceRounds=0;lastStandRounds=0;primalFuryRounds=0;freeSpellsRounds=0;primalExtraUsed=false;
-  burnDmg=0;burnTurnsLeft=0;
+  burnDmg=0;burnTurnsLeft=0;bleedTurnsLeft=0;
   animAction_skillIdx=null;animAction_skill=null;
   animAction_ultIdx=null;animAction_ult=null;
   playerStunnedByMonster=false;heroPoisonTurns=0;
@@ -243,6 +359,13 @@ export function initDgCombat(monster){
       dgMouseY=(e.clientY-r.top)*(cvs.height/r.height);
     });
     cvs.addEventListener('mouseleave',function(){dgMouseX=-1;dgMouseY=-1;});
+    cvs.addEventListener('click',function(){if(autoBattle)toggleAutoBattle();});
+  }
+  if(!document._dgEscBound){
+    document._dgEscBound=true;
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'&&autoBattle)toggleAutoBattle();
+    });
   }
   SFX.battleStart();
   showTurnText('Battle Start!');
@@ -305,9 +428,12 @@ function enableButtons(enabled){
   var div=document.getElementById('dgTurnActions');
   if(!div)return;
   div.querySelectorAll('.dg-action-btn').forEach(function(btn){
-    btn.disabled=!enabled;
-    btn.style.opacity=enabled?'1':'0.4';
-    btn.style.pointerEvents=enabled?'auto':'none';
+    // Keep auto button clickable during animations when auto-battle is on
+    var isAutoBtn=btn.id==='dgAutoBtn';
+    var forceEnable=isAutoBtn&&autoBattle;
+    btn.disabled=forceEnable?false:!enabled;
+    btn.style.opacity=(enabled||forceEnable)?'1':'0.4';
+    btn.style.pointerEvents=(enabled||forceEnable)?'auto':'none';
   });
   if(enabled)refreshButtonStates();
 }
@@ -363,30 +489,49 @@ function refreshButtonStates(){
 }
 
 // ===== AUTO BATTLE =====
+function _showAutoBanner(show){
+  var existing=document.getElementById('dgAutoBanner');
+  if(show){
+    if(!existing){
+      var banner=document.createElement('div');
+      banner.id='dgAutoBanner';banner.className='dg-auto-banner';
+      banner.innerHTML='\u{1F916} AUTO BATTLE \u2014 Click or press ESC to cancel';
+      banner.onclick=function(){if(autoBattle)toggleAutoBattle();};
+      var cvs=document.getElementById('arenaCanvas');
+      if(cvs&&cvs.parentNode)cvs.parentNode.insertBefore(banner,cvs);
+    }
+  }else{
+    if(existing)existing.remove();
+  }
+}
 function toggleAutoBattle(){
   autoBattle=!autoBattle;
   var btn=document.getElementById('dgAutoBtn');
   if(btn){
     btn.style.background=autoBattle?'rgba(204,170,0,0.25)':'';
     btn.style.boxShadow=autoBattle?'0 0 10px #ccaa00':'';
+    btn.className=autoBattle?'dg-action-btn dg-auto-active':'dg-action-btn';
     btn.innerHTML=autoBattle?'\u{1F916} AUTO ON':'\u{1F916} Auto';
   }
+  _showAutoBanner(autoBattle);
   if(autoBattle&&phase==='pick')autoPickAction();
 }
 
+function _findSkill(affordable,id){
+  for(var i=0;i<affordable.length;i++)if(affordable[i].sk.id===id)return affordable[i];
+  return null;
+}
+function _findIdx(affordable,idx){
+  for(var i=0;i<affordable.length;i++)if(affordable[i].idx===idx)return affordable[i];
+  return null;
+}
 function autoPickAction(){
   if(!autoBattle||phase!=='pick')return;
   var hero=state.h1,monster=state.h2,run=state.dgRun;
   if(!hero||!monster||!run)return;
   var res=hero.resource!==undefined?hero.resource:(hero.mana||0);
   var hpPct=hero.hp/hero.maxHp;
-  var isCharging=!!monsterChargingSpecial;
-  // Use potion if HP low
-  if(hpPct<0.35&&run.potions>0){handleAction('potion');return}
-  // Use ultimate if available and HP below threshold
-  var ultIdx=state.customChar.ultimate;
-  var ud=ultIdx!==null?ALL_ULTS[ultIdx]:null;
-  if(ud&&!ultUsed&&hpPct<(ud.threshold||0.25)+0.1){handleAction('ultimate');return}
+  var mHpPct=monster.hp/monster.maxHp;
   // Build list of affordable skills
   var affordable=[];
   for(var i=0;i<2;i++){
@@ -397,68 +542,98 @@ function autoPickAction(){
     if(cost>0&&res<cost&&freeSpellsRounds<=0)continue;
     affordable.push({slot:i,idx:si,sk:sk,cost:cost,dmg:getSkillDmg(si,hero)});
   }
-  // TELEGRAPH AWARENESS: If monster is charging, prioritize stun > shield > smokeBomb
-  if(isCharging){
-    // Try stun skills first (chain lightning idx=0 stuns)
-    for(var sti=0;sti<affordable.length;sti++){
-      if(affordable[sti].idx===0){handleAction('skill'+affordable[sti].slot);return}
-    }
-    // Try shield/smokeBomb to survive
-    for(var di=0;di<affordable.length;di++){
-      var did=affordable[di].sk.id;
-      if(did==='staticShield'&&!hero.shieldActive){handleAction('skill'+affordable[di].slot);return}
-      if(did==='smokeBomb'&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+affordable[di].slot);return}
-    }
+  // P1: Potion at 45% HP
+  if(hpPct<0.45&&run.potions>0){handleAction('potion');return}
+  // P2: Ultimate — when HP low OR long fight with tough monster
+  var ultIdx=state.customChar.ultimate;
+  var ud=ultIdx!==null?ALL_ULTS[ultIdx]:null;
+  if(ud&&!ultUsed){
+    if(hpPct<0.40||(mHpPct>0.6&&turnNum>6)){handleAction('ultimate');return}
   }
-  // Prioritize: damage skills first, then utility/buffs contextually
-  var dmgSkills=affordable.filter(function(s){return s.dmg>0});
-  var buffSkills=affordable.filter(function(s){return s.dmg===0});
-  // Use highest-damage skill if available
+  // P3: Telegraph-specific response
+  if(monsterChargingSpecial){
+    var specId=monsterChargingSpecial.id;
+    var used=_aiTelegraphResponse(specId,affordable,hero,hpPct);
+    if(used)return;
+  }
+  // P4: Combo setup — buffs BEFORE damage
+  var s;
+  s=_findSkill(affordable,'envenom');
+  if(s&&poisonTurnsLeft<=0){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'huntersMark');
+  if(s&&!hasStatus(monsterStatuses,'marked')){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'markedForDeath');
+  if(s&&!monsterVulnerable){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'battleTrance');
+  if(s&&!tranceActive){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'bloodlust');
+  if(s&&!bloodlustActive){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'sacrifice');
+  if(s&&!hero.followerAlive){handleAction('skill'+s.slot);return}
+  // P5: Execute — Lacerate when monster < 50% HP, Rupture when bleed active
+  s=_findSkill(affordable,'lacerate');
+  if(s&&mHpPct<0.5){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'rupture');
+  if(s&&bleedTurnsLeft>0){handleAction('skill'+s.slot);return}
+  // P6: Damage skills — highest first
+  var dmgSkills=affordable.filter(function(a){return a.dmg>0});
   if(dmgSkills.length>0){
     dmgSkills.sort(function(a,b){return b.dmg-a.dmg});
     handleAction('skill'+dmgSkills[0].slot);return;
   }
-  // Use buff/utility skills smartly — only against tough enemies (tier 2+)
-  var monsterTough=monster.maxHp>500;
-  for(var bi=0;bi<buffSkills.length;bi++){
-    var bs=buffSkills[bi];
-    var id=bs.sk.id;
-    // Shield: use when HP below 65% and no shield active
-    if(id==='staticShield'&&hpPct<0.65&&!hero.shieldActive){handleAction('skill'+bs.slot);return}
-    // Hunter's Mark: only vs tough enemies
-    if(id==='huntersMark'&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Bloodlust: use for extra attack (always worth it)
-    if(id==='bloodlust'&&!bloodlustActive){handleAction('skill'+bs.slot);return}
-    // Shadow Step: only vs tough enemies when not stealthed
-    if(id==='shadowStep'&&!hero.stealthed&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Envenom: only vs tough enemies
-    if(id==='envenom'&&poisonTurnsLeft<=0&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Smoke Bomb: use when HP below 55%
-    if(id==='smokeBomb'&&hpPct<0.55&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+bs.slot);return}
-    // War Cry: only vs tough enemies
-    if(id==='warCry'&&!hasStatus(monsterStatuses,'warcry')&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Summon Pet: use if no follower alive
-    if(id==='sacrifice'&&!hero.followerAlive){handleAction('skill'+bs.slot);return}
-    // Rupture: pop bleeds if any active
-    if(id==='rupture'&&poisonTurnsLeft>0){handleAction('skill'+bs.slot);return}
-    // Marked for Death: vulnerable debuff
-    if(id==='markedForDeath'&&!monsterVulnerable&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Lacerate: execute when enemy below 50% HP
-    if(id==='lacerate'&&monster.hp/monster.maxHp<0.5){handleAction('skill'+bs.slot);return}
-    // Riposte: counter stance if not already active
-    if(id==='riposte'&&!riposteReady&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Battle Trance: convert DEF to DMG
-    if(id==='battleTrance'&&!tranceActive&&monsterTough){handleAction('skill'+bs.slot);return}
-    // Thorns: reflect damage
-    if(id==='thorns'&&!thornsActive&&monsterTough){handleAction('skill'+bs.slot);return}
-  }
-  // Default: basic attack
+  // P7: Defensive buffs — no tough-enemy gate
+  s=_findSkill(affordable,'staticShield');
+  if(s&&hpPct<0.65&&!hero.shieldActive){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'smokeBomb');
+  if(s&&hpPct<0.6&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'riposte');
+  if(s&&!riposteReady){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'thorns');
+  if(s&&!thornsActive){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'shadowStep');
+  if(s&&!hero.stealthed){handleAction('skill'+s.slot);return}
+  s=_findSkill(affordable,'warCry');
+  if(s&&!hasStatus(monsterStatuses,'warcry')){handleAction('skill'+s.slot);return}
+  // P8: Basic attack fallback
   handleAction('attack');
+}
+function _aiTelegraphResponse(specId,affordable,hero,hpPct){
+  var s;
+  if(specId==='heavyStrike'){
+    // Riposte is ideal — counter the big hit
+    s=_findSkill(affordable,'riposte');if(s&&!riposteReady){handleAction('skill'+s.slot);return true}
+    // Stun to cancel
+    s=_findIdx(affordable,0);if(s){handleAction('skill'+s.slot);return true}
+    // Shield/Smoke/Thorns to survive
+    s=_findSkill(affordable,'staticShield');if(s&&!hero.shieldActive){handleAction('skill'+s.slot);return true}
+    s=_findSkill(affordable,'smokeBomb');if(s&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+s.slot);return true}
+    s=_findSkill(affordable,'thorns');if(s&&!thornsActive){handleAction('skill'+s.slot);return true}
+    // Pre-potion if HP not great
+    if(hpPct<0.6&&state.dgRun&&state.dgRun.potions>0){handleAction('potion');return true}
+  }
+  else if(specId==='warStomp'){
+    s=_findIdx(affordable,0);if(s){handleAction('skill'+s.slot);return true}
+    s=_findSkill(affordable,'smokeBomb');if(s&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+s.slot);return true}
+  }
+  else if(specId==='enrage'){
+    s=_findIdx(affordable,0);if(s){handleAction('skill'+s.slot);return true}
+    s=_findSkill(affordable,'staticShield');if(s&&!hero.shieldActive){handleAction('skill'+s.slot);return true}
+  }
+  else if(specId==='heal'){
+    s=_findIdx(affordable,0);if(s){handleAction('skill'+s.slot);return true}
+    // No good counter — fall through to max damage
+  }
+  else if(specId==='poisonSpit'){
+    s=_findIdx(affordable,0);if(s){handleAction('skill'+s.slot);return true}
+    s=_findSkill(affordable,'smokeBomb');if(s&&!hasStatus(playerStatuses,'smokeBomb')){handleAction('skill'+s.slot);return true}
+  }
+  return false;
 }
 
 // ===== HANDLE PLAYER ACTION =====
 function handleAction(action){
   if(phase!=='pick')return;
+  removeTelegraphPanel();
   var hero=state.h1,monster=state.h2,run=state.dgRun;
   if(!hero||!monster||!run)return;
   if(action==='attack'){
@@ -740,15 +915,15 @@ function applySkillEffect(src,tgt){
       }
     }
     else if(idx===13){
-      // Rupture: pop poison stacks for burst
-      if(poisonTurnsLeft>0){
-        var stacks=poisonTurnsLeft;
+      // Rupture: pop bleed stacks for burst
+      if(bleedTurnsLeft>0){
+        var stacks=bleedTurnsLeft;
         var perStack=Math.round(30+(src.baseAS||0.5)*80);
         var burstDmg=Math.round(stacks*perStack*(1-Math.min(tgt.def/300,0.8)));
         tgt.hp-=burstDmg;tgt.hurtAnim=1;
         dmgDealt+=burstDmg;if(deathMarkActive)deathMarkDmg+=burstDmg;
-        poisonStacks=0;poisonTurnsLeft=0;
-        for(var ri=monsterStatuses.length-1;ri>=0;ri--)if(monsterStatuses[ri].id==='poison')monsterStatuses.splice(ri,1);
+        bleedTurnsLeft=0;
+        for(var ri=monsterStatuses.length-1;ri>=0;ri--)if(monsterStatuses[ri].id==='bleed')monsterStatuses.splice(ri,1);
         addFloat(tgt.x,tgt.y-60,'\u{1FA78}x'+stacks+' '+burstDmg,'#cc4444');
         combatLog('Rupture x'+stacks+' = '+burstDmg+' dmg!','dmg');
       }else{
@@ -778,7 +953,7 @@ function applySkillEffect(src,tgt){
         addFloat(tgt.x,tgt.y-60,(result.crit?'CRIT! ':'')+'\u{1F5E1} '+result.amount,'#ff2222');
         SFX.hit();if(result.crit)SFX.crit();
         combatLog('Lacerate '+result.amount+' ('+Math.round(missingPct*100)+'% missing HP)','dmg');
-        poisonTurnsLeft=Math.max(poisonTurnsLeft,1);poisonDmg=Math.max(poisonDmg,Math.round(src.baseDmg*0.3));
+        bleedTurnsLeft=Math.max(bleedTurnsLeft,2);
         addStatus(monsterStatuses,'bleed',2);combatLog(tgt.name+' is bleeding!','debuff');
       }
     }
@@ -1201,6 +1376,17 @@ function tickRoundDurations(){
       for(var pi=monsterStatuses.length-1;pi>=0;pi--)if(monsterStatuses[pi].id==='poison'){monsterStatuses.splice(pi,1);break;}
     }
   }
+  // Bleed DoT tick on monster (from Lacerate)
+  if(bleedTurnsLeft>0&&state.h2&&state.h2.hp>0){
+    var bleedDmg=Math.round((state.h1?state.h1.baseDmg:50)*0.3);
+    state.h2.hp-=bleedDmg;dmgDealt+=bleedDmg;
+    addFloat(state.h2.x,state.h2.y-40,'\u{1FA78} '+bleedDmg,'#cc4444');
+    combatLog('Bleed deals '+bleedDmg+' to '+state.h2.name,'dmg');
+    bleedTurnsLeft--;
+    if(bleedTurnsLeft<=0){
+      for(var bli=monsterStatuses.length-1;bli>=0;bli--)if(monsterStatuses[bli].id==='bleed'){monsterStatuses.splice(bli,1);break;}
+    }
+  }
 }
 
 function doCompanionTurn(){
@@ -1353,6 +1539,7 @@ function startMonsterTurn(){
       addFloat(monster.x,monster.y-70,'CANCELLED!','#44ddbb');
       combatLog(monster.name+'\'s '+monsterChargingSpecial.id+' was cancelled by stun!','stun');
       monsterChargingSpecial=null;
+      removeTelegraphPanel();
     }
     phase='monsterAnim';
     setTimeout(function(){finishAnim();},150);
@@ -1360,6 +1547,7 @@ function startMonsterTurn(){
   }
   // Execute charged special if one is pending
   if(monsterChargingSpecial){
+    removeTelegraphPanel();
     var spec=monsterChargingSpecial;
     monsterChargingSpecial=null;
     executeMonsterSpecial(spec.id,hero,monster);
@@ -1377,6 +1565,7 @@ function startMonsterTurn(){
     showTurnText('\u26A0 '+monster.name+' '+readySpecial.telegraph);
     combatLog('\u26A0 '+monster.name+' '+readySpecial.telegraph,'spell');
     addFloat(monster.x,monster.y-70,'\u26A0 '+readySpecial.icon,'#ff6644');
+    showTelegraphPanel(readySpecial.id);
   }
   // Normal attack
   phase='monsterAnim';animAction='monsterAttack';
@@ -1467,6 +1656,8 @@ function endCombat(result){
   run.totalDmgTaken=(run.totalDmgTaken||0)+Math.round(dmgTaken);
   state.h1=null;state.h2=null;state.over=false;
   state._dgCombatMonster=null;state._dgCombatActive=false;
+  autoBattle=false;_showAutoBanner(false);
+  removeTelegraphPanel();
   var actDiv=document.getElementById('dgTurnActions');
   if(actDiv)actDiv.remove();
   var ctrls=document.querySelector('#battleScreen .ctrls');
