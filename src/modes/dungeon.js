@@ -7,6 +7,8 @@ import { getCustomTotalStats } from '../combat/hero.js';
 import { initDgCombat } from './dgCombat.js';
 import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '../render/ui.js';
 import { drawSpritePreview } from '../render/sprites.js';
+import { buildCharSheet } from '../render/charSheet.js';
+import { getIcon } from '../render/icons.js';
 
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
 
@@ -29,28 +31,7 @@ var DG_MONSTERS=[
 ];
 
 export function buildDungeonPicker(){
-  var cont=document.getElementById('dgClassPick');cont.innerHTML='';
-  // Show hero gear summary instead of class picker
-  var cs=getCustomTotalStats();
-  var gearHtml='';
-  EQ_SLOTS.forEach(function(slot){
-    var ik=state.customChar.equipment[slot.key];
-    var item=ik?ITEMS[ik]:null;
-    if(item){
-      var col=GEAR_RARITY_COLORS[item.rarity]||'#aaa';
-      gearHtml+='<span style="color:'+col+'" title="'+item.name+': '+item.desc+'">'+item.icon+'</span> ';
-    }
-  });
-  cont.innerHTML='<div class="class-card cst selected" style="cursor:default">'+
-    '<canvas class="hero-preview-canvas" width="100" height="120" id="dgPreviewCanvas"></canvas>'+
-    '<div class="cc-name cst">'+state.customChar.name+'</div>'+
-    '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
-    '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
-    buildCustomTooltip()+
-    '<button class="dg-choice" style="margin-top:6px;font-size:.42rem;padding:3px 8px" onclick="showArchetypePicker()">Change Class</button>'+
-  '</div>';
-  var pc=document.getElementById('dgPreviewCanvas');
-  if(pc)drawSpritePreview(pc,state.customChar.sprite);
+  buildCharSheet('dungeonCharSheet');
 }
 
 export function startDungeon(){
@@ -103,7 +84,7 @@ function updateDgUI(){
   var r=state.dgRun;
   var hi=document.getElementById('dgHeroInfo');
   var hpPct=Math.max(0,r.hp/r.maxHp*100);
-  var hpCol=hpPct>30?'#44ee88':'#ff4444';
+  var hpCol=hpPct>30?'#6a9a6a':'#aa5a5a';
   hi.innerHTML='<div class="dg-hero-info"><b>'+r.heroName+'</b> (Custom)<br>'+
     '<div class="dg-hero-bar"><div class="bar-label" style="font-size:.52rem"><span style="color:'+hpCol+'">HP</span><span>'+Math.round(r.hp)+'/'+r.maxHp+'</span></div><div class="bar-track"><div class="bar-fill" style="width:'+hpPct+'%;background:linear-gradient(90deg,#1a4a1a,'+hpCol+')"></div></div></div>'+
     'DMG: '+(r.baseDmg+r.bonusDmg)+' | DEF: '+(r.def+r.bonusDef)+'<br>'+
@@ -113,10 +94,10 @@ function updateDgUI(){
   document.getElementById('dgFloorNum').textContent='FLOOR '+r.floor;
   var inv=document.getElementById('dgInventory');
   if(r.items.length===0)inv.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">Empty</div>';
-  else{var ih='';r.items.forEach(function(it){ih+='<div class="dg-inv-item"><span class="dg-inv-icon">'+it.icon+'</span><span>'+it.name+'</span></div>'});inv.innerHTML=ih}
+  else{var ih='';r.items.forEach(function(it){ih+='<div class="dg-inv-item"><span class="dg-inv-icon">'+getIcon(it,16)+'</span><span>'+it.name+'</span></div>'});inv.innerHTML=ih}
   var fc=document.getElementById('dgFollowers');
   if(r.followers.length===0)fc.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">None yet</div>';
-  else{var fh='';r.followers.forEach(function(f){fh+='<div class="dg-inv-item"><span class="dg-inv-icon">'+f.icon+'</span><span class="dg-loot-name '+f.rarity+'">'+f.name+'</span></div>'});fc.innerHTML=fh}
+  else{var fh='';r.followers.forEach(function(f){fh+='<div class="dg-inv-item"><span class="dg-inv-icon">'+getIcon(f,16)+'</span><span class="dg-loot-name '+f.rarity+'">'+f.name+'</span></div>'});fc.innerHTML=fh}
 }
 
 function dgUpdateProgress(){
@@ -152,7 +133,7 @@ function dgShowIntermission(title,titleColor,bodyHtml,nextLabel,nextFn){
     '<div class="dg-im-title" style="color:'+(titleColor||'var(--parch)')+'">'+title+'</div>'+
     '<div class="dg-im-summary">'+bodyHtml+'</div>'+
     '<div style="margin:6px 0">'+
-      '<span class="dg-im-stat" style="color:#44ee88">HP: '+Math.round(r.hp)+'/'+r.maxHp+'</span>'+
+      '<span class="dg-im-stat" style="color:#6a9a6a">HP: '+Math.round(r.hp)+'/'+r.maxHp+'</span>'+
       '<span class="dg-im-stat" style="color:var(--gold-bright)">Gold: '+r.gold+'</span>'+
       '<span class="dg-im-stat" style="color:#88aacc">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:#cc66ff">Followers: '+r.followers.length+'</span>'+
@@ -182,21 +163,21 @@ export function dgShowGearDrop(itemKey,afterFn){
       var diff=newVal-curVal;
       if(diff!==0){
         var label=sk==='hp'?'HP':sk==='baseDmg'?'DMG':sk==='baseAS'?'AS':sk==='def'?'DEF':sk==='evasion'?'EVA':sk==='moveSpeed'?'SPD':sk==='mana'?'MANA':sk;
-        var diffStr=diff>0?'<span style="color:#44ee88">+'+( sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>':'<span style="color:#ff4444">'+(sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>';
+        var diffStr=diff>0?'<span style="color:#6a9a6a">+'+( sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>':'<span style="color:#aa5a5a">'+(sk==='evasion'||sk==='spellDmgBonus'?Math.round(diff*100)+'%':sk==='baseAS'?diff.toFixed(2):Math.round(diff))+'</span>';
         diffs.push(label+': '+diffStr);
       }
     }
     var curCol=GEAR_RARITY_COLORS[currentItem.rarity]||'#aaa';
-    compareHtml='<div style="font-size:.45rem;margin-top:6px;color:var(--parch-dk)">Currently equipped: <span style="color:'+curCol+'">'+currentItem.icon+' '+currentItem.name+'</span> ('+currentItem.desc+')</div>';
+    compareHtml='<div style="font-size:.45rem;margin-top:6px;color:var(--parch-dk)">Currently equipped: <span style="color:'+curCol+'">'+getIcon(currentItem,14)+' '+currentItem.name+'</span> ('+currentItem.desc+')</div>';
     if(diffs.length)compareHtml+='<div style="font-size:.45rem;margin-top:2px">'+diffs.join(' | ')+'</div>';
   } else {
-    compareHtml='<div style="font-size:.45rem;margin-top:4px;color:#44ee88">No item equipped in '+item.slot+'</div>';
+    compareHtml='<div style="font-size:.45rem;margin-top:4px;color:#6a9a6a">No item equipped in '+item.slot+'</div>';
   }
   state.dgRun._pendingGearDrop=itemKey;
   state.dgRun._pendingGearAfter=afterFn;
   rc.innerHTML='<div class="dg-intermission">'+
     '<div class="dg-im-title" style="color:'+col+'">\u2728 GEAR DROP! \u2728</div>'+
-    '<div style="font-size:.7rem">'+item.icon+'</div>'+
+    '<div style="font-size:.7rem">'+getIcon(item,28)+'</div>'+
     '<div style="font-size:.55rem;color:'+col+';font-weight:bold">'+item.name+'</div>'+
     '<div style="font-size:.42rem;color:'+col+'">'+item.rarity+'</div>'+
     '<div style="font-size:.48rem;color:var(--parch)">'+item.desc+'</div>'+
@@ -254,7 +235,7 @@ function dgShowFollowerCapture(f,afterFn){
   var totalOwned=allOwned.length;
   var contextHtml='<div style="font-size:.45rem;color:var(--parch-dk);margin-top:6px;line-height:1.6">';
   if(hasDupe)contextHtml+='<span style="color:#ffaa44">\u26A0 You already have a '+f.name+'</span><br>';
-  else contextHtml+='<span style="color:#44ee88">\u2728 New to your collection!</span><br>';
+  else contextHtml+='<span style="color:#6a9a6a">\u2728 New to your collection!</span><br>';
   contextHtml+='Collection: '+totalOwned+' followers ('+sameRarity+' '+f.rarity+')';
   if(totalOwned>=3)contextHtml+=' \u2014 <span style="color:#88aacc">Max 3 fighters in arena</span>';
   contextHtml+='</div>';
@@ -266,7 +247,7 @@ function dgShowFollowerCapture(f,afterFn){
   });
   var powerHtml='';
   if(totalOwned>0){
-    if(powerScore>bestPower)powerHtml='<div style="font-size:.45rem;color:#44ee88;margin-top:2px">\u2B06 Strongest follower you\'d own!</div>';
+    if(powerScore>bestPower)powerHtml='<div style="font-size:.45rem;color:#6a9a6a;margin-top:2px">\u2B06 Strongest follower you\'d own!</div>';
     else powerHtml='<div style="font-size:.45rem;color:var(--parch-dk);margin-top:2px">Best: '+bestName+' ('+Math.round(bestPower)+'\u2605) vs this: '+Math.round(powerScore)+'\u2605</div>';
   }
   var rc=document.getElementById('dgRoomContent');
@@ -276,7 +257,7 @@ function dgShowFollowerCapture(f,afterFn){
   rc.innerHTML='<div class="dg-intermission">'+
     '<div class="dg-im-title" style="color:'+RARITY_COLORS[f.rarity]+'">\u2728 FOLLOWER CAPTURED! \u2728</div>'+
     '<div class="dg-im-follower '+f.rarity+'">'+
-      '<div class="fim-icon">'+f.icon+'</div>'+
+      '<div class="fim-icon">'+getIcon(f,28)+'</div>'+
       '<div class="fim-name" style="color:'+RARITY_COLORS[f.rarity]+'">'+f.name+'</div>'+
       '<div class="fim-rarity" style="color:'+RARITY_COLORS[f.rarity]+'">'+f.rarity+'</div>'+
       '<div class="fim-buff">Arena Buff: '+f.buffDesc+'</div>'+
@@ -320,7 +301,7 @@ export function generateRoom(){
     state.dgRun.floor++;state.dgRun.room=1;
     dgLog('Descended to Floor '+state.dgRun.floor+'!','good');
     dgShowIntermission(
-      '\u2B07 FLOOR '+state.dgRun.floor+' \u2B07','#44ee88',
+      '\u2B07 FLOOR '+state.dgRun.floor+' \u2B07','#6a9a6a',
       'No rest for the weary...<br>Rooms cleared: <b>'+state.dgRun.roomHistory.length+'</b> | Monsters slain: <b>'+state.dgRun.totalKills+'</b>',
       '\u2B07 Descend','_dgActualGenerateRoom()'
     );
@@ -375,12 +356,12 @@ export function dgCombatVictory(){
 
   r.combatEnemy=null;
   var hpPct=Math.round(r.hp/r.maxHp*100);
-  var hpCol=hpPct>30?'#44ee88':'#ff4444';
+  var hpCol=hpPct>30?'#6a9a6a':'#aa5a5a';
   var isBoss=r.room===3;
-  var body='<span style="font-size:.6rem">'+(m.icon||'\u2694')+'</span> <b>'+m.name+'</b> slain!'+(isBoss?' <span style="color:#ff4444">(BOSS)</span>':'')+
+  var body='<span style="font-size:.6rem">'+(m.icon||'\u2694')+'</span> <b>'+m.name+'</b> slain!'+(isBoss?' <span style="color:#aa5a5a">(BOSS)</span>':'')+
     '<br><br>'+
     '<span class="dg-im-stat" style="color:#ff8844">Dealt: '+(stats.dmgDealt||0)+'</span>'+
-    '<span class="dg-im-stat" style="color:#ff4444">Taken: '+(stats.dmgTaken||0)+'</span>'+
+    '<span class="dg-im-stat" style="color:#aa5a5a">Taken: '+(stats.dmgTaken||0)+'</span>'+
     '<span class="dg-im-stat" style="color:var(--gold-bright)">+'+goldReward+'g</span>'+
     '<br><span class="dg-im-stat" style="color:'+hpCol+'">HP: '+Math.round(r.hp)+'/'+r.maxHp+' ('+hpPct+'%)</span>';
 
@@ -406,9 +387,9 @@ export function dgCombatVictory(){
     }
     var gItem=ITEMS[gearDropKey];
     if(gItem){
-      body+='<br><span style="color:'+GEAR_RARITY_COLORS[gItem.rarity]+';font-size:.55rem">Something shiny drops... '+gItem.icon+'</span>';
+      body+='<br><span style="color:'+GEAR_RARITY_COLORS[gItem.rarity]+';font-size:.55rem">Something shiny drops... '+getIcon(gItem,16)+'</span>';
     }
-    dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#44ee88',body,
+    dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,
       '\u2728 See your loot','dgProceedToLoot()');
     r._pendingVictoryLoot=showGearFn;
   } else if(droppedFollower){
@@ -417,14 +398,14 @@ export function dgCombatVictory(){
       dgShowFollowerCapture(fRef2,afterAllDrops);
     };
     body+='<br><span style="color:'+RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
-    dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#44ee88',body,
+    dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,
       '\u2728 See what you found','dgProceedToLoot()');
     r._pendingVictoryLoot=nextFn;
   } else {
     if(r.floor>=8&&r.room===3){
       dgShowIntermission('\u{1F3C6} FINAL BOSS SLAIN! \u{1F3C6}','#ffcc22',body,'\u{1F3C6} Claim Victory','dgVictory()');
     } else {
-      dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#44ee88',body,'\u27A1\uFE0F Continue','generateRoom()');
+      dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,'\u27A1\uFE0F Continue','generateRoom()');
     }
   }
   dgUpdateProgress();updateDgUI();
@@ -484,7 +465,7 @@ function renderRoom(type){
     var gearHint='';
     if(treasureGearKey){
       var gi=ITEMS[treasureGearKey];
-      if(gi)gearHint='<br>Gear: <span style="color:'+GEAR_RARITY_COLORS[gi.rarity]+'">'+gi.icon+' '+gi.name+'</span>';
+      if(gi)gearHint='<br>Gear: <span style="color:'+GEAR_RARITY_COLORS[gi.rarity]+'">'+getIcon(gi,14)+' '+gi.name+'</span>';
     }
     rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">\u{1F4B0}</div><div class="dg-room-title">Treasure!</div><div class="dg-room-desc">You found a chest containing '+gold+' gold!'+(runItem?'<br>Inside: <b style="color:var(--gold-bright)">'+runItem.icon+' '+runItem.name+'</b> - '+runItem.desc:'')+gearHint+'</div>'+
       '<div class="dg-choices"><button class="dg-choice gold-c" onclick="dgTakeTreasure('+gold+','+(runItem?'true':'false')+','+(treasureGearKey?'true':'false')+')">\u270B Take It</button></div></div>';
@@ -500,12 +481,12 @@ function renderRoom(type){
     var trap=traps[Math.floor(Math.random()*traps.length)];
     var canDodge=r.evasion>0;
     var dodgeChance=Math.round(r.evasion*100+20);
-    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">'+trap.icon+'</div><div class="dg-room-title">'+trap.name+'!</div><div class="dg-room-desc">'+trap.desc+'<br>Potential damage: <span style="color:#ff4444">'+trap.dmg+'</span></div>'+
+    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">'+trap.icon+'</div><div class="dg-room-title">'+trap.name+'!</div><div class="dg-room-desc">'+trap.desc+'<br>Potential damage: <span style="color:#aa5a5a">'+trap.dmg+'</span></div>'+
       '<div class="dg-choices"><button class="dg-choice danger" onclick="dgTriggerTrap('+trap.dmg+')">\u{1F4AA} Endure ('+trap.dmg+' dmg)</button>'+(canDodge?'<button class="dg-choice" onclick="dgDodgeTrap('+trap.dmg+')">\u{1F3C3} Dodge ('+dodgeChance+'% full dodge, fail = \u00D70.5)</button>':'')+'</div></div>';
   }
   else if(type==='rest'){
     var healAmt=Math.round(r.maxHp*0.25);
-    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">\u{1F3D5}\uFE0F</div><div class="dg-room-title">Rest Site</div><div class="dg-room-desc">A safe place to rest and recover.<br>Heal: <span style="color:#44ee88">'+healAmt+' HP</span></div>'+
+    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">\u{1F3D5}\uFE0F</div><div class="dg-room-title">Rest Site</div><div class="dg-room-desc">A safe place to rest and recover.<br>Heal: <span style="color:#6a9a6a">'+healAmt+' HP</span></div>'+
       '<div class="dg-choices"><button class="dg-choice" onclick="dgRest('+healAmt+')">\u{1F634} Rest</button><button class="dg-choice gold-c" onclick="generateRoom()">\u27A1\uFE0F Move On</button></div></div>';
   }
   else if(type==='shrine'){
@@ -522,7 +503,7 @@ function renderRoom(type){
     var shrine=shrines[Math.floor(Math.random()*shrines.length)];
     var cost=Math.round(r.maxHp*0.15);
     r._pendingShrine=shrine;
-    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">'+shrine.icon+'</div><div class="dg-room-title">'+shrine.name+'</div><div class="dg-room-desc">'+shrine.desc+'<br>Cost: <span style="color:#ff4444">'+cost+' HP</span> (blood offering)</div>'+
+    rc.innerHTML='<div class="dg-room"><div class="dg-room-icon">'+shrine.icon+'</div><div class="dg-room-title">'+shrine.name+'</div><div class="dg-room-desc">'+shrine.desc+'<br>Cost: <span style="color:#aa5a5a">'+cost+' HP</span> (blood offering)</div>'+
       '<div class="dg-choices"><button class="dg-choice" onclick="dgUseShrine('+cost+')" '+(r.hp<=cost?'disabled':'')+'>'+'\u{1FA78} Offer Blood</button><button class="dg-choice gold-c" onclick="generateRoom()">\u27A1\uFE0F Skip</button></div></div>';
   }
   else if(type==='merchant'){
@@ -548,13 +529,13 @@ function renderRoom(type){
     r._shopGear=gearForSale;
     var sh='<div class="dg-room"><div class="dg-room-icon">\u{1F3EA}</div><div class="dg-room-title">Wandering Merchant</div><div class="dg-room-desc">Gold: <span style="color:var(--gold-bright)">'+r.gold+'</span></div><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">';
     shopItems.forEach(function(it,i){
-      sh+='<button class="dg-choice gold-c" onclick="dgBuyItem('+i+')" '+(r.gold<it.cost?'disabled':'')+' style="text-align:left;font-size:.48rem">'+it.icon+' '+it.name+' - '+it.desc+' ('+it.cost+'g)</button>';
+      sh+='<button class="dg-choice gold-c" onclick="dgBuyItem('+i+')" '+(r.gold<it.cost?'disabled':'')+' style="text-align:left;font-size:.48rem">'+getIcon(it,14)+' '+it.name+' - '+it.desc+' ('+it.cost+'g)</button>';
     });
     if(gearForSale.length){
       sh+='<div style="font-size:.48rem;color:#cc66ff;margin-top:6px;margin-bottom:2px">\u2694 Gear for Sale</div>';
       gearForSale.forEach(function(g,i){
         var col=GEAR_RARITY_COLORS[g.item.rarity]||'#aaa';
-        sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+g.item.icon+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
+        sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
       });
     }
     sh+='</div><div class="dg-choices" style="margin-top:6px"><button class="dg-choice" onclick="generateRoom()">\u27A1\uFE0F Leave Shop</button></div></div>';
@@ -689,13 +670,13 @@ function dgRefreshMerchant(){
   var rc=document.getElementById('dgRoomContent');
   var sh='<div class="dg-room"><div class="dg-room-icon">\u{1F3EA}</div><div class="dg-room-title">Wandering Merchant</div><div class="dg-room-desc">Gold: <span style="color:var(--gold-bright)">'+r.gold+'</span></div><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">';
   if(r._shopItems)r._shopItems.forEach(function(si,i){
-    sh+='<button class="dg-choice gold-c" onclick="dgBuyItem('+i+')" '+(r.gold<si.cost?'disabled':'')+' style="text-align:left;font-size:.48rem">'+si.icon+' '+si.name+' - '+si.desc+' ('+si.cost+'g)</button>';
+    sh+='<button class="dg-choice gold-c" onclick="dgBuyItem('+i+')" '+(r.gold<si.cost?'disabled':'')+' style="text-align:left;font-size:.48rem">'+getIcon(si,14)+' '+si.name+' - '+si.desc+' ('+si.cost+'g)</button>';
   });
   if(r._shopGear&&r._shopGear.length){
     sh+='<div style="font-size:.48rem;color:#cc66ff;margin-top:6px;margin-bottom:2px">\u2694 Gear for Sale</div>';
     r._shopGear.forEach(function(g,i){
       var col=GEAR_RARITY_COLORS[g.item.rarity]||'#aaa';
-      sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+g.item.icon+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
+      sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
     });
   }
   sh+='</div><div class="dg-choices" style="margin-top:6px"><button class="dg-choice" onclick="generateRoom()">\u27A1\uFE0F Leave Shop</button></div></div>';
@@ -725,12 +706,12 @@ export function dgDeath(){
     slainByHtml=buildDefeatSheet(defeatData);
   }
   rc.innerHTML='<div class="dg-intermission">'+
-    '<div class="dg-im-title" style="color:#ff4444">\u{1F480} DEFEATED \u{1F480}</div>'+
+    '<div class="dg-im-title" style="color:#aa5a5a">\u{1F480} DEFEATED \u{1F480}</div>'+
     '<div class="dg-im-summary">'+
       'Fell on <b>Floor '+r.floor+', Room '+r.room+'</b><br><br>'+
       slainByHtml+
       '<span class="dg-im-stat" style="color:#ff8844">Rooms: '+r.roomHistory.length+'</span>'+
-      '<span class="dg-im-stat" style="color:#ff4444">Kills: '+r.totalKills+'</span>'+
+      '<span class="dg-im-stat" style="color:#aa5a5a">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:var(--gold-bright)">Gold: '+r.gold+'</span>'+
       '<span class="dg-im-stat" style="color:#88aacc">Dmg Dealt: '+r.totalDmgDealt+'</span>'+
       '<span class="dg-im-stat" style="color:#cc66ff">Dmg Taken: '+r.totalDmgTaken+'</span>'+
@@ -760,7 +741,7 @@ export function dgVictory(){
     '<div class="dg-im-summary">'+
       'Cleared all <b>8 Floors</b>!<br><br>'+
       '<span class="dg-im-stat" style="color:#ff8844">Rooms: '+r.roomHistory.length+'</span>'+
-      '<span class="dg-im-stat" style="color:#ff4444">Kills: '+r.totalKills+'</span>'+
+      '<span class="dg-im-stat" style="color:#aa5a5a">Kills: '+r.totalKills+'</span>'+
       '<span class="dg-im-stat" style="color:var(--gold-bright)">Gold: '+r.gold+'</span>'+
       '<span class="dg-im-stat" style="color:#88aacc">Dmg Dealt: '+r.totalDmgDealt+'</span>'+
       '<br><br>All <b>'+r.followers.length+'</b> followers kept!'+

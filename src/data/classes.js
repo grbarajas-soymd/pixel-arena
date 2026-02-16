@@ -19,7 +19,7 @@ export const CLASSES = {
     ultStrikes: 5, ultDmg: 200, ultDur: 2500, ultHeal: 0.42, ultThreshold: 0.25,
   },
   ranger: {
-    icon: '🔥', name: 'Flame Archer', nameShort: 'Pyralis',
+    icon: '🔥', name: 'Flame Ranger', nameShort: 'Pyralis',
     desc: '4800 HP · Longbow 180dmg\nHunter\'s Mark · Bloodlust\nSacrifice · Rain of Fire',
     color: '#ffaa44', colorDark: '#8a4400', colorLight: '#ffcc88',
     hp: 4800, baseDmg: 180, baseAS: 0.95, def: 58, evasion: 0.05,

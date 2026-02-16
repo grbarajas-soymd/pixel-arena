@@ -14,6 +14,7 @@ import { buildHUD, updateUI, buildCharTooltip, buildCustomTooltip, buildDefeatSh
 import { initGround } from '../render/arena.js';
 import { openCustomEditor } from '../custom.js';
 import { drawSpritePreview } from '../render/sprites.js';
+import { buildCharSheet } from '../render/charSheet.js';
 import * as network from '../network.js';
 import { saveGame } from '../persistence.js';
 
@@ -37,18 +38,8 @@ function buildGearSummary(){
 }
 
 export function buildSelector(){
-  // Left side: hero card
-  var heroArea=document.getElementById('heroCard');
-  if(heroArea){
-    heroArea.innerHTML='';
-    var card=document.createElement('div');
-    card.className='class-card cst selected';
-    card.innerHTML=buildGearSummary();
-    card.onclick=function(){openCustomEditor('p1')};
-    heroArea.appendChild(card);
-    var pc=heroArea.querySelector('#arenaPreviewCanvas');
-    if(pc)drawSpritePreview(pc,state.customChar.sprite);
-  }
+  // Left side: character sheet
+  buildCharSheet('arenaCharSheet');
   // Online controls (register / upload)
   var ctrl=document.getElementById('onlineControls');
   if(ctrl){
@@ -57,12 +48,38 @@ export function buildSelector(){
         '<input id="regNameInput" class="cs-name-input" placeholder="Your display name" maxlength="20" style="width:140px;display:inline-block;margin-right:4px">'+
         '<button class="btn btn-spd" onclick="registerPlayer()" style="font-size:.42rem">Join Arena</button>';
     } else {
-      ctrl.innerHTML='<div style="font-size:.48rem;color:#44ee88;margin-bottom:4px">Playing as: <b>'+state.playerName+'</b></div>'+
+      ctrl.innerHTML='<div style="font-size:.48rem;color:#6a9a6a;margin-bottom:4px">Playing as: <b>'+state.playerName+'</b></div>'+
         '<button class="btn btn-spd" onclick="uploadBuild()" style="font-size:.42rem">Upload Build</button>';
     }
   }
   // Right side: online opponents
   buildOnlineOpponents();
+  // Fighter follower selection
+  updateArenaFollowerUI();
+}
+
+function updateArenaFollowerUI(){
+  var col=state.p1Collection;
+  var cont=document.getElementById('arenaFighters');
+  var section=document.getElementById('arenaFighterSection');
+  if(!cont||!section)return;
+  if(!col||col.length===0){section.style.display='none';return}
+  section.style.display='block';
+  // Render fighter cards — exclude wager follower
+  renderFollowerCards('arenaFighters',col,function(f,i){
+    if(i===state.p1StakedFollower)return;
+    var fi=state.p1ArenaFighters.indexOf(i);
+    if(fi>=0){state.p1ArenaFighters.splice(fi,1)}
+    else{if(state.p1ArenaFighters.length>=3)return;state.p1ArenaFighters.push(i)}
+    updateArenaFollowerUI();
+    updateStakeUI();
+  });
+  cont.querySelectorAll('.follower-card').forEach(function(card,i){
+    if(state.p1ArenaFighters.indexOf(i)>=0)card.classList.add('selected');
+    if(i===state.p1StakedFollower)card.style.opacity='0.4';
+  });
+  var fcEl=document.getElementById('arenaFighterCount');
+  if(fcEl)fcEl.textContent='('+state.p1ArenaFighters.length+'/3)';
 }
 
 function buildOnlineOpponents(){
@@ -94,7 +111,7 @@ function buildOnlineOpponents(){
       '<div class="cc-stats">'+Math.round(ch.stats.hp)+'HP '+Math.round(ch.stats.baseDmg)+'dmg '+ch.stats.baseAS.toFixed(2)+'AS</div>'+
       '<div style="font-size:.42rem;color:var(--parch-dk)">DEF:'+Math.round(ch.stats.def)+' EVA:'+Math.round(ch.stats.evasion*100)+'% '+ch.rangeType+'</div>'+
       (skillNames.length?'<div style="font-size:.42rem;color:#88aacc">'+skillNames.join(', ')+'</div>':'')+
-      '<div style="font-size:.45rem;margin-top:2px"><span style="color:#44ee88">W:'+rec.wins+'</span> <span style="color:#ff4444">L:'+rec.losses+'</span></div>';
+      '<div style="font-size:.45rem;margin-top:2px"><span style="color:#6a9a6a">W:'+rec.wins+'</span> <span style="color:#aa5a5a">L:'+rec.losses+'</span></div>';
     card.onclick=function(){selectOpponent(opp.playerId)};
     cont.appendChild(card);
   });
@@ -187,8 +204,10 @@ export function backToSelect(){
   resetBattle();
   state._ladderGenConfig=null;
   state.selectedOpponent=null;
+  state.p1ArenaFighters=[];
   document.getElementById('battleScreen').style.display='none';
   document.getElementById('selectorScreen').style.display='flex';
+  buildSelector();updateStakeUI();
 }
 
 export function startBattle(){
@@ -199,8 +218,16 @@ export function startBattle(){
   state.h1=mkHero(state.p1Class,'left');
   state.h2=mkHero(state.p2Class,'right');
 
-  // No fighter followers in arena — only wager buff/debuff
-  state.h1.arenaFollowers=[];state.h2.arenaFollowers=[];
+  // Spawn player's fighter followers
+  state.h1.arenaFollowers=[];
+  state.p1ArenaFighters.forEach(function(idx,i){
+    if(idx>=0&&idx<state.p1Collection.length){
+      var tmpl=FOLLOWER_TEMPLATES.find(function(t){return t.name===state.p1Collection[idx].name})||state.p1Collection[idx];
+      state.h1.arenaFollowers.push(mkArenaFollower(tmpl,state.h1,i,state.p1ArenaFighters.length));
+    }
+  });
+  // Opponent gets no fighter followers (online PvP is 1v1 + followers)
+  state.h2.arenaFollowers=[];
 
   // Apply staked follower stat buffs to hero + debuffs to enemy
   if(state.p1StakedFollower!==null){
@@ -245,6 +272,7 @@ export function showWin(w){
     }
   }
   state.p1StakedFollower=null;
+  state.p1ArenaFighters=[];
 
   var bannerHtml='<div>'+w.name+' WINS!'+stakeMsg+'</div>';
 

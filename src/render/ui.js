@@ -3,12 +3,13 @@ import { CLASSES } from '../data/classes.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { blN, effAS, effEv, isStunned } from '../combat/engine.js';
 import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
+import { getIcon } from './icons.js';
 
 export function buildHUD(h,id){
   const p=document.getElementById(id);
   const isW=h.type==='wizard',isA=h.type==='assassin',isR=h.type==='ranger',isB=h.type==='barbarian',isC=h.type==='custom';
   const icon=isC?'\u2692':isW?'\u26A1':isA?'\u2744':isR?'\u{1F525}':'\u{1F480}';
-  const nameCol=isC?'color:#ff88ff':isW?'color:var(--teal-glow)':isA?'color:var(--ice-glow)':isR?'color:var(--fire-glow)':'color:#ff6666';
+  const nameCol=isC?'color:var(--gold-bright)':isW?'color:var(--teal-glow)':isA?'color:var(--ice-glow)':isR?'color:var(--fire-glow)':'color:#aa6a5a';
   const hpCls=isC?'hp-c':isW?'hp-w':isA?'hp-a':isR?'hp-r':'hp-b';
   const className=isC?'Custom':CLASSES[h.type].name;
   let html='<div class="hud-name" style="'+nameCol+'">'+icon+' '+h.name+' \u2014 '+className+'</div>';
@@ -94,7 +95,7 @@ export function buildCustomTooltip(){
   var sn1=state.customChar.skills[0]!==null&&ALL_SKILLS[state.customChar.skills[0]]?'<div class="ct-skill"><b>'+ALL_SKILLS[state.customChar.skills[0]].name+'</b> '+ALL_SKILLS[state.customChar.skills[0]].desc+'</div>':'';
   var sn2=state.customChar.skills[1]!==null&&ALL_SKILLS[state.customChar.skills[1]]?'<div class="ct-skill"><b>'+ALL_SKILLS[state.customChar.skills[1]].name+'</b> '+ALL_SKILLS[state.customChar.skills[1]].desc+'</div>':'';
   var un=state.customChar.ultimate!==null&&ALL_ULTS[state.customChar.ultimate]?'<div class="ct-skill"><b>'+ALL_ULTS[state.customChar.ultimate].name+'</b> (Ultimate)</div>':'';
-  return '<div class="char-tooltip"><div class="ct-header" style="color:#ff88ff">\u2692 '+state.customChar.name+'</div><div class="ct-divider"></div>'+
+  return '<div class="char-tooltip"><div class="ct-header" style="color:#d8b858">\u2692 '+state.customChar.name+'</div><div class="ct-divider"></div>'+
     '<div class="ct-section">Stats</div>'+
     '<div class="ct-row"><span>HP</span><span class="ct-val">'+Math.round(cs.hp)+'</span></div>'+
     '<div class="ct-row"><span>Damage</span><span class="ct-val">'+Math.round(cs.baseDmg)+'</span></div>'+
@@ -117,7 +118,7 @@ export function renderFollowerCards(containerId,followers,clickHandler){
     if(f.stakedP1)badges+='<div class="staked-badge" style="background:#aa2200;top:auto;bottom:-4px">BET</div>';
     var abilityLine=f.abilityName?'<div style="font-size:.42rem;color:#88ccaa;margin-top:1px">'+f.abilityName+': '+f.abilityDesc+'</div>':'';
     var wagerLine=f.wagerDebuffName?'<div style="font-size:.42rem;color:#cc8866;margin-top:1px">Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>':'';
-    card.innerHTML='<div class="fc-icon">'+f.icon+'</div><div class="fc-name '+f.rarity+'">'+f.name+'</div><div class="fc-rarity '+f.rarity+'">'+f.rarity+'</div><div class="fc-stats">'+f.buffDesc+'</div>'+abilityLine+wagerLine+badges;
+    card.innerHTML='<div class="fc-icon">'+getIcon(f,24)+'</div><div class="fc-name '+f.rarity+'">'+f.name+'</div><div class="fc-rarity '+f.rarity+'">'+f.rarity+'</div><div class="fc-stats">'+f.buffDesc+'</div>'+abilityLine+wagerLine+badges;
     if(clickHandler)card.onclick=function(){clickHandler(f,i)};
     el.appendChild(card);
   });
@@ -137,14 +138,17 @@ export function updateFollowerDisplays(){
 export function updateStakeUI(){
   var stakeEl=document.getElementById('p1Stake');
   if(!stakeEl)return;
-  renderFollowerCards('p1Stake',state.p1Collection,function(f){
-    var idx=state.p1Collection.indexOf(f);
-    if(state.p1StakedFollower===idx){state.p1StakedFollower=null}
-    else{state.p1StakedFollower=idx}
+  // Filter out fighters from wager list
+  var wagerList=state.p1Collection.filter(function(f,i){return state.p1ArenaFighters.indexOf(i)<0});
+  renderFollowerCards('p1Stake',wagerList,function(f){
+    var realIdx=state.p1Collection.indexOf(f);
+    if(state.p1StakedFollower===realIdx){state.p1StakedFollower=null}
+    else{state.p1StakedFollower=realIdx}
     updateStakeUI();
   });
   stakeEl.querySelectorAll('.follower-card').forEach(function(card,i){
-    if(i===state.p1StakedFollower)card.classList.add('selected');
+    var realIdx=state.p1Collection.indexOf(wagerList[i]);
+    if(realIdx===state.p1StakedFollower)card.classList.add('selected');
   });
   var warn=document.getElementById('wagerWarning');
   if(warn)warn.style.display=state.p1StakedFollower===null?'block':'none';

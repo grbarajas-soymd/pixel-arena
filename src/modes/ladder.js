@@ -12,33 +12,13 @@ import { mkHero, getCustomTotalStats, mkArenaFollower, applyFollowerBuff } from 
 import { buildHUD, updateUI, buildCustomTooltip, buildDefeatSheet, renderFollowerCards } from '../render/ui.js';
 import { startBattle, showWin, resetBattle } from './arena.js';
 import { drawSpritePreview } from '../render/sprites.js';
+import { buildCharSheet } from '../render/charSheet.js';
 
 var LADDER_SEQUENCE=['wizard','ranger','assassin','barbarian'];
 var LADDER_NAMES=['Draven','Zara','Krix','Moku','Thane','Vex','Nira','Bolt','Crag','Syla','Fenn','Hex','Jolt','Pyra','Onyx','Dusk','Blaze','Storm','Frost','Ash','Rune','Shade','Grim','Talon','Echo','Ember','Flux','Nova','Spike','Wisp'];
 
 export function buildLadderPicker(){
-  var cont=document.getElementById('ldClassPick');cont.innerHTML='';
-  // Show hero gear summary (always custom character)
-  var cs=getCustomTotalStats();
-  var gearHtml='';
-  EQ_SLOTS.forEach(function(slot){
-    var ik=state.customChar.equipment[slot.key];
-    var item=ik?ITEMS[ik]:null;
-    if(item){
-      var col=GEAR_RARITY_COLORS[item.rarity]||'#aaa';
-      gearHtml+='<span style="color:'+col+'" title="'+item.name+': '+item.desc+'">'+item.icon+'</span> ';
-    }
-  });
-  cont.innerHTML='<div class="class-card cst selected" style="cursor:default">'+
-    '<canvas class="hero-preview-canvas" width="100" height="120" id="ldPreviewCanvas"></canvas>'+
-    '<div class="cc-name cst">'+state.customChar.name+'</div>'+
-    '<div class="cc-stats">'+Math.round(cs.hp)+'HP '+Math.round(cs.baseDmg)+'dmg '+cs.baseAS.toFixed(2)+'AS '+Math.round(cs.def)+'DEF</div>'+
-    '<div style="font-size:.5rem;margin-top:2px">'+gearHtml+'</div>'+
-    buildCustomTooltip()+
-    '<button class="dg-choice" style="margin-top:6px;font-size:.42rem;padding:3px 8px" onclick="showArchetypePicker()">Change Class</button>'+
-  '</div>';
-  var pc=document.getElementById('ldPreviewCanvas');
-  if(pc)drawSpritePreview(pc,state.customChar.sprite);
+  buildCharSheet('ladderCharSheet');
   var rec=document.getElementById('ladderRecord');
   if(rec)rec.innerHTML='Best: <span style="color:var(--gold-bright)">'+state.ladderBest+'W</span>';
   // Update follower display
@@ -103,7 +83,7 @@ function ladderShowFollowerPick(){
     state.ladderRun._previewedNext=nextOpp;
     oppPreview='<div class="ld-next-preview">'+
       '<div class="lnp-title">CHALLENGER #'+(nextIdx-LADDER_SEQUENCE.length+1)+'</div>'+
-      '<div class="lnp-name" style="color:#ff88ff">\u2692 '+nextOpp.name+'</div>'+
+      '<div class="lnp-name" style="color:#d8b858">\u2692 '+nextOpp.name+'</div>'+
       '<div class="lnp-stats">'+nextOpp.hp+' HP | '+nextOpp.baseDmg+' DMG | '+nextOpp.baseAS+' AS | '+nextOpp.def+' DEF | '+Math.round(nextOpp.evasion*100)+'% EVA</div>'+
     '</div>';
   }
@@ -121,7 +101,7 @@ function ladderShowFollowerPick(){
   }
 
   var screenHtml='<div class="ld-inter" id="ldInterContent">'+
-    '<div class="ld-title" style="color:#44ee88">\u2694 PREPARE FOR BATTLE</div>'+
+    '<div class="ld-title" style="color:#6a9a6a">\u2694 PREPARE FOR BATTLE</div>'+
     oppPreview+followerHtml+
     '<div class="dg-choices" style="margin-top:10px">'+
       '<button class="dg-choice danger" onclick="ladderFight()">\u2694 FIGHT!</button>'+
@@ -361,9 +341,9 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
   var statsHtml='';
   if(lastFight){
     var hpPct=lastFight.won?Math.round(lastFight.playerHpLeft/lastFight.playerMaxHp*100):0;
-    var hpCol=hpPct>30?'#44ee88':'#ff4444';
+    var hpCol=hpPct>30?'#6a9a6a':'#aa5a5a';
     statsHtml='<div style="margin:6px 0">'+
-      '<span class="dg-im-stat" style="color:'+(lastFight.won?'#44ee88':'#ff4444')+'">'+(lastFight.won?'WON':'LOST')+' vs '+lastFight.name+'</span>'+
+      '<span class="dg-im-stat" style="color:'+(lastFight.won?'#6a9a6a':'#aa5a5a')+'">'+(lastFight.won?'WON':'LOST')+' vs '+lastFight.name+'</span>'+
       (lastFight.won?'<span class="dg-im-stat" style="color:'+hpCol+'">HP left: '+lastFight.playerHpLeft+' ('+hpPct+'%)</span>':'')+
     '</div>';
   }
@@ -385,7 +365,7 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
   }
 
   var stakeHtml='';
-  if(stakeMsg)stakeHtml='<div style="font-size:.5rem;color:#ff4444;margin:4px 0">'+stakeMsg+'</div>';
+  if(stakeMsg)stakeHtml='<div style="font-size:.5rem;color:#aa5a5a;margin:4px 0">'+stakeMsg+'</div>';
 
   var rewardHtml='';
   if(earnedFollower){
@@ -396,8 +376,8 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
   }
 
   var titleHtml,titleColor;
-  if(won){titleHtml='\u{1F3C6} ROUND '+state.ladderRun.wins+' COMPLETE!';titleColor='#44ee88';}
-  else{titleHtml='\u{1F480} LADDER OVER \u2014 '+state.ladderRun.wins+' WIN'+(state.ladderRun.wins!==1?'S':'');titleColor='#ff4444';}
+  if(won){titleHtml='\u{1F3C6} ROUND '+state.ladderRun.wins+' COMPLETE!';titleColor='#6a9a6a';}
+  else{titleHtml='\u{1F480} LADDER OVER \u2014 '+state.ladderRun.wins+' WIN'+(state.ladderRun.wins!==1?'S':'');titleColor='#aa5a5a';}
 
   var screenHtml='<div class="ld-inter" id="ldInterContent">'+
     '<div class="ld-title" style="color:'+titleColor+'">'+titleHtml+'</div>'+

@@ -62,6 +62,7 @@ export const state = {
 
   // Follower assignments
   p1StakedFollower: null,
+  p1ArenaFighters: [],
 
   // Online arena
   playerId: null,

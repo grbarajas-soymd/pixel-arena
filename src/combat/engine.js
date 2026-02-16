@@ -1,6 +1,6 @@
 // =============== COMBAT ENGINE ===============
 import { state } from '../gameState.js';
-import { AX, AW, AY, AH, GY, TK, MELEE, RANGED_PEN } from '../constants.js';
+import { AX, AW, AY, AH, GY, GY_MIN, GY_MAX, TK, MELEE, RANGED_PEN } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
 import { SFX } from '../sfx.js';
 import { spSparks, spDrips, spFloat, spLightning, spLStrike, spSmoke, spShadow, spPoison, spFire, spStun, updParticles } from '../render/particles.js';
@@ -10,7 +10,8 @@ import { ALL_ULTS } from '../data/skills.js';
 
 // =============== UTILS ===============
 export const en = h => h === state.h1 ? state.h2 : state.h1;
-export const dst = (a, b) => Math.abs(a.x - b.x);
+export const dst = (a, b) => Math.sqrt((a.x - b.x) ** 2 + ((a.y || GY) - (b.y || GY)) ** 2);
+const AF_DMG_REDUCTION = 0.30; // Arena followers take 30% less damage from hero attacks
 export const blN = h => h.bleedStacks.length;
 export const addBl = (t, time) => { t.bleedStacks.push({ hpSnap: t.hp, at: time, exp: time + 2000 }) };
 export function procBl(h, t, dt) { h.bleedStacks = h.bleedStacks.filter(s => t < s.exp); let d = 0; for (const s of h.bleedStacks) d += (s.hpSnap * .01) * (dt / 1000); if (d > 0) h.hp -= d; return d }
@@ -52,14 +53,14 @@ export function addLog(ms, txt, typ) { state.logs.push({ t: (ms / 1000).toFixed(
 // =============== TARGETING ===============
 export function getTarget(atk) {
   const e = en(atk);
-  if (e.follower && e.follower.alive && e.follower.goading) { const dF = Math.abs(atk.x - e.follower.x); if (dF <= atk.attackRange && dF <= e.follower.goadRange) return { type: 'follower', tgt: e.follower, owner: e } }
+  if (e.follower && e.follower.alive && e.follower.goading) { const dF = dst(atk, e.follower); if (dF <= atk.attackRange && dF <= e.follower.goadRange) return { type: 'follower', tgt: e.follower, owner: e } }
   if (e.arenaFollowers) {
     var nearestAF = null, nearD = 99999;
     for (var i = 0; i < e.arenaFollowers.length; i++) {
       var af = e.arenaFollowers[i]; if (!af.alive) continue;
-      var d = Math.abs(atk.x - af.x); if (d < nearD && d <= atk.attackRange + 20) { nearD = d; nearestAF = af }
+      var d = dst(atk, af); if (d < nearD && d <= atk.attackRange + 20) { nearD = d; nearestAF = af }
     }
-    if (nearestAF && (nearD < Math.abs(atk.x - e.x) * 0.8 || Math.random() < 0.25)) {
+    if (nearestAF && (nearD < dst(atk, e) * 0.8 || Math.random() < 0.25)) {
       return { type: 'arenaFollower', tgt: nearestAF, owner: e };
     }
   }
@@ -72,10 +73,10 @@ function pickArenaFollowerTarget(af, enemyHero) {
     for (var i = 0; i < enemyHero.arenaFollowers.length; i++) {
       var ef = enemyHero.arenaFollowers[i]; if (!ef.alive) continue;
       ef._isArenaFollower = true; ef.def = ef.def || 0;
-      var d = Math.abs(af.x - ef.x); if (d < bestDist) { bestDist = d; best = ef }
+      var d = dst(af, ef); if (d < bestDist) { bestDist = d; best = ef }
     }
   }
-  var heroD = Math.abs(af.x - enemyHero.x);
+  var heroD = dst(af, enemyHero);
   if (!best || heroD < bestDist * 0.7) { best = enemyHero; best._isArenaFollower = false }
   else { best._isArenaFollower = true }
   return best;
@@ -89,14 +90,14 @@ export function doAttack(h, t) {
   if (d > atkRange + 10 && !(h.type === 'assassin' && d <= h.throwRange)) return false;
   h.atkCnt++; h.attackAnim = 1; const tg = getTarget(h);
   const tx = tg.type === 'follower' ? tg.tgt.x : tg.type === 'arenaFollower' ? tg.tgt.x : e.x;
-  const ty = tg.type === 'follower' ? GY - 15 : tg.type === 'arenaFollower' ? (tg.tgt.y - 15) : (GY - 35);
+  const ty = tg.type === 'follower' ? (tg.tgt.y || GY) - 15 : tg.type === 'arenaFollower' ? (tg.tgt.y || GY) - 15 : (e.y || GY) - 35;
   const isMelee = h.type === 'assassin' ? d <= h.meleeRange : (h.type === 'barbarian' ? true : (h.type === 'custom' && state.customChar.rangeType === 'melee' ? true : false));
   if (isMelee) { SFX.hit(); setTimeout(() => resolveHit(h, tg, t, d, false), 80) }
   else {
     const pType = h.type === 'wizard' ? 'bolt' : h.type === 'assassin' ? 'dagger' : 'arrow';
     const pSpeed = h.type === 'wizard' ? 650 : h.type === 'assassin' ? 550 : 520;
-    const pCol = h.type === 'custom' ? '#ff88ff' : h.type === 'wizard' ? '#44ddbb' : h.type === 'assassin' ? '#66ccff' : '#ffaa44';
-    state.projectiles.push({ x: h.x, y: h.y - 30, tx, ty, speed: pSpeed, color: pCol, type: pType, time: 0, onHit: () => resolveHit(h, tg, t, d, true) });
+    const pCol = h.type === 'custom' ? '#d8b858' : h.type === 'wizard' ? '#6aaa8a' : h.type === 'assassin' ? '#6a9aba' : '#c87a4a';
+    state.projectiles.push({ x: h.x, y: (h.y || GY) - 30, tx, ty, speed: pSpeed, color: pCol, type: pType, time: 0, onHit: () => resolveHit(h, tg, t, d, true) });
     if (pType === 'bolt') SFX.bolt(); else if (pType === 'dagger') SFX.dagger(); else SFX.arrow();
   }
   if (h.stealthed) { h.stealthed = false; addLog(t, `${h.name} breaks stealth!`, 'stealth') }
@@ -107,7 +108,7 @@ function resolveHit(atk, tg, t, d, isRanged) {
   const e = en(atk);
   if (tg.type === 'follower') { const fl = tg.tgt; let dm = calcDmg(atk, tg.owner, isRanged, Math.abs(atk.x - fl.x)); fl.hp -= dm; atk.totDmg += dm; fl.hurtAnim = 1; if (atk.blActive) atk.blDmg += dm; spFloat(fl.x, fl.y - 50, `-${Math.round(dm)}`, atk.color); addLog(t, `${atk.name} > Pet ${Math.round(dm)}`, 'dmg'); if (atk.type === 'assassin') atk.combo = Math.min(atk.maxCombo, atk.combo + 1); if (atk.type === 'assassin' && !isRanged && atk.atkCnt % 2 === 0) { addBl(tg.owner, t); spDrips(fl.x, fl.y - 10) } if (fl.hp <= 0) killFollower(tg.owner, t); return }
   if (tg.type === 'arenaFollower') {
-    let af = tg.tgt; let afDm = atk.baseDmg * (1 - Math.min(af.def / 300, 0.7)) * (0.85 + Math.random() * 0.3); afDm = Math.round(afDm);
+    let af = tg.tgt; let afDm = atk.baseDmg * (1 - Math.min(af.def / 300, 0.7)) * (0.85 + Math.random() * 0.3) * (1 - AF_DMG_REDUCTION); afDm = Math.round(afDm);
     af.hp -= afDm; atk.totDmg += afDm; af.hurtAnim = 1;
     spFloat(af.x, af.y - 40, `-${afDm}`, atk.color); addLog(t, `${atk.name} > ${af.name} ${afDm}`, 'dmg');
     if (af.hp <= 0) { af.alive = false; af.hp = 0; spSparks(af.x, af.y - 10, 6, af.color); addLog(t, `${af.name} slain!`, 'summon') }
@@ -153,8 +154,13 @@ export function tick() {
       var af = h.arenaFollowers[fi]; if (!af.alive) continue;
       var tgt = pickArenaFollowerTarget(af, enemy);
       if (tgt) {
-        var dx = tgt.x - af.x, dist = Math.abs(dx), dir = dx > 0 ? 1 : -1;
-        if (dist > af.attackRange) { af.x += dir * af.moveSpeed * dts; af.x = Math.max(AX + 15, Math.min(AX + AW - 15, af.x)) }
+        var dx = tgt.x - af.x, dist = dst(af, tgt), dirX = dx > 0 ? 1 : -1;
+        if (dist > af.attackRange) {
+          af.x += dirX * af.moveSpeed * dts; af.x = Math.max(AX + 15, Math.min(AX + AW - 15, af.x));
+          var dy = (tgt.y || GY) - (af.y || GY);
+          if (Math.abs(dy) > 5) af.y = (af.y || GY) + (dy > 0 ? 1 : -1) * af.moveSpeed * dts * 0.5;
+          af.y = Math.max(GY_MIN, Math.min(GY_MAX, af.y || GY));
+        }
         af.atkCd -= dt;
         if (af.atkCd <= 0 && dist <= af.attackRange + 15) {
           af.atkCd = 1000 / af.baseAS; af.attackAnim = 1;
@@ -165,7 +171,7 @@ export function tick() {
           tgt.hp -= dm; af.totDmg += dm; tgt.hurtAnim = 1;
           spFloat(tgt.x, tgt.y - (tgt.maxHp ? 50 : 30), '-' + dm, af.color);
           SFX.followerAtk();
-          if (af.isRanged) { state.projectiles.push({ x: af.x, y: af.y - 15, tx: tgt.x, ty: tgt.y - (tgt.maxHp ? 30 : 10), speed: 400, color: af.color, type: 'bolt', time: 0, onHit: function () { } }) }
+          if (af.isRanged) { state.projectiles.push({ x: af.x, y: (af.y || GY) - 15, tx: tgt.x, ty: (tgt.y || GY) - (tgt.maxHp ? 30 : 10), speed: 400, color: af.color, type: 'bolt', time: 0, onHit: function () { } }) }
           if (tgt._isArenaFollower && tgt.hp <= 0) {
             var revived = false;
             if (tgt.onDeath) { revived = tgt.onDeath(tgt, state.bt) }

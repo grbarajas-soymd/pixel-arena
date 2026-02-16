@@ -849,7 +849,7 @@ function dgRender(now){
   for(var fli=0;fli<floats.length;fli++){
     var f=floats[fli];
     ctx.globalAlpha=f.life/f.maxLife;
-    ctx.fillStyle='#000';ctx.font='bold 14px "Chakra Petch"';ctx.textAlign='center';
+    ctx.fillStyle='#000';ctx.font='bold 14px "Cinzel"';ctx.textAlign='center';
     ctx.fillText(f.text,f.x+1,f.y+1);
     ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);
     ctx.globalAlpha=1;
@@ -858,21 +858,21 @@ function dgRender(now){
   if(turnTextTimer>0&&turnText){
     var ttA=Math.min(1,turnTextTimer/0.5);
     ctx.globalAlpha=ttA*0.9;
-    ctx.fillStyle='#000';ctx.font='bold 16px "Chakra Petch"';ctx.textAlign='center';
+    ctx.fillStyle='#000';ctx.font='bold 16px "Cinzel"';ctx.textAlign='center';
     ctx.fillText(turnText,CW/2+1,AY+25+1);
     ctx.fillStyle='#ffcc44';ctx.fillText(turnText,CW/2,AY+25);
     ctx.globalAlpha=1;
   }
   // Turn counter
-  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.font='bold 10px "Chakra Petch"';ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.font='bold 10px "Cinzel"';ctx.textAlign='center';
   ctx.fillText('Turn '+turnNum,CW/2,AY-5);
   // Phase indicator
   if(phase==='pick'){
     var pickP=Math.sin(state.bt/300)*0.2+0.8;
-    ctx.globalAlpha=pickP;ctx.fillStyle='#44ee88';ctx.font='bold 11px "Chakra Petch"';
+    ctx.globalAlpha=pickP;ctx.fillStyle='#6a9a6a';ctx.font='bold 11px "Cinzel"';
     ctx.fillText('\u25B6 YOUR TURN',CW/2,AY+45);ctx.globalAlpha=1;
   }else if(phase==='monsterAnim'){
-    ctx.fillStyle='#ff6644';ctx.font='bold 11px "Chakra Petch"';
+    ctx.fillStyle='#ff6644';ctx.font='bold 11px "Cinzel"';
     ctx.fillText('\uD83D\uDC80 ENEMY TURN',CW/2,AY+45);
   }
   rafId=requestAnimationFrame(dgRender);
@@ -888,7 +888,7 @@ function drawStatuses(ctx,statuses,hero){
     ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(startX+i*18-1,y-1,16,14);
     ctx.fillStyle=s.color;ctx.font='10px sans-serif';ctx.textAlign='center';
     ctx.fillText(s.icon,startX+i*18+7,y+10);
-    ctx.fillStyle='#fff';ctx.font='bold 7px "Chakra Petch"';
+    ctx.fillStyle='#fff';ctx.font='bold 7px "Cinzel"';
     ctx.fillText(s.turnsLeft,startX+i*18+13,y+4);
   }
 }

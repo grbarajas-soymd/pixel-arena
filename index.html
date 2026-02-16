@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pixel Arena — Gear RPG</title>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="bg"></div>
@@ -22,9 +22,15 @@
       </div>
       <div class="class-card rgr" style="cursor:pointer;width:130px" onclick="pickArchetype('ranged')">
         <div class="cc-icon">&#127993;</div>
-        <div class="cc-name rgr">Archer</div>
+        <div class="cc-name rgr">Ranger</div>
         <div class="cc-stats">Ranged attacker</div>
         <div style="font-size:.42rem;color:var(--parch-dk);margin-top:4px">Wooden Bow + Mark &amp; Bloodlust</div>
+      </div>
+      <div class="class-card asn" style="cursor:pointer;width:130px" onclick="pickArchetype('hybrid')">
+        <div class="cc-icon">&#10052;</div>
+        <div class="cc-name asn">Rogue</div>
+        <div class="cc-stats">Hybrid melee/ranged</div>
+        <div style="font-size:.42rem;color:var(--parch-dk);margin-top:4px">Rusty Daggers + Shadow Step &amp; Envenom</div>
       </div>
       <div class="class-card wiz" style="cursor:pointer;width:130px" onclick="pickArchetype('caster')">
         <div class="cc-icon">&#129668;</div>
@@ -52,9 +58,7 @@
   <div class="dg-sub">Fight online opponents and wager followers</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:800px">
     <div>
-      <div class="sel-title">&#8212; Your Hero &#8212;</div>
-      <div id="heroCard"></div>
-      <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
+      <div id="arenaCharSheet"></div>
       <div id="onlineControls" style="margin-top:8px;text-align:center"></div>
     </div>
     <div>
@@ -64,6 +68,11 @@
       <div id="onlineStatus" style="font-size:.48rem;color:var(--parch-dk)"></div>
       <div class="sel-row" id="opponentCards" style="max-height:300px;overflow-y:auto"></div>
     </div>
+  </div>
+  <div class="stake-section" id="arenaFighterSection">
+    <div class="sel-title" style="font-size:.55rem">&#9876; FIGHTER FOLLOWERS <span id="arenaFighterCount">(0/3)</span> &#9876;</div>
+    <div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">Select up to 3 followers to fight alongside you.</div>
+    <div class="follower-collection" id="arenaFighters"></div>
   </div>
   <div class="stake-section" id="stakeSection">
     <div class="sel-title" style="font-size:.55rem">&#9876; WAGER FOLLOWER &#9876;</div>
@@ -81,9 +90,7 @@
   <div class="dg-header">&#127984; THE DEPTHS &#127984;</div>
   <div class="dg-sub">Descend to find powerful gear and followers</div>
   <div id="dungeonPickScreen">
-    <div class="sel-title">&#8212; Your Hero &#8212;</div>
-    <div class="sel-row" id="dgClassPick"></div>
-    <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
+    <div id="dungeonCharSheet"></div>
     <div style="font-size:.52rem;color:var(--parch-dk);text-align:center;max-width:400px;line-height:1.6">
       Descend through randomized floors. Defeat monsters, find treasure, and collect gear. Your hero heals 30% between floors. Gear persists forever!
     </div>
@@ -139,7 +146,7 @@
       <div class="cs-panel-title" style="margin-top:8px">&#127890; GEAR BAG</div>
       <div id="gearBagDisplay"></div>
     </div>
-    <div class="cs-panel" style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="cs-panel-title">PREVIEW</div><div class="cs-avatar"><canvas id="previewCanvas" width="160" height="180"></canvas></div><input class="cs-name-input" id="customName" placeholder="Hero Name" maxlength="12" value="Custom"><div id="customTotalStats" style="font-size:.5rem;color:var(--parch-dk);line-height:1.5;text-align:center;margin-top:3px"></div></div>
+    <div class="cs-panel" style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="cs-panel-title">PREVIEW</div><div class="cs-avatar"><canvas id="previewCanvas" width="240" height="280" style="image-rendering:pixelated"></canvas></div><input class="cs-name-input" id="customName" placeholder="Hero Name" maxlength="12" value="Custom"><div id="customTotalStats" style="font-size:.6rem;color:var(--parch-dk);line-height:1.6;text-align:center;margin-top:4px"></div></div>
     <div class="cs-panel"><div class="cs-panel-title">&#10022; SKILLS (Pick 2)</div><div id="skillSlot1" class="skill-pick" onclick="openSkillPicker(0)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 1 - Click</div></div></div><div id="skillSlot2" class="skill-pick" onclick="openSkillPicker(1)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill 2 - Click</div></div></div><div class="cs-panel-title" style="margin-top:8px">&#128128; ULTIMATE</div><div id="ultSlot" class="skill-pick" onclick="openSkillPicker(2)"><div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Ultimate - Click</div></div></div>
     <div class="cs-panel-title" style="margin-top:8px">&#9881; CLASS</div>
     <div class="stat-edit-row"><span class="stat-edit-label">Class</span><select id="customClass" class="stat-edit-val" onchange="applyClassDefaults()"><option value="wizard">Mage</option><option value="ranger">Archer</option><option value="assassin">Rogue</option><option value="barbarian">Warrior</option></select></div>
@@ -153,9 +160,7 @@
   <div class="dg-header">&#127942; THE LADDER &#127942;</div>
   <div class="dg-sub">Fight every class then face infinite challengers. Every 3 wins earns a follower!</div>
   <div id="ladderPickScreen">
-    <div class="sel-title">&#8212; Your Hero &#8212;</div>
-    <div class="sel-row" id="ldClassPick"></div>
-    <button class="btn btn-spd" onclick="openCustomEditor('p1')" style="font-size:.42rem;margin-top:6px">&#9881; Edit Hero</button>
+    <div id="ladderCharSheet"></div>
     <div id="ladderRecord" style="font-size:.55rem;color:var(--parch-dk);margin-top:4px"></div>
     <button class="go-btn" onclick="startLadder()" id="btnLadder">&#127942; BEGIN CLIMB</button>
     <div style="width:100%;max-width:800px;margin-top:8px">

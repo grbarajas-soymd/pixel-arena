@@ -84,7 +84,10 @@ export function mkFollower(owner) { return { alive: true, hp: owner.followerMaxH
 
 export function mkCustomHero(side) {
   var isLeft = side === 'left', s = getCustomTotalStats(), isMelee = getWeaponRangeType() === 'melee';
-  var h = { type: 'custom', customSprite: state.customChar.sprite, name: state.customChar.name, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side, x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1, maxHp: s.hp, hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, moveSpeedBonus: 0, attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300, atkCnt: 0, atkCd: 0, bleedStacks: [], shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0, state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0, totDmg: 0, totHeal: 0, blActive: false, blEnd: 0, blDmg: 0, markNext: false, followerAlive: false, follower: null, followerMaxHp: 450, arenaFollowers: [], ultActive: false, ultEnd: 0, shieldActive: false, shieldHp: 0, shieldEnd: 0, mana: s.mana || 0, maxMana: s.mana || 0, manaRegen: s.manaRegen || 0, charge: 0, maxCharge: 10, chargeDecayTimer: 0, castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0, spellRange: isMelee ? 200 : 400, ultStrikes: 0, ultStrikeTimer: 0, energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0, meleeRange: MELEE, throwRange: 200, stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5, envenomed: false, envenomedEnd: 0, deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0, smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120, resource: Math.max(s.mana || 0, s.energy || 0, 100), maxResource: Math.max(s.mana || 0, s.energy || 0, 100), resourceRegen: Math.max(s.manaRegen || 0, s.energyRegen || 0, 2), spells: {}, customSkillIds: [], customUltId: null };
+  var h = { type: 'custom', customSprite: state.customChar.sprite, name: state.customChar.name, color: '#d8b858', colorDark: '#4a3818', colorLight: '#e8d080', side: side, x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1, maxHp: s.hp, hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, moveSpeedBonus: 0, attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300, atkCnt: 0, atkCd: 0, bleedStacks: [], shocked: false, shockedEnd: 0, slow: 0, slowEnd: 0, stunEnd: 0, state: 'idle', bobPhase: isLeft ? 0 : Math.PI, attackAnim: 0, hurtAnim: 0, castAnim: 0, totDmg: 0, totHeal: 0, blActive: false, blEnd: 0, blDmg: 0, markNext: false, followerAlive: false, follower: null, followerMaxHp: 450, arenaFollowers: [], ultActive: false, ultEnd: 0, shieldActive: false, shieldHp: 0, shieldEnd: 0, mana: s.mana || 0, maxMana: s.mana || 0, manaRegen: s.manaRegen || 0, charge: 0, maxCharge: 10, chargeDecayTimer: 0, castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0, spellRange: isMelee ? 200 : 400, ultStrikes: 0, ultStrikeTimer: 0, energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0, meleeRange: MELEE, throwRange: 200, stealthed: false, stealthEnd: 0, combo: 0, maxCombo: 5, envenomed: false, envenomedEnd: 0, deathMarkTarget: false, deathMarkEnd: 0, deathMarkDmg: 0, smokeBombActive: false, smokeBombEnd: 0, smokeBombX: 0, smokeBombRadius: 120, resource: Math.max(s.mana || 0, s.energy || 0, 100), maxResource: Math.max(s.mana || 0, s.energy || 0, 100), resourceRegen: Math.max(s.manaRegen || 0, s.energyRegen || 0, 2), spells: {}, customSkillIds: [], customUltId: null };
+  // Copy equipment for gear-dependent sprite rendering
+  h.equipment = {};
+  for (var ek in state.customChar.equipment) { h.equipment[ek] = state.customChar.equipment[ek]; }
   for (var i = 0; i < 2; i++) { if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) { h.spells['skill' + i] = { cd: 0, bcd: ALL_SKILLS[state.customChar.skills[i]].bcd || 3000, n: ALL_SKILLS[state.customChar.skills[i]].name }; h.customSkillIds.push({ idx: state.customChar.skills[i], key: 'skill' + i }) } }
   if (state.customChar.ultimate !== null && ALL_ULTS[state.customChar.ultimate]) { h.spells.ultimate = { cd: 0, bcd: Infinity, used: false, n: ALL_ULTS[state.customChar.ultimate].name }; h.customUltId = state.customChar.ultimate }
   return h;
@@ -93,7 +96,7 @@ export function mkCustomHero(side) {
 export function mkLadderHero(cfg, side) {
   var isLeft = side === 'left';
   var isMelee = cfg.rangeType === 'melee';
-  var h = { type: 'custom', customSprite: cfg.sprite, name: cfg.name, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side,
+  var h = { type: 'custom', customSprite: cfg.sprite, name: cfg.name, color: '#d8b858', colorDark: '#4a3818', colorLight: '#e8d080', side: side,
     x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,
     maxHp: cfg.hp, hp: cfg.hp, baseDmg: cfg.baseDmg, baseAS: cfg.baseAS, def: cfg.def, evasion: cfg.evasion,
     moveSpeed: cfg.moveSpeed, moveSpeedBonus: 0,
@@ -114,6 +117,8 @@ export function mkLadderHero(cfg, side) {
     resource: 300, maxResource: 300, resourceRegen: 4,
     spells: {}, customSkillIds: [], customUltId: null,
   };
+  // Copy equipment for gear-dependent sprite rendering
+  if (cfg.equip) { h.equipment = {}; for (var ek in cfg.equip) h.equipment[ek] = cfg.equip[ek]; }
   for (var i = 0; i < cfg.skills.length && i < 2; i++) {
     if (cfg.skills[i] !== null && ALL_SKILLS[cfg.skills[i]]) {
       h.spells['skill' + i] = { cd: 0, bcd: ALL_SKILLS[cfg.skills[i]].bcd || 3000, n: ALL_SKILLS[cfg.skills[i]].name };
@@ -184,7 +189,7 @@ export function mkDungeonHero(run, side) {
   var s = getCustomTotalStats();
   var h = {
     type: 'custom', customSprite: state.customChar.sprite,
-    name: run.heroName, color: '#ff88ff', colorDark: '#6a1a6a', colorLight: '#ffaaff', side: side,
+    name: run.heroName, color: '#d8b858', colorDark: '#4a3818', colorLight: '#e8d080', side: side,
     x: isLeft ? AX + 140 : AX + AW - 140, y: GY, facing: isLeft ? 1 : -1,
     maxHp: run.maxHp, hp: run.hp,
     baseDmg: run.baseDmg + run.bonusDmg,
@@ -219,6 +224,9 @@ export function mkDungeonHero(run, side) {
     _stashCrit: run._crit || 0,
     _stashLifesteal: run._lifesteal || 0,
   };
+  // Copy equipment for gear-dependent sprite rendering
+  h.equipment = {};
+  for (var ek in state.customChar.equipment) { h.equipment[ek] = state.customChar.equipment[ek]; }
   // Apply skills from customChar
   for (var i = 0; i < 2; i++) {
     if (state.customChar.skills[i] !== null && ALL_SKILLS[state.customChar.skills[i]]) {

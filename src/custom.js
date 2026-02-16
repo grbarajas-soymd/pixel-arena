@@ -5,6 +5,7 @@ import { ALL_SKILLS, ALL_ULTS } from './data/skills.js';
 import { getCustomTotalStats, getWeaponRangeType } from './combat/hero.js';
 import { switchMode } from './modes/arena.js';
 import { drawSpritePreview } from './render/sprites.js';
+import { getIcon } from './render/icons.js';
 
 // Default skill loadouts per class
 var CLASS_DEFAULTS = {
@@ -21,7 +22,7 @@ export function buildCustomSheet(){
     el.className='eq-slot';el.setAttribute('data-slot',slot.key);
     el.onclick=function(){openItemPicker(this.getAttribute('data-slot'))};
     var rarityCol=item&&item.rarity?GEAR_RARITY_COLORS[item.rarity]||'#aaa':'#aaa';
-    el.innerHTML='<div class="eq-slot-icon">'+(item?item.icon:slot.icon)+'</div><div class="eq-slot-label">'+slot.label+'</div><div class="eq-slot-name" style="color:'+rarityCol+'">'+(item?item.name:'- Empty -')+'</div><div class="eq-slot-stats">'+(item?item.desc:'Click')+'</div>'+(item&&item.rarity?'<div style="font-size:.4rem;color:'+rarityCol+'">'+item.rarity+'</div>':'');
+    el.innerHTML='<div class="eq-slot-icon">'+getIcon(item||slot,20)+'</div><div class="eq-slot-label">'+slot.label+'</div><div class="eq-slot-name" style="color:'+rarityCol+'">'+(item?item.name:'- Empty -')+'</div><div class="eq-slot-stats">'+(item?item.desc:'Click')+'</div>'+(item&&item.rarity?'<div style="font-size:.4rem;color:'+rarityCol+'">'+item.rarity+'</div>':'');
     eq.appendChild(el);
   }
   // Gear bag display
@@ -34,7 +35,7 @@ export function buildCustomSheet(){
       state.gearBag.forEach(function(ik){
         var it=ITEMS[ik];if(!it)return;
         var col=GEAR_RARITY_COLORS[it.rarity]||'#aaa';
-        bh+='<div class="dg-inv-item" style="cursor:default"><span class="dg-inv-icon">'+it.icon+'</span><span style="color:'+col+'">'+it.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+it.slot+')</span></div>';
+        bh+='<div class="dg-inv-item" style="cursor:default"><span class="dg-inv-icon">'+getIcon(it,14)+'</span><span style="color:'+col+'">'+it.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+it.slot+')</span></div>';
       });
       bagEl.innerHTML=bh;
     }
@@ -53,15 +54,15 @@ export function buildCustomSheet(){
 export function updateTotalStats(){
   var s=getCustomTotalStats(),el=document.getElementById('customTotalStats');
   var rt=getWeaponRangeType();
-  el.innerHTML='<b style="color:#ff88ff">Total Stats</b><br>HP:'+Math.round(s.hp)+' Dmg:'+Math.round(s.baseDmg)+'<br>AS:'+s.baseAS.toFixed(2)+' DEF:'+Math.round(s.def)+'<br>Eva:'+Math.round(s.evasion*100)+'% Spd:'+Math.round(s.moveSpeed)+'<br>Range: '+rt+(s.mana>0?'<br>Mana:'+Math.round(s.mana):'')+(s.energy>0?'<br>Eng:'+Math.round(s.energy):'');
+  el.innerHTML='<b style="color:#d8b858">Total Stats</b><br>HP:'+Math.round(s.hp)+' Dmg:'+Math.round(s.baseDmg)+'<br>AS:'+s.baseAS.toFixed(2)+' DEF:'+Math.round(s.def)+'<br>Eva:'+Math.round(s.evasion*100)+'% Spd:'+Math.round(s.moveSpeed)+'<br>Range: '+rt+(s.mana>0?'<br>Mana:'+Math.round(s.mana):'')+(s.energy>0?'<br>Eng:'+Math.round(s.energy):'');
 }
 
 export function drawPreview(){
   var pc=document.getElementById('previewCanvas');
-  drawSpritePreview(pc,state.customChar.sprite);
+  drawSpritePreview(pc,state.customChar.sprite,state.customChar.equipment);
   var c=pc.getContext('2d');
-  c.fillStyle='#ff88ff';c.font='bold 9px "Chakra Petch"';c.textAlign='center';
-  c.fillText(state.customChar.name||'Custom',80,22);
+  c.fillStyle='#d8b858';c.font='bold 14px "Cinzel"';c.textAlign='center';
+  c.fillText(state.customChar.name||'Custom',120,24);
 }
 
 export function applyClassDefaults(){
@@ -90,14 +91,14 @@ export function openItemPicker(slotKey){
     var v=ITEMS[equippedKey];
     var col=GEAR_RARITY_COLORS[v.rarity]||'#aaa';
     el=document.createElement('div');el.className='dd-item';el.style.opacity='0.5';
-    el.innerHTML='<div class="dd-item-icon">'+v.icon+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+' (equipped)</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
+    el.innerHTML='<div class="dd-item-icon">'+getIcon(v,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+' (equipped)</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
     c.appendChild(el);
   }
   ownedKeys.forEach(function(k){
     var v=ITEMS[k];if(!v)return;
     var col=GEAR_RARITY_COLORS[v.rarity]||'#aaa';
     el=document.createElement('div');el.className='dd-item';
-    el.innerHTML='<div class="dd-item-icon">'+v.icon+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+'</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
+    el.innerHTML='<div class="dd-item-icon">'+getIcon(v,18)+'</div><div class="dd-item-info"><div class="dd-item-name" style="color:'+col+'">'+v.name+'</div><div class="dd-item-stats">'+v.desc+'</div><div style="font-size:.4rem;color:'+col+'">'+v.rarity+'</div></div>';
     el.onclick=function(){
       if(equippedKey){state.gearBag.push(equippedKey)}
       var idx=state.gearBag.indexOf(k);
