@@ -549,5 +549,26 @@ select.stat-edit-val{width:75px;font-size:.48rem;color:var(--gold-bright);backgr
   animation:sparkleFloat 1.5s ease-out both;
 }
 
+/* ===== TOOLTIP SYSTEM ===== */
+.game-tooltip{
+  position:fixed;z-index:500;max-width:280px;padding:10px 12px;
+  background:rgba(13,10,7,0.97);border:2px solid var(--gold);border-radius:2px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.7),0 0 10px rgba(200,168,72,0.08);
+  font-family:'Cinzel',serif;font-size:.52rem;color:var(--text);
+  pointer-events:none;line-height:1.6;
+}
+.tt-header{font-size:.58rem;font-weight:700;margin-bottom:4px}
+.tt-rarity{font-size:.42rem;text-transform:uppercase;letter-spacing:1px}
+.tt-divider{height:1px;background:var(--panel-border);margin:4px 0}
+.tt-section{font-size:.45rem;color:var(--gold);margin:3px 0 1px;font-weight:700}
+.tt-stat{display:flex;justify-content:space-between;font-size:.48rem;padding:1px 0}
+.tt-stat-label{color:var(--text-dim)}
+.tt-stat-val{color:var(--text-bright);font-weight:700}
+.tt-diff-pos{color:#6a9a6a}
+.tt-diff-neg{color:#aa5a5a}
+.tt-compare{font-size:.42rem;color:var(--text-dim);margin-top:4px;padding-top:4px;border-top:1px solid var(--panel-border)}
+.tt-desc{font-size:.45rem;color:var(--text);line-height:1.5}
+body.is-mobile .game-tooltip{max-width:260px;pointer-events:auto}
+
 /* Scrollbar global */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3a2e1e;border-radius:2px}

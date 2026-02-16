@@ -35,6 +35,9 @@ import {
 import { render } from './render/arena.js';
 import { updateFollowerDisplays, updateStakeUI } from './render/ui.js';
 
+// Tooltip system
+import './tooltip.js';
+
 // =============== DEVICE DETECTION ===============
 function detectLayout() {
   var w = window.innerWidth, h = window.innerHeight;

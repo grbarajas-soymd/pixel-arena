@@ -10,8 +10,16 @@ import { buildCustomTooltip, buildDefeatSheet, updateFollowerDisplays } from '..
 import { drawSpritePreview } from '../render/sprites.js';
 import { buildCharSheet } from '../render/charSheet.js';
 import { getIcon } from '../render/icons.js';
+import { attachTooltip, buildGearTooltipHtml, buildFollowerTooltipHtml, buildRunItemTooltipHtml } from '../tooltip.js';
 
 var GEAR_PRICES={common:20,uncommon:40,rare:70,epic:120,legendary:250};
+
+function _attachMerchantGearTooltips(container){
+  container.querySelectorAll('.dg-gear-btn').forEach(function(btn){
+    var key=btn.getAttribute('data-gear-key');
+    if(key)attachTooltip(btn,(function(k){return function(){return buildGearTooltipHtml(k)}})(key));
+  });
+}
 
 var DG_MONSTERS=[
   {name:'Goblin Scout',icon:'\u{1F47A}',hp:350,dmg:35,def:5,tier:1,monsterType:'humanoid',colors:{body:'#4a6a2a',accent:'#6a4a1a',eye:'#ffcc00'},specials:['heavyStrike']},
@@ -96,18 +104,20 @@ function updateDgUI(){
   document.getElementById('dgFloorNum').textContent='FLOOR '+r.floor;
   var inv=document.getElementById('dgInventory');
   if(r.items.length===0)inv.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">Empty</div>';
-  else{var ih='';r.items.forEach(function(it){ih+='<div class="dg-inv-item"><span class="dg-inv-icon">'+getIcon(it,16)+'</span><span>'+it.name+'</span></div>'});inv.innerHTML=ih}
+  else{inv.innerHTML='';r.items.forEach(function(it){var div=document.createElement('div');div.className='dg-inv-item';div.innerHTML='<span class="dg-inv-icon">'+getIcon(it,16)+'</span><span>'+it.name+'</span>';attachTooltip(div,function(){return buildRunItemTooltipHtml(it.name,it.desc)});inv.appendChild(div)})}
   var fc=document.getElementById('dgFollowers');
   if(r.followers.length===0)fc.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">None yet</div>';
-  else{var fh='';r.followers.forEach(function(f,fi){
+  else{fc.innerHTML='';r.followers.forEach(function(f,fi){
     var isDeployed=r.deployedFollower===f;
-    fh+='<div class="dg-inv-item" style="'+(isDeployed?'border-left:2px solid #bb88ff;padding-left:4px':'')+'">'+
-      '<span class="dg-inv-icon">'+getIcon(f,16)+'</span>'+
+    var div=document.createElement('div');div.className='dg-inv-item';
+    if(isDeployed)div.style.cssText='border-left:2px solid #bb88ff;padding-left:4px';
+    div.innerHTML='<span class="dg-inv-icon">'+getIcon(f,16)+'</span>'+
       '<span class="dg-loot-name '+f.rarity+'">'+f.name+'</span>'+
       (isDeployed?' <span style="color:#bb88ff;font-size:.45rem">\u2694 ACTIVE</span>':
-        ' <button class="dg-deploy-btn" onclick="dgDeployFollower('+fi+')">Deploy</button>')+
-    '</div>';
-  });fc.innerHTML=fh}
+        ' <button class="dg-deploy-btn" onclick="dgDeployFollower('+fi+')">Deploy</button>');
+    attachTooltip(div,(function(follower){return function(){return buildFollowerTooltipHtml(follower)}})(f));
+    fc.appendChild(div);
+  })}
 }
 
 function dgUpdateProgress(){
@@ -600,11 +610,12 @@ function renderRoom(type){
       sh+='<div style="font-size:.48rem;color:#cc66ff;margin-top:6px;margin-bottom:2px">\u2694 Gear for Sale</div>';
       gearForSale.forEach(function(g,i){
         var col=GEAR_RARITY_COLORS[g.item.rarity]||'#aaa';
-        sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
+        sh+='<button class="dg-choice dg-gear-btn" data-gear-key="'+g.key+'" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
       });
     }
     sh+='</div><div class="dg-choices" style="margin-top:6px"><button class="dg-choice" onclick="generateRoom()">\u27A1\uFE0F Leave Shop</button></div></div>';
     rc.innerHTML=sh;
+    _attachMerchantGearTooltips(rc);
   }
   else if(type==='follower_cage'){
     var f=rollCageFollower(r.floor);
@@ -741,11 +752,12 @@ function dgRefreshMerchant(){
     sh+='<div style="font-size:.48rem;color:#cc66ff;margin-top:6px;margin-bottom:2px">\u2694 Gear for Sale</div>';
     r._shopGear.forEach(function(g,i){
       var col=GEAR_RARITY_COLORS[g.item.rarity]||'#aaa';
-      sh+='<button class="dg-choice" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
+      sh+='<button class="dg-choice dg-gear-btn" data-gear-key="'+g.key+'" style="text-align:left;font-size:.48rem;border-color:'+col+';color:'+col+'" onclick="dgBuyGear('+i+')" '+(r.gold<g.price?'disabled':'')+'>'+getIcon(g.item,14)+' '+g.item.name+' ('+g.item.slot+') - '+g.item.desc+' <span style="color:var(--gold-bright)">('+g.price+'g)</span></button>';
     });
   }
   sh+='</div><div class="dg-choices" style="margin-top:6px"><button class="dg-choice" onclick="generateRoom()">\u27A1\uFE0F Leave Shop</button></div></div>';
   rc.innerHTML=sh;
+  _attachMerchantGearTooltips(rc);
 }
 
 export function dgDeath(){

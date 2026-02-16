@@ -4,6 +4,7 @@ import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
 import { blN, effAS, effEv, isStunned } from '../combat/engine.js';
 import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
 import { getIcon } from './icons.js';
+import { attachTooltip, buildFollowerTooltipHtml } from '../tooltip.js';
 
 export function buildHUD(h,id){
   const p=document.getElementById(id);
@@ -119,6 +120,7 @@ export function renderFollowerCards(containerId,followers,clickHandler){
     var abilityLine=f.abilityName?'<div style="font-size:.42rem;color:#88ccaa;margin-top:1px">'+f.abilityName+': '+f.abilityDesc+'</div>':'';
     var wagerLine=f.wagerDebuffName?'<div style="font-size:.42rem;color:#cc8866;margin-top:1px">Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>':'';
     card.innerHTML='<div class="fc-icon">'+getIcon(f,24)+'</div><div class="fc-name '+f.rarity+'">'+f.name+'</div><div class="fc-rarity '+f.rarity+'">'+f.rarity+'</div><div class="fc-stats">'+f.buffDesc+'</div>'+abilityLine+wagerLine+badges;
+    attachTooltip(card,(function(follower){return function(){return buildFollowerTooltipHtml(follower)}})(f));
     if(clickHandler)card.onclick=function(){clickHandler(f,i)};
     el.appendChild(card);
   });

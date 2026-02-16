@@ -6,6 +6,7 @@ import { getIcon } from './icons.js';
 import { getCustomTotalStats, getWeaponRangeType } from '../combat/hero.js';
 import { drawSpritePreview } from './sprites.js';
 import { openCustomEditor } from '../custom.js';
+import { attachTooltip, buildGearTooltipHtml, buildSkillTooltipHtml } from '../tooltip.js';
 
 // Class display names
 var CLASS_NAMES = {
@@ -117,6 +118,25 @@ export function buildCharSheet(containerId) {
   sheet.appendChild(footer);
 
   el.appendChild(sheet);
+
+  // Attach tooltips to equipment slots
+  var equipSlots = sheet.querySelectorAll('.char-sheet-equip-slot');
+  EQ_SLOTS.forEach(function(slot, idx) {
+    var ik = state.customChar.equipment[slot.key];
+    if (ik && equipSlots[idx]) attachTooltip(equipSlots[idx], (function(k) { return function() { return buildGearTooltipHtml(k) } })(ik));
+  });
+  // Attach tooltips to skill entries
+  var skillEls = sheet.querySelectorAll('.char-sheet-skill');
+  var ti = 0;
+  for (var si = 0; si < 2; si++) {
+    if (state.customChar.skills[si] !== null && ALL_SKILLS[state.customChar.skills[si]]) {
+      if (skillEls[ti]) attachTooltip(skillEls[ti], (function(idx) { return function() { return buildSkillTooltipHtml(idx, false) } })(state.customChar.skills[si]));
+      ti++;
+    }
+  }
+  if (state.customChar.ultimate !== null && ALL_ULTS[state.customChar.ultimate]) {
+    if (skillEls[ti]) attachTooltip(skillEls[ti], (function(idx) { return function() { return buildSkillTooltipHtml(idx, true) } })(state.customChar.ultimate));
+  }
 
   // Draw sprite preview on the canvas with equipped gear
   drawSpritePreview(canvas, state.customChar.sprite, state.customChar.equipment);

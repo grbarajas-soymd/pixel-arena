@@ -6,6 +6,7 @@ import { getCustomTotalStats, getWeaponRangeType } from './combat/hero.js';
 import { switchMode } from './modes/arena.js';
 import { drawSpritePreview } from './render/sprites.js';
 import { getIcon } from './render/icons.js';
+import { attachTooltip, buildGearTooltipHtml, buildSkillTooltipHtml } from './tooltip.js';
 
 // Default skill loadouts per class
 var CLASS_DEFAULTS = {
@@ -23,6 +24,7 @@ export function buildCustomSheet(){
     el.onclick=function(){openItemPicker(this.getAttribute('data-slot'))};
     var rarityCol=item&&item.rarity?GEAR_RARITY_COLORS[item.rarity]||'#aaa':'#aaa';
     el.innerHTML='<div class="eq-slot-icon">'+getIcon(item||slot,20)+'</div><div class="eq-slot-label">'+slot.label+'</div><div class="eq-slot-name" style="color:'+rarityCol+'">'+(item?item.name:'- Empty -')+'</div><div class="eq-slot-stats">'+(item?item.desc:'Click')+'</div>'+(item&&item.rarity?'<div style="font-size:.4rem;color:'+rarityCol+'">'+item.rarity+'</div>':'');
+    if(ik)attachTooltip(el,(function(k){return function(){return buildGearTooltipHtml(k)}})(ik));
     eq.appendChild(el);
   }
   // Gear bag display
@@ -31,23 +33,27 @@ export function buildCustomSheet(){
     if(state.gearBag.length===0){
       bagEl.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);padding:4px">No spare gear. Run dungeons to find loot!</div>';
     } else {
-      var bh='';
+      bagEl.innerHTML='';
       state.gearBag.forEach(function(ik){
         var it=ITEMS[ik];if(!it)return;
         var col=GEAR_RARITY_COLORS[it.rarity]||'#aaa';
-        bh+='<div class="dg-inv-item" style="cursor:default"><span class="dg-inv-icon">'+getIcon(it,14)+'</span><span style="color:'+col+'">'+it.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+it.slot+')</span></div>';
+        var div=document.createElement('div');div.className='dg-inv-item';div.style.cursor='default';
+        div.innerHTML='<span class="dg-inv-icon">'+getIcon(it,14)+'</span><span style="color:'+col+'">'+it.name+'</span> <span style="font-size:.42rem;color:var(--parch-dk)">('+it.slot+')</span>';
+        attachTooltip(div,(function(k){return function(){return buildGearTooltipHtml(k)}})(ik));
+        bagEl.appendChild(div);
       });
-      bagEl.innerHTML=bh;
     }
   }
   for(var i=0;i<2;i++){
     var el2=document.getElementById('skillSlot'+(i+1)),sk=state.customChar.skills[i]!==null?ALL_SKILLS[state.customChar.skills[i]]:null;
     if(sk){el2.innerHTML='<div class="skill-icon">'+sk.icon+'</div><div class="skill-info"><div class="skill-name">'+sk.name+'</div><div class="skill-desc">'+sk.desc+'</div><div class="skill-source">From: '+sk.source+'</div></div>';el2.classList.add('active')}
     else{el2.innerHTML='<div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Skill '+(i+1)+' - Click</div></div>';el2.classList.remove('active')}
+    if(!el2._tooltipAttached){attachTooltip(el2,(function(idx){return function(){var si=state.customChar.skills[idx];return si!==null?buildSkillTooltipHtml(si,false):''}})(i));el2._tooltipAttached=true}
   }
   var ue=document.getElementById('ultSlot'),u=state.customChar.ultimate!==null?ALL_ULTS[state.customChar.ultimate]:null;
   if(u){ue.innerHTML='<div class="skill-icon">'+u.icon+'</div><div class="skill-info"><div class="skill-name">'+u.name+'</div><div class="skill-desc">'+u.desc+'</div><div class="skill-source">From: '+u.source+'</div></div>';ue.classList.add('active')}
   else{ue.innerHTML='<div class="skill-icon">&#10067;</div><div class="skill-info"><div class="skill-name">Ultimate - Click</div></div>';ue.classList.remove('active')}
+  if(!ue._tooltipAttached){attachTooltip(ue,function(){var ui=state.customChar.ultimate;return ui!==null?buildSkillTooltipHtml(ui,true):''});ue._tooltipAttached=true}
   updateTotalStats();drawPreview();
 }
 
@@ -106,6 +112,7 @@ export function openItemPicker(slotKey){
       state.customChar.equipment[slotKey]=k;
       buildCustomSheet();closeDD();
     };
+    attachTooltip(el,(function(key){return function(){return buildGearTooltipHtml(key)}})(k));
     c.appendChild(el);
   });
   if(ownedKeys.length===0&&!equippedKey){
@@ -125,7 +132,7 @@ export function openSkillPicker(idx){
   el.onclick=function(){if(isUlt)state.customChar.ultimate=null;else state.customChar.skills[idx]=null;buildCustomSheet();closeDD()};c.appendChild(el);
   arr.forEach(function(sk,i){el=document.createElement('div');el.className='dd-item';
     el.innerHTML='<div class="dd-item-icon">'+sk.icon+'</div><div class="dd-item-info"><div class="dd-item-name">'+sk.name+'</div><div class="dd-item-stats">'+sk.desc+'<br><span style="color:#cc44cc">From: '+sk.source+'</span></div></div>';
-    el.onclick=function(){if(isUlt)state.customChar.ultimate=i;else state.customChar.skills[idx]=i;buildCustomSheet();closeDD()};c.appendChild(el)});
+    el.onclick=function(){if(isUlt)state.customChar.ultimate=i;else state.customChar.skills[idx]=i;buildCustomSheet();closeDD()};attachTooltip(el,(function(si,iu){return function(){return buildSkillTooltipHtml(si,iu)}})(i,isUlt));c.appendChild(el)});
   document.getElementById('ddOverlay').classList.add('show');
 }
 
