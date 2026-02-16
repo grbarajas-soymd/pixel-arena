@@ -102,9 +102,113 @@ function dismissStartScreen() {
   if (document.getElementById('skipStartCheck').checked) {
     localStorage.setItem('pixel-arena-skip-start', '1');
   }
-  initCharacterFlow();
+  if (localStorage.getItem('pixel-arena-tutorial-seen') !== '1') {
+    showTutorial(initCharacterFlow);
+  } else {
+    initCharacterFlow();
+  }
 }
 window.dismissStartScreen = dismissStartScreen;
+
+// =============== TUTORIAL ===============
+
+var TUTORIAL_SLIDES = [
+  { icon: '\u{1F3F0}', title: 'DELVE THE DEPTHS', desc: 'Descend through dungeon floors. Fight monsters. Survive.' },
+  { icon: '\u2694\uFE0F\u{1F43E}', title: 'CLAIM YOUR SPOILS', desc: 'Collect powerful gear and capture followers.' },
+  { icon: '\u{1F3C6}', title: 'CLIMB THE LADDER', desc: 'Test your build against endless challengers.' },
+  { icon: '\u{1F310}', title: 'CONQUER THE ARENA', desc: 'Upload your hero and battle real players online.' }
+];
+
+function showTutorial(onComplete) {
+  var currentSlide = 0;
+  var timer = null;
+  var barAnim = null;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'tutorialOverlay';
+  overlay.className = 'tut-overlay';
+
+  var slideEl = document.createElement('div');
+  slideEl.className = 'tut-slide';
+  overlay.appendChild(slideEl);
+
+  var progressWrap = document.createElement('div');
+  progressWrap.className = 'tut-progress';
+  var dotsEl = document.createElement('div');
+  dotsEl.className = 'tut-dots';
+  var barOuter = document.createElement('div');
+  barOuter.className = 'tut-bar';
+  var barFill = document.createElement('div');
+  barFill.className = 'tut-bar-fill';
+  barOuter.appendChild(barFill);
+  progressWrap.appendChild(dotsEl);
+  progressWrap.appendChild(barOuter);
+  overlay.appendChild(progressWrap);
+
+  var skipBtn = document.createElement('button');
+  skipBtn.className = 'tut-skip';
+  skipBtn.textContent = 'SKIP \u2192';
+  skipBtn.onclick = finish;
+  overlay.appendChild(skipBtn);
+
+  overlay.addEventListener('click', function(ev) {
+    if (ev.target === overlay || ev.target === slideEl) advance();
+  });
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(function() { overlay.classList.add('show'); });
+
+  function renderSlide(idx) {
+    var s = TUTORIAL_SLIDES[idx];
+    slideEl.style.opacity = '0';
+    setTimeout(function() {
+      slideEl.innerHTML =
+        '<div class="tut-icon">' + s.icon + '</div>' +
+        '<div class="tut-title">' + s.title + '</div>' +
+        '<div class="tut-desc">' + s.desc + '</div>';
+      slideEl.style.opacity = '1';
+    }, 300);
+
+    var dots = '';
+    for (var i = 0; i < TUTORIAL_SLIDES.length; i++) {
+      dots += '<span class="tut-dot' + (i === idx ? ' active' : '') + '">\u25CF</span> ';
+    }
+    dotsEl.innerHTML = dots;
+
+    barFill.style.transition = 'none';
+    barFill.style.width = '0%';
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        barFill.style.transition = 'width 3s linear';
+        barFill.style.width = '100%';
+      });
+    });
+  }
+
+  function advance() {
+    clearTimeout(timer);
+    currentSlide++;
+    if (currentSlide >= TUTORIAL_SLIDES.length) {
+      finish();
+    } else {
+      renderSlide(currentSlide);
+      timer = setTimeout(advance, 3000);
+    }
+  }
+
+  function finish() {
+    clearTimeout(timer);
+    localStorage.setItem('pixel-arena-tutorial-seen', '1');
+    overlay.classList.remove('show');
+    setTimeout(function() {
+      overlay.remove();
+      onComplete();
+    }, 400);
+  }
+
+  renderSlide(0);
+  timer = setTimeout(advance, 3000);
+}
 
 // =============== CHARACTER FLOW ===============
 

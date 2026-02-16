@@ -186,46 +186,174 @@ body.is-desktop .app{max-width:1300px;padding:10px 20px}
 /* ===== SCREEN FILL ===== */
 #selectorScreen,#dungeonScreen,#ladderScreen,#battleScreen,#customScreen{flex:1}
 
+/* ===== UTILITY CLASSES ===== */
+.panel-hint{font-size:.52rem;color:var(--parch-dk);margin-bottom:4px;line-height:1.6}
+.panel-warning{font-size:.48rem;color:#ff4444}
+.cc-detail{font-size:.45rem;color:var(--parch-dk);margin-top:4px}
+.archetype-grid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.archetype-grid .class-card{width:130px}
+.dg-progress-row{display:flex;justify-content:space-between;font-size:.52rem;color:var(--parch-dk);margin-bottom:2px}
+
 /* ===== RESPONSIVE: MOBILE (body.is-mobile) ===== */
+
+/* Global mobile text bump — base font slightly larger for readability */
+body.is-mobile{font-size:16px}
+body.is-mobile .app{padding:6px 8px}
+
+/* Title & subtitle */
 body.is-mobile .title{font-size:.85rem;letter-spacing:1px}
-body.is-mobile .sub{font-size:.5rem;letter-spacing:2px;margin-bottom:6px}
+body.is-mobile .sub{font-size:.55rem;letter-spacing:2px;margin-bottom:6px}
+
+/* Mode tabs — horizontal scroll */
 body.is-mobile .mode-tabs{overflow-x:auto;justify-content:flex-start;padding:0 4px;-webkit-overflow-scrolling:touch}
-body.is-mobile .mode-tab{font-size:.48rem;padding:8px 14px;white-space:nowrap;min-height:44px}
+body.is-mobile .mode-tab{font-size:.52rem;padding:8px 14px;white-space:nowrap;min-height:44px}
+body.is-mobile .mode-tab.reset-tab{font-size:.48rem;padding:8px 12px}
+
+/* Arena screen */
 body.is-mobile .arena-grid{grid-template-columns:1fr}
+body.is-mobile #arenaCanvas{width:100%;height:auto}
+body.is-mobile .stake-section{max-width:100%;padding:8px}
+
+/* Battle HUD */
 body.is-mobile .hud{grid-template-columns:1fr;gap:4px}
-body.is-mobile .hud-panel{padding:6px}
-body.is-mobile .hud-name{font-size:.58rem}
+body.is-mobile .hud-panel{padding:8px}
+body.is-mobile .hud-name{font-size:.62rem}
+body.is-mobile .ctrls{flex-wrap:wrap;gap:4px}
+body.is-mobile .btn{padding:8px 14px;font-size:.62rem;min-height:44px}
+body.is-mobile .btn-spd{padding:8px 12px;font-size:.52rem;min-height:44px}
+body.is-mobile .go-btn{font-size:.72rem;padding:12px 28px}
+body.is-mobile .log-scroll{height:80px;font-size:.55rem}
+
+/* Class cards (archetype picker) */
 body.is-mobile .sel-row{flex-direction:column;align-items:center}
-body.is-mobile .class-card{width:120px;padding:10px 6px}
-body.is-mobile .cc-icon{font-size:1.6rem}
-body.is-mobile .cc-name{font-size:.52rem}
+body.is-mobile .class-card{width:100%;max-width:260px;padding:12px 10px}
+body.is-mobile .cc-icon{font-size:1.8rem}
+body.is-mobile .cc-name{font-size:.58rem}
 body.is-mobile .cc-stats{font-size:.62rem}
+
+/* Character forge */
 body.is-mobile .cs-layout{grid-template-columns:1fr;max-width:100%}
 body.is-mobile .cs-header{font-size:.75rem}
 body.is-mobile .cs-avatar{width:180px;height:210px}
 body.is-mobile .cs-avatar canvas{width:180px!important;height:210px!important}
-body.is-mobile #arenaCanvas{width:100%;height:auto}
-body.is-mobile .ctrls{flex-wrap:wrap;gap:3px}
-body.is-mobile .btn{padding:8px 12px;font-size:.6rem;min-height:44px}
-body.is-mobile .btn-spd{padding:8px 10px;font-size:.48rem;min-height:44px}
-body.is-mobile .go-btn{font-size:.72rem;padding:10px 24px}
-body.is-mobile .stake-section{max-width:100%;padding:8px}
-body.is-mobile .follower-card{width:120px;padding:8px 6px}
-body.is-mobile .follower-card .fc-icon{font-size:1.2rem}
-body.is-mobile .follower-card .fc-name{font-size:.46rem}
-body.is-mobile .follower-card .fc-stats{font-size:.4rem}
-body.is-mobile .log-scroll{height:60px}
+body.is-mobile .cs-panel-title{font-size:.62rem}
+body.is-mobile .skill-name{font-size:.6rem}
+body.is-mobile .skill-desc{font-size:.55rem}
+
+/* Follower cards — wider on mobile for readability */
+body.is-mobile .follower-card{width:140px;padding:10px 8px}
+body.is-mobile .follower-card .fc-icon{font-size:1.4rem}
+body.is-mobile .follower-card .fc-name{font-size:.52rem}
+body.is-mobile .follower-card .fc-stats{font-size:.48rem}
+body.is-mobile .follower-card .fc-rarity{font-size:.48rem}
+body.is-mobile .staked-badge{font-size:.45rem}
+
+/* Dungeon layout */
+body.is-mobile .dg-header{font-size:.85rem}
+body.is-mobile .dg-sub{font-size:.58rem}
 body.is-mobile .dg-main{grid-template-columns:1fr;max-width:100%}
 body.is-mobile .dg-map{min-height:250px}
 body.is-mobile .dg-panel{padding:8px}
-body.is-mobile .dg-choice{font-size:.55rem;padding:10px 14px;min-width:80px;min-height:44px}
+body.is-mobile .dg-panel-title{font-size:.58rem}
+body.is-mobile .dg-room-title{font-size:.85rem}
+body.is-mobile .dg-room-desc{font-size:.62rem}
+body.is-mobile .dg-choice{font-size:.58rem;padding:12px 16px;min-width:90px;min-height:44px}
+body.is-mobile .dg-log{font-size:.55rem;max-height:120px}
+body.is-mobile .dg-inv-item{font-size:.55rem}
+body.is-mobile .dg-dmg-est{font-size:.55rem}
+body.is-mobile .dg-turn-actions{flex-wrap:wrap;gap:4px;padding:6px}
+body.is-mobile .dg-action-btn{padding:8px 12px;min-width:64px;min-height:44px}
+body.is-mobile .dga-label{font-size:.48rem}
+body.is-mobile .dg-deploy-btn{font-size:.45rem;padding:2px 8px}
+
+/* Intermission screens (victory/death) */
+body.is-mobile .dg-im-title{font-size:.8rem}
+body.is-mobile .dg-im-summary{font-size:.55rem}
+body.is-mobile .dg-im-stat{font-size:.52rem}
+
+/* Ladder */
 body.is-mobile .ld-next-preview{max-width:100%}
+body.is-mobile .ld-next-preview .lnp-name{font-size:.6rem}
+body.is-mobile .ld-next-preview .lnp-stats{font-size:.52rem}
+
+/* Character sheet */
 body.is-mobile .char-sheet{grid-template-columns:1fr!important;max-width:100%!important}
 body.is-mobile .char-sheet-sprite{margin:0 auto;border-right:none;border-bottom:1px solid var(--border)}
-body.is-mobile .dg-turn-actions{flex-wrap:wrap;gap:4px;padding:6px}
-body.is-mobile .dg-action-btn{padding:6px 10px;min-width:60px;min-height:44px}
+body.is-mobile .char-sheet-name{font-size:.78rem}
+body.is-mobile .char-sheet-class{font-size:.55rem}
+body.is-mobile .char-sheet-section{font-size:.58rem}
+body.is-mobile .char-sheet-stat{font-size:.58rem}
+body.is-mobile .char-sheet-equip-slot{font-size:.55rem}
+body.is-mobile .char-sheet-skill{font-size:.55rem}
+body.is-mobile .char-sheet-edit-btn{font-size:.55rem;padding:8px 24px;min-height:44px}
+
+/* Character select overlay */
+body.is-mobile .char-slot-card{width:100%;max-width:140px}
+body.is-mobile .char-slot-name{font-size:.55rem}
+body.is-mobile .char-slot-class{font-size:.48rem}
+body.is-mobile .char-slot-info{font-size:.45rem}
+body.is-mobile .char-slot-time{font-size:.42rem}
+body.is-mobile .char-slot-delete{font-size:.45rem;padding:3px 6px;min-width:24px;min-height:24px}
+
+/* Dropdown overlay & panels */
+body.is-mobile .dropdown-panel{width:94%;padding:12px 10px}
+body.is-mobile .dd-title{font-size:.72rem}
+body.is-mobile .dd-item-name{font-size:.58rem}
+body.is-mobile .dd-item-stats{font-size:.52rem}
+body.is-mobile .dd-close{font-size:.55rem;padding:10px 20px;min-height:44px}
+
+/* Tooltips — larger on mobile */
+body.is-mobile .game-tooltip{max-width:280px;pointer-events:auto;font-size:.55rem}
+body.is-mobile .tt-header{font-size:.6rem}
+body.is-mobile .tt-rarity{font-size:.48rem}
+body.is-mobile .tt-section{font-size:.5rem}
+body.is-mobile .tt-stat{font-size:.52rem}
+body.is-mobile .tt-desc{font-size:.5rem}
+body.is-mobile .tt-compare{font-size:.48rem}
+
+/* Tutorial — readable on small screens */
+body.is-mobile .tut-icon{font-size:2.4rem}
+body.is-mobile .tut-title{font-size:.75rem}
+body.is-mobile .tut-desc{font-size:.52rem;max-width:85vw;padding:0 16px}
+body.is-mobile .tut-skip{font-size:.48rem;padding:6px 14px;min-height:44px}
+body.is-mobile .tut-dots{font-size:.48rem}
+
+/* Combat log popup */
+body.is-mobile .cl-popup{width:95%;max-width:none}
+body.is-mobile .cl-popup-header{font-size:.55rem;padding:10px}
+body.is-mobile .cl-popup-stats{font-size:.48rem}
+body.is-mobile .cl-entry{font-size:.45rem}
+body.is-mobile .cl-log-btn{font-size:.48rem!important}
+
+/* Start screen */
 body.is-mobile .start-play-btn{font-size:.75rem;padding:14px 32px}
-body.is-mobile .start-subtitle{font-size:.52rem;letter-spacing:2px}
+body.is-mobile .start-subtitle{font-size:.55rem;letter-spacing:2px}
+body.is-mobile .start-skip-label{font-size:.48rem}
+
+/* No-followers message */
+body.is-mobile .no-followers{font-size:.55rem}
+
+/* Loot reveal */
+body.is-mobile .loot-reveal-rarity{font-size:.52rem}
+body.is-mobile .loot-reveal-card{padding:12px}
+
+/* Utility classes on mobile */
+body.is-mobile .panel-hint{font-size:.55rem}
+body.is-mobile .panel-warning{font-size:.52rem}
+body.is-mobile .cc-detail{font-size:.5rem}
+body.is-mobile .archetype-grid{gap:8px}
+body.is-mobile .archetype-grid .class-card{width:100%;max-width:260px}
+body.is-mobile .dg-progress-row{font-size:.52rem}
+body.is-mobile .sel-title{font-size:.58rem}
+
+/* Mobile font floor — catch JS-generated inline font-size values */
+body.is-mobile .dg-choices .dg-choice[style*="font-size"]{font-size:.52rem!important}
+body.is-mobile #onlineControls [style*="font-size"]{font-size:.52rem!important}
+body.is-mobile #opponentCards [style*="font-size"]{font-size:.5rem!important}
+body.is-mobile .loot-reveal-compare[style*="font-size"]{font-size:.5rem!important}
+body.is-mobile .loot-reveal-stats[style*="font-size"]{font-size:.52rem!important}
+body.is-mobile .dg-intermission [style*="font-size"]{font-size:.52rem!important}
+body.is-mobile .ld-next-preview [style*="font-size"]{font-size:.52rem!important}
 
 /* ===== RESPONSIVE: DESKTOP (body.is-desktop) ===== */
 body.is-desktop .dg-main{grid-template-columns:240px 1fr 240px;max-width:1100px}
@@ -603,6 +731,57 @@ body.is-mobile .game-tooltip{max-width:260px;pointer-events:auto}
   pointer-events:none;
 }
 .save-toast.show{opacity:1}
+
+/* Tutorial overlay */
+.tut-overlay{
+  position:fixed;inset:0;z-index:275;
+  background:rgba(4,3,2,0.94);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transition:opacity 0.4s;
+}
+.tut-overlay.show{opacity:1}
+.tut-slide{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  opacity:0;transition:opacity 0.3s;
+}
+.tut-icon{
+  font-size:3rem;
+  animation:tutPulse 2s ease-in-out infinite;
+  filter:drop-shadow(0 0 16px rgba(200,168,72,0.3));
+}
+@keyframes tutPulse{
+  0%,100%{transform:scale(1);filter:drop-shadow(0 0 16px rgba(200,168,72,0.3))}
+  50%{transform:scale(1.08);filter:drop-shadow(0 0 24px rgba(200,168,72,0.5))}
+}
+.tut-title{
+  font-family:'Cinzel',serif;font-size:.85rem;font-weight:700;
+  color:var(--gold);letter-spacing:2px;
+  text-shadow:2px 2px 0 #2a1a08,0 0 20px rgba(200,168,72,0.25);
+}
+.tut-desc{
+  font-family:'Cinzel',serif;font-size:.5rem;
+  color:var(--parch-dk);max-width:340px;text-align:center;line-height:1.6;
+}
+.tut-progress{
+  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.tut-dots{font-size:.45rem;color:#3a2e1e;letter-spacing:6px}
+.tut-dot{transition:color 0.3s}
+.tut-dot.active{color:var(--gold)}
+.tut-bar{
+  width:120px;height:3px;background:rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.tut-bar-fill{height:100%;width:0%;background:var(--gold)}
+.tut-skip{
+  position:fixed;bottom:16px;right:20px;
+  background:none;border:1px solid rgba(200,168,72,0.2);
+  color:var(--parch-dk);font-family:'Cinzel',serif;font-size:.4rem;
+  cursor:pointer;padding:4px 12px;letter-spacing:1px;
+  transition:color 0.2s,border-color 0.2s;
+}
+.tut-skip:hover{color:var(--gold);border-color:var(--gold)}
 
 /* Combat log popup */
 .cl-popup-overlay{
