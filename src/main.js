@@ -67,21 +67,21 @@ function drawLogo(canvas) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#8a7a52';
-  ctx.fillText('\u2694', w / 2 - 155, h / 2);
-  ctx.fillText('\u2694', w / 2 + 155, h / 2);
-  ctx.font = 'bold 48px "Cinzel"';
+  ctx.fillText('\u2694', w / 2 - 220, h / 2);
+  ctx.fillText('\u2694', w / 2 + 220, h / 2);
+  ctx.font = 'bold 34px "Cinzel"';
   ctx.shadowColor = 'rgba(200,168,72,0.4)';
   ctx.shadowBlur = 20;
   ctx.fillStyle = '#c8a848';
-  ctx.fillText('PIXEL ARENA', w / 2, h / 2);
+  ctx.fillText('SOME OF YOU MAY DIE', w / 2, h / 2);
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#d8b858';
-  ctx.fillText('PIXEL ARENA', w / 2, h / 2);
+  ctx.fillText('SOME OF YOU MAY DIE', w / 2, h / 2);
   ctx.strokeStyle = 'rgba(200,168,72,0.3)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(w / 2 - 130, h / 2 + 28);
-  ctx.lineTo(w / 2 + 130, h / 2 + 28);
+  ctx.moveTo(w / 2 - 190, h / 2 + 24);
+  ctx.lineTo(w / 2 + 190, h / 2 + 24);
   ctx.stroke();
 }
 

@@ -103,5 +103,5 @@ if (fs.existsSync(distPath)) {
 }
 
 app.listen(PORT, function () {
-  console.log('Pixel Arena running on port ' + PORT);
+  console.log('Some of You May Die running on port ' + PORT);
 });
