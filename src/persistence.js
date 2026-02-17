@@ -279,6 +279,28 @@ function rehydrateFollowers(collection){
   });
 }
 
+// =============== CLOUD SAVE ===============
+
+import * as network from './network.js';
+
+/** Upload current local save to cloud. Requires auth. */
+export function cloudSaveUpload(){
+  var wrapper=readWrapper();
+  if(!wrapper)return Promise.reject(new Error('No local save'));
+  return network.uploadCloudSave(wrapper);
+}
+
+/** Download cloud save and replace local save. Returns the wrapper or null. */
+export function cloudSaveDownload(){
+  return network.fetchCloudSave().then(function(res){
+    if(!res||!res.save)return null;
+    var wrapper=migrateWrapper(res.save);
+    if(!wrapper)return null;
+    writeWrapper(wrapper);
+    return wrapper;
+  });
+}
+
 // =============== AUTO-SAVE ===============
 
 export function setupAutoSave(){

@@ -8,8 +8,12 @@ import { STARTER_LOADOUTS } from './data/items.js';
 // Persistence
 import {
   loadSaveWrapper, loadCharacterSlot, createCharacterSlot,
-  deleteCharacterSlot, getSaveData, saveGame, setupAutoSave, showSaveToast
+  deleteCharacterSlot, getSaveData, saveGame, setupAutoSave, showSaveToast,
+  cloudSaveUpload, cloudSaveDownload
 } from './persistence.js';
+
+// Network (auth)
+import * as network from './network.js';
 
 // Mode modules
 import {
@@ -334,6 +338,9 @@ function showCharacterSelect() {
     grid.appendChild(newCard);
   }
 
+  // Footer: Account + Cloud Save section
+  buildAccountSection(footer);
+
   // Footer: Delete All
   if (slots.length > 0) {
     var delAll = document.createElement('button');
@@ -405,6 +412,115 @@ function resetAllCharacters() {
   }
 }
 window.resetAllCharacters = resetAllCharacters;
+
+// =============== ACCOUNT & CLOUD SAVE ===============
+
+function buildAccountSection(container) {
+  var section = document.createElement('div');
+  section.className = 'account-section';
+  section.style.cssText = 'margin-top:12px;padding:10px;border-top:1px solid rgba(200,168,72,0.2);text-align:center;font-size:.42rem';
+
+  if (network.isLoggedIn()) {
+    network.getMe().then(function(user) {
+      section.innerHTML =
+        '<div style="color:var(--gold);margin-bottom:6px">\u2601 Cloud Account: <b>' + user.username + '</b></div>' +
+        '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">' +
+          '<button class="btn btn-spd" style="font-size:.38rem;padding:3px 10px" onclick="cloudUpload()">\u2B06 Upload Save</button>' +
+          '<button class="btn btn-spd" style="font-size:.38rem;padding:3px 10px" onclick="cloudDownload()">\u2B07 Download Save</button>' +
+          '<button class="btn btn-back" style="font-size:.38rem;padding:3px 10px;opacity:0.7" onclick="accountLogout()">Logout</button>' +
+        '</div>' +
+        '<div id="cloudStatus" style="margin-top:4px;color:var(--parch-dk);font-size:.38rem"></div>';
+    }).catch(function() {
+      // Token expired/invalid
+      network.logout();
+      buildAccountLoginForm(section);
+    });
+  } else {
+    buildAccountLoginForm(section);
+  }
+
+  container.appendChild(section);
+}
+
+function buildAccountLoginForm(section) {
+  section.innerHTML =
+    '<div style="color:var(--parch-dk);margin-bottom:6px">\u2601 Cloud saves let you sync progress across devices</div>' +
+    '<div id="authForm">' +
+      '<input id="authUser" class="cs-name-input" placeholder="Username" maxlength="20" style="width:110px;display:inline-block;margin-right:4px;font-size:.38rem">' +
+      '<input id="authPass" type="password" class="cs-name-input" placeholder="Password" style="width:110px;display:inline-block;margin-right:4px;font-size:.38rem">' +
+      '<button class="btn btn-spd" style="font-size:.38rem;padding:3px 8px" onclick="accountLogin()">Login</button>' +
+      '<button class="btn btn-spd" style="font-size:.38rem;padding:3px 8px" onclick="accountSignup()">Sign Up</button>' +
+    '</div>' +
+    '<div id="cloudStatus" style="margin-top:4px;color:var(--parch-dk);font-size:.38rem"></div>';
+}
+
+function setCloudStatus(msg, isError) {
+  var el = document.getElementById('cloudStatus');
+  if (el) {
+    el.textContent = msg;
+    el.style.color = isError ? '#aa5a5a' : '#6a9a6a';
+  }
+}
+
+function accountLogin() {
+  var user = (document.getElementById('authUser') || {}).value || '';
+  var pass = (document.getElementById('authPass') || {}).value || '';
+  if (!user || !pass) { setCloudStatus('Enter username and password', true); return; }
+  setCloudStatus('Logging in...');
+  network.login(user, pass).then(function() {
+    showCharacterSelect();
+  }).catch(function(e) {
+    setCloudStatus(e.message || 'Login failed', true);
+  });
+}
+window.accountLogin = accountLogin;
+
+function accountSignup() {
+  var user = (document.getElementById('authUser') || {}).value || '';
+  var pass = (document.getElementById('authPass') || {}).value || '';
+  if (!user || user.length < 3) { setCloudStatus('Username must be 3-20 characters', true); return; }
+  if (!pass || pass.length < 6) { setCloudStatus('Password must be at least 6 characters', true); return; }
+  setCloudStatus('Creating account...');
+  network.signup(user, pass).then(function() {
+    setCloudStatus('Account created! Uploading save...');
+    return cloudSaveUpload();
+  }).then(function() {
+    showCharacterSelect();
+  }).catch(function(e) {
+    setCloudStatus(e.message || 'Signup failed', true);
+  });
+}
+window.accountSignup = accountSignup;
+
+function accountLogout() {
+  network.logout();
+  showCharacterSelect();
+}
+window.accountLogout = accountLogout;
+
+function cloudUpload() {
+  saveGame();
+  setCloudStatus('Uploading...');
+  cloudSaveUpload().then(function() {
+    setCloudStatus('Save uploaded to cloud!');
+  }).catch(function(e) {
+    setCloudStatus(e.message || 'Upload failed', true);
+  });
+}
+window.cloudUpload = cloudUpload;
+
+function cloudDownload() {
+  if (!confirm('Download cloud save? This will replace your local save data.')) return;
+  setCloudStatus('Downloading...');
+  cloudSaveDownload().then(function(wrapper) {
+    if (!wrapper) { setCloudStatus('No cloud save found', true); return; }
+    setCloudStatus('Save downloaded! Reloading...');
+    setTimeout(function() { location.reload(); }, 500);
+  }).catch(function(e) {
+    setCloudStatus(e.message || 'Download failed', true);
+  });
+}
+window.cloudDownload = cloudDownload;
 
 // =============== INITIALIZATION ===============
 state.canvas = document.getElementById('arenaCanvas');
