@@ -1,0 +1,213 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/dungeon/dungeon.gd" id="1"]
+
+[node name="Dungeon" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.03, 0.03, 1)
+
+[node name="PickScreen" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 4.0
+offset_right = -8.0
+offset_bottom = -4.0
+theme_override_constants/separation = 4
+
+[node name="PickTitle" type="Label" parent="PickScreen"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "DUNGEON"
+horizontal_alignment = 1
+
+[node name="PickInfo" type="Label" parent="PickScreen"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "First descent awaits..."
+horizontal_alignment = 1
+
+[node name="PickCompanion" type="VBoxContainer" parent="PickScreen"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 2
+
+[node name="PickButtons" type="HBoxContainer" parent="PickScreen"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="DescendBtn" type="Button" parent="PickScreen/PickButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 24)
+text = "DESCEND"
+
+[node name="PickBackBtn" type="Button" parent="PickScreen/PickButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(60, 24)
+text = "Back"
+
+[node name="RunScreen" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 2.0
+offset_right = -4.0
+offset_bottom = -2.0
+theme_override_constants/separation = 2
+
+[node name="TopBar" type="HBoxContainer" parent="RunScreen"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FloorLabel" type="Label" parent="RunScreen/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Floor 1"
+
+[node name="ProgressBar" type="ProgressBar" parent="RunScreen/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(80, 10)
+max_value = 24.0
+show_percentage = false
+
+[node name="StatsLabel" type="Label" parent="RunScreen/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Kills:0 Gold:0"
+
+[node name="HeroInfo" type="RichTextLabel" parent="RunScreen"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+fit_content = true
+
+[node name="Columns" type="HBoxContainer" parent="RunScreen"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 3
+
+[node name="LeftPanel" type="ScrollContainer" parent="RunScreen/Columns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+horizontal_scroll_mode = 0
+
+[node name="LeftVBox" type="VBoxContainer" parent="RunScreen/Columns/LeftPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 1
+
+[node name="CenterPanel" type="VBoxContainer" parent="RunScreen/Columns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.50
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="RoomContent" type="PanelContainer" parent="RunScreen/Columns/CenterPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RoomVBox" type="VBoxContainer" parent="RunScreen/Columns/CenterPanel/RoomContent"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 4
+
+[node name="RoomSprite" type="TextureRect" parent="RunScreen/Columns/CenterPanel/RoomContent/RoomVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(32, 32)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 4
+
+[node name="RoomIcon" type="Label" parent="RunScreen/Columns/CenterPanel/RoomContent/RoomVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="RoomTitle" type="Label" parent="RunScreen/Columns/CenterPanel/RoomContent/RoomVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="RoomDesc" type="RichTextLabel" parent="RunScreen/Columns/CenterPanel/RoomContent/RoomVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+
+[node name="RoomActions" type="HBoxContainer" parent="RunScreen/Columns/CenterPanel/RoomContent/RoomVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="RightPanel" type="ScrollContainer" parent="RunScreen/Columns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+horizontal_scroll_mode = 0
+
+[node name="RightVBox" type="VBoxContainer" parent="RunScreen/Columns/RightPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="RunScreen"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="PotionBtn" type="Button" parent="RunScreen/BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(60, 20)
+text = "Potion (3)"
+
+[node name="AbandonBtn" type="Button" parent="RunScreen/BottomBar"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(60, 20)
+text = "Abandon"
+
+[node name="DgLog" type="RichTextLabel" parent="RunScreen"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+bbcode_enabled = true
+scroll_following = true

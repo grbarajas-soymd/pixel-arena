@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account — Pixel Arena</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">PIXEL ARENA</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="guide.html">Guide</a></li>
+      <li><a href="account.html" class="active">Account</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container" style="padding-top:40px">
+
+  <!-- AUTH SECTION (login / signup) -->
+  <div id="auth-section">
+    <div class="form-card">
+      <div class="tabs" style="margin-bottom:20px;border-bottom:2px solid var(--border)">
+        <button class="tab auth-tab active" data-tab="login">Login</button>
+        <button class="tab auth-tab" data-tab="signup">Sign Up</button>
+      </div>
+
+      <div id="auth-error" class="alert alert-error" style="display:none"></div>
+
+      <!-- Login form -->
+      <div id="login-panel">
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" class="form-input" autocomplete="username" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-input" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px">Login</button>
+        </form>
+      </div>
+
+      <!-- Signup form -->
+      <div id="signup-panel" style="display:none">
+        <form id="signup-form">
+          <div class="form-group">
+            <label for="signup-username">Username (3-20 chars, letters/numbers/underscores)</label>
+            <input type="text" id="signup-username" class="form-input" autocomplete="username" pattern="[a-zA-Z0-9_]{3,20}" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password (min 6 chars)</label>
+            <input type="password" id="signup-password" class="form-input" autocomplete="new-password" minlength="6" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm">Confirm Password</label>
+            <input type="password" id="signup-confirm" class="form-input" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SECTION -->
+  <div id="dashboard-section" style="display:none">
+    <div class="user-bar">
+      <div>
+        <span style="color:var(--text-dim);font-size:0.85rem">Logged in as</span><br>
+        <span class="username" id="dash-username">Player</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-sm btn-primary" id="sync-btn">Upload to Cloud</button>
+        <button class="btn btn-sm btn-outline" id="download-btn">Download from Cloud</button>
+        <button class="btn btn-sm btn-danger" id="logout-btn">Logout</button>
+      </div>
+    </div>
+
+    <div id="save-status" class="alert" style="display:none"></div>
+
+    <h2 class="section-title">Your Characters</h2>
+    <div class="char-slots" id="char-slots">
+      <div class="empty-slot" style="grid-column:1/-1">Loading...</div>
+    </div>
+
+    <div class="section" style="margin-top:32px">
+      <h3 class="section-subtitle">Cloud Save</h3>
+      <p style="color:var(--text-dim);font-size:0.9rem;margin-bottom:12px">
+        Your game saves locally in your browser. Use cloud save to back up your progress and continue on another device.
+      </p>
+      <ul style="color:var(--text-dim);font-size:0.9rem;margin-left:20px">
+        <li><strong>Upload to Cloud</strong> — saves your current browser data to the server</li>
+        <li><strong>Download from Cloud</strong> — overwrites your local save with the cloud version</li>
+        <li>Cloud save stores all character slots, gear, followers, and progression</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Pixel Arena — Gear RPG</p>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/account.js"></script>
+</body>
+</html>

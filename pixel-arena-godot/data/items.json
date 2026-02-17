@@ -1,0 +1,105 @@
+{
+  "_rarity_roll_config": {
+    "starter":    {"floor_pct": 0.95, "ceil_pct": 1.00},
+    "common":     {"floor_pct": 0.75, "ceil_pct": 1.15},
+    "uncommon":   {"floor_pct": 0.80, "ceil_pct": 1.20},
+    "rare":       {"floor_pct": 0.85, "ceil_pct": 1.25},
+    "epic":       {"floor_pct": 0.88, "ceil_pct": 1.30},
+    "legendary":  {"floor_pct": 0.92, "ceil_pct": 1.35},
+    "mythic":     {"floor_pct": 0.95, "ceil_pct": 1.40}
+  },
+  "_salvage_values": {"starter": 0, "common": 1, "uncommon": 3, "rare": 8, "epic": 20, "legendary": 50, "mythic": 120},
+  "_rarity_colors": {
+    "starter": "#6a6a5a", "common": "#8a8a7a", "uncommon": "#4a8a4a",
+    "rare": "#4a6a9a", "epic": "#8a4a9a", "legendary": "#c8a848", "mythic": "#cc3333"
+  },
+  "_affixes": {
+    "counts": {
+      "starter": 1, "common": 1, "uncommon": 2, "rare": 2,
+      "epic": 3, "legendary": 3, "mythic": 4
+    },
+    "tier_access": {
+      "starter": ["basic"], "common": ["basic"], "uncommon": ["basic"],
+      "rare": ["basic", "mid"],
+      "epic": ["basic", "mid", "high"], "legendary": ["basic", "mid", "high"],
+      "mythic": ["basic", "mid", "high", "mythic"]
+    },
+    "pool": [
+      {"id": "crit_chance",    "name": "Critical Strike", "tier": "basic",  "stat": true,  "desc": "+{v}% crit chance",       "min": 0.02, "max": 0.08, "pct": true},
+      {"id": "lifesteal",      "name": "Life Steal",      "tier": "basic",  "stat": true,  "desc": "+{v}% lifesteal",          "min": 0.02, "max": 0.06, "pct": true},
+      {"id": "thorns_reflect", "name": "Thorns",          "tier": "basic",  "stat": true,  "desc": "+{v}% damage reflected",   "min": 0.03, "max": 0.08, "pct": true},
+      {"id": "hp_regen",       "name": "Vitality",        "tier": "basic",  "stat": true,  "desc": "+{v} HP regen/round",      "min": 5,    "max": 25,   "pct": false},
+      {"id": "mana_regen_bonus","name": "Clarity",        "tier": "basic",  "stat": true,  "desc": "+{v} mana regen",          "min": 1,    "max": 4,    "pct": false},
+      {"id": "bonus_hp",       "name": "Fortified",       "tier": "basic",  "stat": true,  "desc": "+{v} HP",                  "min": 50,   "max": 200,  "pct": false},
+      {"id": "bonus_def",      "name": "Hardened",        "tier": "basic",  "stat": true,  "desc": "+{v} DEF",                 "min": 3,    "max": 12,   "pct": false},
+      {"id": "fire_dmg",       "name": "Flame Touch",     "tier": "mid",    "stat": true,  "desc": "+{v}% fire damage",        "min": 0.05, "max": 0.15, "pct": true},
+      {"id": "ice_dmg",        "name": "Frost Touch",     "tier": "mid",    "stat": true,  "desc": "+{v}% ice damage",         "min": 0.05, "max": 0.15, "pct": true},
+      {"id": "lightning_dmg",  "name": "Storm Touch",     "tier": "mid",    "stat": true,  "desc": "+{v}% lightning damage",    "min": 0.05, "max": 0.15, "pct": true},
+      {"id": "dmg_reduction",  "name": "Warding",         "tier": "mid",    "stat": true,  "desc": "+{v}% damage reduction",   "min": 0.03, "max": 0.08, "pct": true},
+      {"id": "as_on_hit",      "name": "Frenzy",          "tier": "mid",    "stat": false, "desc": "+{v}% AS on hit",          "min": 0.03, "max": 0.08, "pct": true},
+      {"id": "slow_on_hit",    "name": "Chilling",        "tier": "mid",    "stat": false, "desc": "{v}% slow on hit",         "min": 0.05, "max": 0.12, "pct": true},
+      {"id": "_chain_lightning_proc", "name": "Thunderstrike", "tier": "high", "stat": false, "desc": "{v}% chance Chain Lightning on hit", "min": 0.05, "max": 0.12, "pct": true},
+      {"id": "_thorns_proc",   "name": "Thorn Aura",      "tier": "high",   "stat": false, "desc": "Reflect {v}% damage taken",  "min": 0.10, "max": 0.25, "pct": true},
+      {"id": "_life_on_kill",  "name": "Executioner",     "tier": "high",   "stat": false, "desc": "Heal {v}% max HP on kill",   "min": 0.05, "max": 0.15, "pct": true},
+      {"id": "_extra_skill_proc","name": "Spellweaver",   "tier": "mythic", "stat": false, "desc": "{v}% chance extra skill cast","min": 0.08, "max": 0.15, "pct": true},
+      {"id": "_stealth_on_kill","name": "Shadow Reaper",  "tier": "mythic", "stat": false, "desc": "Gain stealth on kill",       "min": 1,    "max": 1,    "pct": false},
+      {"id": "_double_strike", "name": "Twin Strike",     "tier": "mythic", "stat": false, "desc": "{v}% chance double strike",  "min": 0.08, "max": 0.18, "pct": true},
+      {"id": "_dmg_aura",      "name": "Aura of Might",   "tier": "mythic", "stat": false, "desc": "+{v}% damage aura",         "min": 0.05, "max": 0.12, "pct": true}
+    ]
+  },
+
+  "rusty_blade":     {"slot": "weapon", "name": "Rusty Blade",     "rarity": "starter",   "range_type": "melee",  "stats": {"base_dmg": 60, "base_as": 0.4}, "visual": {"type": "sword", "color": "#5a4a3a", "hilight": "#7a6a5a"}},
+  "wooden_bow":      {"slot": "weapon", "name": "Wooden Bow",      "rarity": "starter",   "range_type": "ranged", "stats": {"base_dmg": 45, "base_as": 0.5}, "visual": {"type": "bow", "color": "#5a3a1a", "hilight": "#7a5a3a"}},
+  "worn_wand":       {"slot": "weapon", "name": "Worn Wand",       "rarity": "starter",   "range_type": "ranged", "stats": {"base_dmg": 40, "base_as": 0.35, "mana": 80, "spell_dmg_bonus": 0.08}, "visual": {"type": "staff", "color": "#4a4a3a", "hilight": "#6a6a5a", "glow": "#6aaa8a"}},
+  "cloth_cap":       {"slot": "helmet", "name": "Cloth Cap",       "rarity": "starter",   "stats": {"def": 5, "hp": 150}, "visual": {"type": "cloth_cap", "color": "#5a5a4a", "hilight": "#7a7a6a"}},
+  "cloth_tunic":     {"slot": "chest",  "name": "Cloth Tunic",     "rarity": "starter",   "stats": {"def": 10, "hp": 200}, "visual": {"type": "cloth", "color": "#5a5a4a", "hilight": "#7a7a6a"}},
+  "worn_sandals":    {"slot": "boots",  "name": "Worn Sandals",    "rarity": "starter",   "stats": {"def": 3, "move_speed": 12}, "visual": {"type": "sandals", "color": "#5a4a3a", "hilight": "#7a6a5a"}},
+  "copper_ring":     {"slot": "accessory","name": "Copper Ring",   "rarity": "starter",   "stats": {"base_dmg": 15, "hp": 100}, "visual": {"type": "ring", "color": "#7a5a3a", "hilight": "#9a7a5a"}},
+  "rusty_daggers":   {"slot": "weapon", "name": "Rusty Daggers",   "rarity": "starter",   "range_type": "melee",  "stats": {"base_dmg": 40, "base_as": 0.6, "evasion": 0.04}, "visual": {"type": "daggers", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
+
+  "iron_sword":      {"slot": "weapon", "name": "Iron Sword",      "rarity": "common",    "range_type": "melee",  "stats": {"base_dmg": 75, "base_as": 0.5}, "visual": {"type": "sword", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
+  "hunting_knives":  {"slot": "weapon", "name": "Hunting Knives",  "rarity": "common",    "range_type": "melee",  "stats": {"base_dmg": 55, "base_as": 0.75, "evasion": 0.03}, "visual": {"type": "daggers", "color": "#6a5a4a", "hilight": "#8a7a6a"}},
+  "arcane_staff":    {"slot": "weapon", "name": "Arcane Staff",    "rarity": "common",    "range_type": "ranged", "stats": {"base_dmg": 60, "base_as": 0.55, "spell_dmg_bonus": 0.08}, "visual": {"type": "staff", "color": "#3a4a5a", "hilight": "#5a6a7a", "glow": "#6aaa8a"}},
+  "steel_helm":      {"slot": "helmet", "name": "Steel Helm",      "rarity": "common",    "stats": {"def": 15, "hp": 200}, "visual": {"type": "steel_helm", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
+  "chain_mail":      {"slot": "chest",  "name": "Chain Mail",      "rarity": "common",    "stats": {"def": 22, "hp": 300}, "visual": {"type": "chain", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
+  "steel_boots":     {"slot": "boots",  "name": "Steel Boots",     "rarity": "common",    "stats": {"def": 8, "move_speed": 10}, "visual": {"type": "steel_boots", "color": "#4a4a4a", "hilight": "#6a6a6a"}},
+  "power_ring":      {"slot": "accessory","name": "Ring of Power", "rarity": "common",    "stats": {"base_dmg": 30}, "visual": {"type": "ring", "color": "#6a3a3a", "hilight": "#8a5a5a", "glow": "#aa5a5a"}},
+
+  "crystal_staff":   {"slot": "weapon", "name": "Crystal Staff",   "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 80, "base_as": 0.6, "spell_dmg_bonus": 0.12}, "visual": {"type": "staff", "color": "#4a6a8a", "hilight": "#6a9aba", "glow": "#88bbdd"}},
+  "shortbow":        {"slot": "weapon", "name": "Swift Shortbow",  "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 60, "base_as": 0.8}, "visual": {"type": "bow", "color": "#6a4a2a", "hilight": "#8a6a4a"}},
+  "shadow_hood":     {"slot": "helmet", "name": "Shadow Hood",     "rarity": "uncommon",  "stats": {"def": 8, "evasion": 0.05, "move_speed": 10}, "visual": {"type": "shadow_hood", "color": "#2a2a3a", "hilight": "#3a3a4a"}},
+  "leather_vest":    {"slot": "chest",  "name": "Leather Vest",    "rarity": "uncommon",  "stats": {"def": 15, "evasion": 0.08, "move_speed": 15}, "visual": {"type": "leather", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+  "swift_boots":     {"slot": "boots",  "name": "Swift Boots",     "rarity": "uncommon",  "stats": {"def": 3, "move_speed": 40, "evasion": 0.03}, "visual": {"type": "swift_boots", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+  "speed_charm":     {"slot": "accessory","name": "Speed Charm",   "rarity": "uncommon",  "stats": {"base_as": 0.15, "move_speed": 15}, "visual": {"type": "charm", "color": "#5a6a4a", "hilight": "#7a8a6a"}},
+
+  "frost_daggers":   {"slot": "weapon", "name": "Frost Daggers",   "rarity": "rare",      "range_type": "melee",  "stats": {"base_dmg": 100, "base_as": 0.85}, "visual": {"type": "daggers", "color": "#6a8aaa", "hilight": "#8aaacc"}},
+  "cursed_scythe":   {"slot": "weapon", "name": "Cursed Scythe",   "rarity": "rare",      "range_type": "melee",  "stats": {"base_dmg": 130, "base_as": 0.65}, "visual": {"type": "scythe", "color": "#3a2a3a", "hilight": "#5a4a5a", "glow": "#6a4a8a"}},
+  "mage_crown":      {"slot": "helmet", "name": "Arcane Crown",    "rarity": "rare",      "stats": {"def": 5, "mana": 100, "spell_dmg_bonus": 0.05}, "visual": {"type": "crown", "color": "#4a6a8a", "hilight": "#6a8aaa", "glow": "#6aaa8a"}},
+  "berserker_helm":  {"slot": "helmet", "name": "Berserker Helm",  "rarity": "rare",      "stats": {"def": 10, "hp": 400}, "visual": {"type": "berserker_helm", "color": "#4a2a2a", "hilight": "#6a4a4a"}},
+  "mage_robe":       {"slot": "chest",  "name": "Arcane Robe",     "rarity": "rare",      "stats": {"def": 10, "mana": 150, "mana_regen": 2}, "visual": {"type": "robe", "color": "#3a4a5a", "hilight": "#5a6a7a", "glow": "#6aaa8a"}},
+  "plate_armor":     {"slot": "chest",  "name": "Plate Armor",     "rarity": "rare",      "stats": {"def": 30, "hp": 500, "move_speed": -10}, "visual": {"type": "plate", "color": "#4a4a4a", "hilight": "#6a6a6a"}},
+  "war_treads":      {"slot": "boots",  "name": "War Treads",      "rarity": "rare",      "stats": {"def": 12, "move_speed": 25, "hp": 150}, "visual": {"type": "war_treads", "color": "#3a2a2a", "hilight": "#5a4a4a"}},
+  "shadow_cloak":    {"slot": "accessory","name": "Shadow Cloak",  "rarity": "rare",      "stats": {"evasion": 0.10, "def": 5}, "visual": {"type": "cloak", "color": "#2a2a3a", "hilight": "#3a3a4a"}},
+  "mana_crystal":    {"slot": "accessory","name": "Mana Crystal",  "rarity": "rare",      "stats": {"mana": 200, "mana_regen": 3}, "visual": {"type": "crystal", "color": "#4a6a8a", "hilight": "#6a8aaa", "glow": "#88bbdd"}},
+
+  "longbow":         {"slot": "weapon", "name": "Flame Longbow",   "rarity": "epic",      "range_type": "ranged", "stats": {"base_dmg": 170, "base_as": 0.85}, "visual": {"type": "bow", "color": "#8a4a1a", "hilight": "#aa6a3a", "glow": "#c87a4a"}},
+  "war_axe":         {"slot": "weapon", "name": "Blood War Axe",   "rarity": "epic",      "range_type": "melee",  "stats": {"base_dmg": 195, "base_as": 0.7}, "visual": {"type": "axe", "color": "#5a2a2a", "hilight": "#7a4a4a"}},
+  "dragon_helm":     {"slot": "helmet", "name": "Dragon Helm",     "rarity": "epic",      "stats": {"def": 20, "hp": 300}, "visual": {"type": "horned_helm", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+  "blood_plate":     {"slot": "chest",  "name": "Blood Plate",     "rarity": "epic",      "stats": {"def": 25, "hp": 800}, "visual": {"type": "blood_plate", "color": "#4a1a1a", "hilight": "#6a3a3a"}},
+  "windwalkers":     {"slot": "boots",  "name": "Windwalkers",     "rarity": "epic",      "stats": {"def": 6, "move_speed": 55, "evasion": 0.06}, "visual": {"type": "windwalkers", "color": "#3a4a3a", "hilight": "#5a6a5a", "glow": "#6aaa8a"}},
+  "life_amulet":     {"slot": "accessory","name": "Life Amulet",   "rarity": "epic",      "stats": {"hp": 600}, "visual": {"type": "amulet", "color": "#6a5a2a", "hilight": "#8a7a4a", "glow": "#c8a848"}},
+  "berserker_totem": {"slot": "accessory","name": "Berserker Totem","rarity": "epic",     "stats": {"base_dmg": 40, "hp": 300}, "visual": {"type": "totem", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+
+  "great_sword":     {"slot": "weapon", "name": "Greatsword",      "rarity": "legendary", "range_type": "melee",  "stats": {"base_dmg": 250, "base_as": 0.85}, "visual": {"type": "sword", "color": "#5a5a6a", "hilight": "#7a7a8a", "glow": "#c8a848"}},
+  "crown_of_abyss":  {"slot": "helmet", "name": "Crown of the Abyss","rarity":"legendary","stats": {"def": 25, "hp": 500, "spell_dmg_bonus": 0.10}, "visual": {"type": "crown", "color": "#3a2a4a", "hilight": "#5a4a6a", "glow": "#6a4a8a"}},
+  "dragonscale":     {"slot": "chest",  "name": "Dragonscale",     "rarity": "legendary", "stats": {"def": 40, "hp": 1000, "move_speed": -5}, "visual": {"type": "dragonscale", "color": "#2a4a2a", "hilight": "#4a6a4a", "glow": "#c8a848"}},
+  "stormstriders":   {"slot": "boots",  "name": "Stormstriders",   "rarity": "legendary", "stats": {"def": 10, "move_speed": 65, "evasion": 0.08, "base_as": 0.1}, "visual": {"type": "stormstriders", "color": "#3a3a5a", "hilight": "#5a5a7a", "glow": "#6a9aba"}},
+  "heart_of_chaos":  {"slot": "accessory","name": "Heart of Chaos","rarity": "legendary", "stats": {"base_dmg": 55, "hp": 400, "base_as": 0.1}, "visual": {"type": "heart", "color": "#6a1a1a", "hilight": "#8a3a3a", "glow": "#aa2a2a"}},
+
+  "soulreaver":      {"slot": "weapon", "name": "Soulreaver",      "rarity": "mythic",    "range_type": "melee",  "stats": {"base_dmg": 340, "base_as": 0.95, "hp": 300}, "visual": {"type": "sword", "color": "#4a1a1a", "hilight": "#8a3a3a", "glow": "#ff4444"}},
+  "astral_longbow":  {"slot": "weapon", "name": "Astral Longbow",  "rarity": "mythic",    "range_type": "ranged", "stats": {"base_dmg": 280, "base_as": 1.05, "spell_dmg_bonus": 0.10}, "visual": {"type": "bow", "color": "#3a2a5a", "hilight": "#6a4a8a", "glow": "#ff4444"}},
+  "crown_of_eternity":{"slot":"helmet", "name": "Crown of Eternity","rarity": "mythic",   "stats": {"def": 35, "hp": 700, "spell_dmg_bonus": 0.15, "mana_regen": 3}, "visual": {"type": "crown", "color": "#4a1a2a", "hilight": "#7a3a4a", "glow": "#ff4444"}},
+  "voidplate":       {"slot": "chest",  "name": "Voidplate",       "rarity": "mythic",    "stats": {"def": 55, "hp": 1400, "evasion": 0.05}, "visual": {"type": "dragonscale", "color": "#1a1a2a", "hilight": "#3a3a4a", "glow": "#ff4444"}},
+  "godstriders":     {"slot": "boots",  "name": "Godstriders",     "rarity": "mythic",    "stats": {"def": 15, "move_speed": 85, "evasion": 0.12, "base_as": 0.15}, "visual": {"type": "stormstriders", "color": "#3a1a1a", "hilight": "#5a3a3a", "glow": "#ff4444"}},
+  "heart_of_abyss":  {"slot": "accessory","name": "Heart of the Abyss","rarity": "mythic","stats": {"base_dmg": 75, "hp": 600, "base_as": 0.15, "evasion": 0.04}, "visual": {"type": "heart", "color": "#2a1a2a", "hilight": "#4a3a4a", "glow": "#ff4444"}}
+}

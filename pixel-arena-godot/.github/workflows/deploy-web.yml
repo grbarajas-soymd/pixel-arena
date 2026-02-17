@@ -1,0 +1,60 @@
+name: Deploy Godot Web Export
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  export-and-deploy:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+
+    env:
+      HOME: /root
+
+    steps:
+      - name: Checkout Godot project
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y fontconfig wget unzip
+
+      - name: Setup export templates
+        run: |
+          TEMPLATE_DIR="/root/.local/share/godot/export_templates/4.6.stable"
+          mkdir -p "$TEMPLATE_DIR"
+
+          if [ ! -f "$TEMPLATE_DIR/web_release.zip" ] && [ ! -f "$TEMPLATE_DIR/web_nothreads_release.zip" ]; then
+            echo "Downloading Godot 4.6 export templates..."
+            wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_export_templates.tpz -O /tmp/templates.tpz
+            unzip -q /tmp/templates.tpz -d /tmp/templates
+            cp -r /tmp/templates/templates/* "$TEMPLATE_DIR"/
+            rm -rf /tmp/templates /tmp/templates.tpz
+          fi
+
+      - name: Import project
+        run: godot --headless --import 2>/dev/null || true
+        timeout-minutes: 5
+
+      - name: Export to Web
+        run: |
+          mkdir -p build
+          godot --headless --export-release "Web" ./build/index.html
+          echo "Build output:"
+          ls -la build/
+
+      - name: Deploy to pixel-arena repo
+        env:
+          DEPLOY_PAT: ${{ secrets.DEPLOY_PAT }}
+        run: |
+          git clone https://x-access-token:${DEPLOY_PAT}@github.com/grbarajas-soymd/pixel-arena.git /tmp/pixel-arena
+          rm -rf /tmp/pixel-arena/public/game/*
+          mkdir -p /tmp/pixel-arena/public/game
+          cp -r build/* /tmp/pixel-arena/public/game/
+          cd /tmp/pixel-arena
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add public/game/
+          git commit -m "Update Godot web export from $(echo ${GITHUB_SHA} | cut -c1-7)" || echo "No changes to deploy"
+          git push

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel Arena — Gear RPG Autobattler</title>
+  <meta name="description" content="Browser-based pixel art autobattler with dungeon roguelike, ladder gauntlet, and async online PvP arena modes.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">PIXEL ARENA</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="guide.html">Guide</a></li>
+      <li><a href="account.html">Account</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>PIXEL ARENA</h1>
+  <p class="tagline">A pixel art autobattler with dungeon roguelike, ladder gauntlet, and online PvP arena. Forge your hero, collect gear, and battle your way to the top.</p>
+  <div class="cta-group">
+    <a href="account.html" class="btn btn-primary">PLAY NOW</a>
+    <a href="guide.html" class="btn btn-outline">Player's Guide</a>
+  </div>
+</section>
+
+<div class="container">
+  <div class="features">
+    <div class="feature-card">
+      <span class="icon">&#9876;</span>
+      <h3>Dungeon Roguelike</h3>
+      <p>Descend through 8 floors of randomized rooms. Fight monsters in turn-based combat, capture followers, and collect dynamically-rolled gear with D4-inspired stat ranges.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">&#9877;</span>
+      <h3>Online PvP Arena</h3>
+      <p>Upload your character build and challenge other players' heroes. Wager followers in async battles where AI runs both sides. Climb the leaderboard.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">&#9878;</span>
+      <h3>Ladder Gauntlet</h3>
+      <p>Fight 4 NPC classes, then face infinite procedurally-generated challengers that scale with your wins. Earn followers every 3 victories.</p>
+    </div>
+    <div class="feature-card">
+      <span class="icon">&#9881;</span>
+      <h3>Character Forge</h3>
+      <p>Mix and match equipment, skills, and ultimates from 4 classes. Roll for rare gear, craft followers in the Forge, and build your ultimate hero.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2 class="section-title">How It Works</h2>
+    <div class="features" style="padding:0">
+      <div class="feature-card">
+        <h3>1. Create Your Hero</h3>
+        <p>Choose an archetype — Warrior, Archer, Rogue, or Mage — each with unique starting gear and skills. Name your hero and jump in.</p>
+      </div>
+      <div class="feature-card">
+        <h3>2. Gear Up</h3>
+        <p>Run dungeons to find gear with dynamically rolled stats. Every drop is unique — a well-rolled Rare can outperform a poorly rolled Epic.</p>
+      </div>
+      <div class="feature-card">
+        <h3>3. Build Your Team</h3>
+        <p>Capture followers in dungeon cages, earn them from the ladder, or craft them in the Follower Forge using salvage dust. Deploy them as combat companions.</p>
+      </div>
+      <div class="feature-card">
+        <h3>4. Compete</h3>
+        <p>Test your build against the ladder gauntlet, challenge other players in the online arena, and climb the leaderboard rankings.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="text-align:center">
+    <h2 class="section-title">Gear Rarity System</h2>
+    <p style="color:var(--text-dim);margin-bottom:20px">Every gear drop has dynamically rolled stats within rarity-scaled ranges. Higher rarity = tighter floors, higher ceilings.</p>
+    <table class="data-table" style="max-width:500px;margin:0 auto">
+      <thead>
+        <tr><th>Rarity</th><th>Roll Range</th><th>Quality</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="rarity-common">Common</td><td>75%-115%</td><td>Wide variance</td></tr>
+        <tr><td class="rarity-uncommon">Uncommon</td><td>80%-120%</td><td>Slightly tighter</td></tr>
+        <tr><td class="rarity-rare">Rare</td><td>85%-125%</td><td>Reliably decent</td></tr>
+        <tr><td class="rarity-epic">Epic</td><td>88%-130%</td><td>Can't roll badly</td></tr>
+        <tr><td class="rarity-legendary">Legendary</td><td>92%-135%</td><td>Always strong</td></tr>
+        <tr><td class="rarity-mythic">Mythic</td><td>95%-140%</td><td>Near-perfect floor</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section" id="leaderboard-section">
+    <h2 class="section-title">Leaderboard</h2>
+    <div class="tabs">
+      <button class="tab active" onclick="showLB('arena')">Arena</button>
+      <button class="tab" onclick="showLB('ladder')">Ladder</button>
+      <button class="tab" onclick="showLB('dungeon')">Dungeon</button>
+    </div>
+    <div id="lb-content">
+      <p style="color:var(--text-muted)">Loading leaderboard...</p>
+    </div>
+  </section>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Pixel Arena — Gear RPG</p>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+(function(){
+  var lbData = null;
+
+  async function loadLB() {
+    try {
+      lbData = await PA_API.getLeaderboard();
+      showLB('arena');
+    } catch(e) {
+      document.getElementById('lb-content').innerHTML = '<p style="color:var(--text-muted)">Could not load leaderboard. Server may be offline.</p>';
+    }
+  }
+
+  window.showLB = function(mode) {
+    if (!lbData) return;
+    var tabs = document.querySelectorAll('#leaderboard-section .tab');
+    tabs.forEach(function(t){ t.classList.remove('active'); });
+    tabs.forEach(function(t){ if(t.textContent.toLowerCase()===mode) t.classList.add('active'); });
+
+    var list = lbData[mode] || [];
+    if (!list.length) {
+      document.getElementById('lb-content').innerHTML = '<p style="color:var(--text-muted)">No entries yet. Be the first!</p>';
+      return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>#</th><th>Player</th>';
+    if (mode === 'arena') html += '<th>Wins</th><th>Losses</th><th>Win Rate</th>';
+    else if (mode === 'ladder') html += '<th>Best Streak</th>';
+    else html += '<th>Clears</th>';
+    html += '</tr></thead><tbody>';
+
+    list.forEach(function(p, i) {
+      html += '<tr><td>' + (i+1) + '</td><td>' + esc(p.playerName) + '</td>';
+      if (mode === 'arena') html += '<td>' + p.wins + '</td><td>' + p.losses + '</td><td>' + p.winRate + '%</td>';
+      else if (mode === 'ladder') html += '<td>' + p.ladderBest + '</td>';
+      else html += '<td>' + p.dungeonClears + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('lb-content').innerHTML = html;
+  };
+
+  function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+  loadLB();
+})();
+</script>
+</body>
+</html>

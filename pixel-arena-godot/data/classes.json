@@ -1,0 +1,46 @@
+{
+  "wizard": {
+    "icon": "🧙", "name": "Iron Mage", "name_short": "Voltaris",
+    "color": "#44ddbb", "color_dark": "#1a6a5a", "color_light": "#88ffdd",
+    "hp": 4200, "mana": 650, "mana_regen": 5.5,
+    "base_dmg": 130, "base_as": 0.75, "def": 45, "evasion": 0,
+    "move_speed": 88, "move_speed_bonus": 0.08,
+    "cast_speed_bonus": 0.12, "spell_dmg_bonus": 0.08,
+    "attack_range": 320, "spell_range": 430, "preferred_range": 380,
+    "chain_dmg": 260, "chain_bcd": 5000, "chain_cost": 35, "chain_bounce": 0.5,
+    "chain_stun": 450, "chain_slow": 0.12, "chain_slow_dur": 1500,
+    "bolt_dmg": 140, "bolt_bcd": 2200, "bolt_cost": 20,
+    "shield_hp": 420, "shield_bcd": 10000, "shield_cost": 45, "shield_dur": 5000, "shield_reflect": 45,
+    "ult_strikes": 5, "ult_dmg": 200, "ult_dur": 2500, "ult_heal": 0.42, "ult_threshold": 0.25
+  },
+  "ranger": {
+    "icon": "🔥", "name": "Flame Ranger", "name_short": "Pyralis",
+    "color": "#ffaa44", "color_dark": "#8a4400", "color_light": "#ffcc88",
+    "hp": 4800, "base_dmg": 180, "base_as": 0.95, "def": 58, "evasion": 0.05,
+    "move_speed": 100, "move_speed_bonus": 0.15,
+    "attack_range": 420, "spell_range": 420, "preferred_range": 340,
+    "follower_max_hp": 450
+  },
+  "assassin": {
+    "icon": "❄", "name": "Frost Blade", "name_short": "Glacier",
+    "color": "#66ccff", "color_dark": "#1a5588", "color_light": "#aaddff",
+    "hp": 4500, "energy": 100, "energy_regen": 14,
+    "base_dmg": 140, "base_as": 1.1, "def": 42, "evasion": 0.18,
+    "move_speed": 135, "move_speed_bonus": 0.10,
+    "melee_range": 55, "throw_range": 200, "preferred_range": 48,
+    "death_mark_dmg": 0.90, "ult_threshold": 0.25
+  },
+  "barbarian": {
+    "icon": "💀", "name": "Blood Warlord", "name_short": "Gorath",
+    "color": "#cc4444", "color_dark": "#6a1a1a", "color_light": "#ff8888",
+    "hp": 5500, "base_dmg": 210, "base_as": 0.85, "def": 65, "evasion": 0,
+    "move_speed": 130, "move_speed_bonus": 0.05,
+    "attack_range": 70, "preferred_range": 50,
+    "rage_max_dmg": 0.45, "rage_max_as": 0.35,
+    "charge_dmg": 200, "charge_bcd": 5500, "charge_range": 350, "charge_min_range": 100,
+    "war_cry_bcd": 10000, "war_cry_slow": 0.25, "war_cry_slow_dur": 2500, "war_cry_range": 150,
+    "lifesteal": 0.03, "stun_resist": 0.5, "slow_resist": 0.40,
+    "spell_dodge": 0.15, "dmg_variance": 0.15,
+    "ult_dur": 4000, "ult_as": 0.40, "ult_dmg": 0.25, "ult_lifesteal": 0.03, "ult_threshold": 0.30
+  }
+}

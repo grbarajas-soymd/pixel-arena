@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && head -20 \"\"{}\"\"')",
+      "Bash(npm install:*)",
+      "WebSearch",
+      "WebFetch(domain:support.steampowered.com)",
+      "WebFetch(domain:help.steampowered.com)",
+      "WebFetch(domain:www.dota2.com)",
+      "WebFetch(domain:developer.valvesoftware.com)",
+      "WebFetch(domain:dota2.fandom.com)",
+      "WebFetch(domain:steamcommunity.com)",
+      "Bash(echo:*)",
+      "Bash(cmd.exe //c \"echo %USERPROFILE%\")"
+    ]
+  }
+}
