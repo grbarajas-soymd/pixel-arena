@@ -55,19 +55,6 @@ if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
 }
 
-// ---- Debug: check game files exist ----
-app.get('/game-check', function (req, res) {
-  var files = [];
-  try { files = fs.readdirSync(gamePath); } catch (e) { /* ignore */ }
-  res.json({
-    gamePath: gamePath,
-    exists: fs.existsSync(gamePath),
-    files: files,
-    distExists: fs.existsSync(distPath),
-    cwd: process.cwd()
-  });
-});
-
 // ---- API routes ----
 app.use('/api/auth', authRoutes);
 app.use('/api/saves', saveRoutes);
@@ -78,7 +65,7 @@ app.get('/admin', adminPage);
 // SPA fallback (serve index.html for non-API, non-file routes)
 if (fs.existsSync(distPath)) {
   app.get('*', function (req, res) {
-    if (req.path.startsWith('/api/') || req.path.startsWith('/admin')) return;
+    if (req.path.startsWith('/api/') || req.path.startsWith('/admin') || req.path.startsWith('/game')) return;
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
