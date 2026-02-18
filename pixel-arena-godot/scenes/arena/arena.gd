@@ -80,21 +80,25 @@ func _load_data() -> void:
 
 
 func _setup_background() -> void:
+	var old_bg := $Background
+	if old_bg:
+		old_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var margin := $Margin
+	if margin:
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tex = load("res://assets/tilesets/battle_backgrounds/sky_citadel.png")
 	if tex:
-		var bg = TextureRect.new()
+		var bg := TextureRect.new()
 		bg.texture = tex
 		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.modulate = Color(0.15, 0.15, 0.30, 1.0)
-		var old_bg = $Background
-		if old_bg:
-			old_bg.queue_free()
 		add_child(bg)
-		move_child(bg, 0)
+		move_child(bg, 1)
 
-	var title = $Margin/VBox/Header/Title
+	var title := $Margin/VBox/Header/Title
 	if title:
 		title.add_theme_color_override("font_color", Color(0.7, 0.5, 1.0))
 		title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])

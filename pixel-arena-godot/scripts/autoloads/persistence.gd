@@ -215,6 +215,7 @@ func _sync_active_slot_to_array() -> void:
 	slot["dust"] = _gs.dust
 	slot["dungeon_clears"] = _gs.dungeon_clears
 	slot["ladder_wins"] = _gs.ladder_wins
+	slot["ladder_best"] = _gs.ladder_best
 	slot["arena_rating"] = _gs.arena_rating
 	slot["potions"] = _gs.potions
 	slot["tutorial_completed"] = _gs.tutorial_completed
@@ -256,6 +257,7 @@ func _load_slot_into_state(index: int) -> void:
 	_gs.dust = slot.get("dust", 0)
 	_gs.dungeon_clears = slot.get("dungeon_clears", 0)
 	_gs.ladder_wins = slot.get("ladder_wins", 0)
+	_gs.ladder_best = slot.get("ladder_best", 0)
 	_gs.arena_rating = slot.get("arena_rating", 1000)
 	_gs.potions = slot.get("potions", 3)
 	_gs.tutorial_completed = slot.get("tutorial_completed", false)

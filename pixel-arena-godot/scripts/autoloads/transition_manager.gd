@@ -78,6 +78,7 @@ func _change_scene(path: String) -> void:
 func _on_fade_done() -> void:
 	_transitioning = false
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rect.color.a = 0.0
 
 
 func _on_crosshatch_done() -> void:

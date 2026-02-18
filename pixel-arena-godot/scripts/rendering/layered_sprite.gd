@@ -106,6 +106,23 @@ func play_attack(toward_x: float, duration: float = 0.25) -> void:
 	tw.parallel().tween_property(self, "scale", Vector2(origin_sx, origin_sy), duration * 0.15)
 
 
+## Play cast/ranged animation: lean back slightly + flash + return (no lunge).
+func play_cast(duration: float = 0.2) -> void:
+	var origin_x := position.x
+	var origin_sy := scale.y
+	var origin_sx := scale.x
+	var lean_back := -3.0 if not _is_flipped else 3.0
+	set_pose("attack")
+	var tw := create_tween()
+	# Lean back
+	tw.tween_property(self, "position:x", origin_x + lean_back, duration * 0.3)
+	tw.parallel().tween_property(self, "scale", Vector2(origin_sx * 0.95, origin_sy * 1.05), duration * 0.3)
+	# Return to idle
+	tw.tween_callback(set_pose.bind("idle"))
+	tw.tween_property(self, "position:x", origin_x, duration * 0.4).set_trans(Tween.TRANS_QUAD)
+	tw.parallel().tween_property(self, "scale", Vector2(origin_sx, origin_sy), duration * 0.3)
+
+
 ## Play hurt animation: flash red + knockback + return.
 func play_hurt(duration: float = 0.25) -> void:
 	var origin_x := position.x

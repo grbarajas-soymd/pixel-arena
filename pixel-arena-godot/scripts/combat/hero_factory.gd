@@ -105,6 +105,60 @@ func get_weapon_range_type() -> String:
 	return _gs.get_weapon_range_type()
 
 
+## Get weapon visual type and glow color from equipped weapon.
+func _get_weapon_visual_info(equip: Dictionary) -> Dictionary:
+	var weapon = equip.get("weapon")
+	if weapon:
+		var idb = get_node_or_null("/root/ItemDatabase")
+		if idb:
+			var tmpl = idb.get_template(weapon.get("base_key", ""))
+			if tmpl:
+				var vis = tmpl.get("visual", {})
+				return {
+					"weapon_visual_type": vis.get("type", "sword"),
+					"weapon_glow": vis.get("glow", ""),
+				}
+	return {"weapon_visual_type": "sword", "weapon_glow": ""}
+
+
+## Class-default weapon visual types for NPC heroes.
+const NPC_WEAPON_VISUALS: Dictionary = {
+	"barbarian": "axe",
+	"wizard": "staff",
+	"ranger": "bow",
+	"assassin": "daggers",
+}
+
+
+## Apply weapon visual type to hero dict from equipment or class defaults.
+func _apply_weapon_visual(h: Dictionary, equip: Dictionary, class_key: String = "") -> void:
+	if not equip.is_empty():
+		var info := _get_weapon_visual_info(equip)
+		h["weapon_visual_type"] = info["weapon_visual_type"]
+		h["weapon_glow"] = info["weapon_glow"]
+	elif NPC_WEAPON_VISUALS.has(class_key):
+		h["weapon_visual_type"] = NPC_WEAPON_VISUALS[class_key]
+		h["weapon_glow"] = ""
+	else:
+		h["weapon_visual_type"] = "claw"
+		h["weapon_glow"] = ""
+
+
+## Apply hybrid weapon ranges (daggers can be thrown or used in melee).
+func _apply_hybrid_ranges(h: Dictionary, range_type: String) -> void:
+	if range_type == "hybrid":
+		h["attack_range"] = 200
+		h["melee_range"] = 70
+		h["throw_range"] = 200
+		h["preferred_range"] = 80
+	elif range_type == "melee":
+		h["attack_range"] = 70
+		h["preferred_range"] = 50
+	else:  # ranged
+		h["attack_range"] = 350
+		h["preferred_range"] = 300
+
+
 func _find_follower_template(tmpl_name: String) -> Dictionary:
 	for t in _followers_data:
 		if t.get("name", "") == tmpl_name:
@@ -263,6 +317,9 @@ func mk_hero(class_key: String, side: String, ladder_scale: float = 1.0) -> Dict
 			"war_cry": {"cd": 0, "bcd": int(c.get("war_cry_bcd", 10000)), "n": "War Cry"},
 			"ultimate": {"cd": 0, "bcd": 999999, "used": false, "n": "Berserker"},
 		}
+
+	# Weapon visual type for NPC heroes
+	_apply_weapon_visual(h, {}, class_key)
 	return h
 
 
@@ -290,7 +347,8 @@ func mk_follower(owner: Dictionary) -> Dictionary:
 func mk_custom_hero(side: String) -> Dictionary:
 	var is_left := side == "left"
 	var s := get_custom_total_stats()
-	var is_melee := get_weapon_range_type() == "melee"
+	var range_type := get_weapon_range_type()
+	var is_melee := range_type == "melee"
 	var h := _base_combat_fields(side)
 	h["type"] = "custom"
 	h["custom_sprite"] = _gs.custom_char.get("class_key", "barbarian")
@@ -309,8 +367,7 @@ func mk_custom_hero(side: String) -> Dictionary:
 	h["evasion"] = float(s.get("evasion", 0.0))
 	h["move_speed"] = int(s.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
-	h["attack_range"] = 70 if is_melee else 350
-	h["preferred_range"] = 50 if is_melee else 300
+	_apply_hybrid_ranges(h, range_type)
 	h["mana"] = int(s.get("mana", 0))
 	h["max_mana"] = h["mana"]
 	h["mana_regen"] = float(s.get("mana_regen", 0.0))
@@ -339,6 +396,9 @@ func mk_custom_hero(side: String) -> Dictionary:
 	for ek in _gs.equipment:
 		h["equipment"][ek] = _gs.equipment[ek]
 
+	# Weapon visual type for VFX
+	_apply_weapon_visual(h, h["equipment"])
+
 	# Attach skills
 	h["spells"] = {}
 	h["custom_skill_ids"] = []
@@ -364,7 +424,7 @@ func mk_custom_hero(side: String) -> Dictionary:
 
 func mk_ladder_hero(cfg: Dictionary, side: String) -> Dictionary:
 	var is_left: bool = side == "left"
-	var is_melee: bool = cfg.get("range_type", "melee") == "melee"
+	var range_type: String = cfg.get("range_type", "melee")
 	var h := _base_combat_fields(side)
 	h["type"] = "custom"
 	h["custom_sprite"] = cfg.get("sprite", "")
@@ -382,13 +442,12 @@ func mk_ladder_hero(cfg: Dictionary, side: String) -> Dictionary:
 	h["evasion"] = float(cfg.get("evasion", 0.0))
 	h["move_speed"] = int(cfg.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
-	h["attack_range"] = 70 if is_melee else 350
-	h["preferred_range"] = 50 if is_melee else 300
+	_apply_hybrid_ranges(h, range_type)
 	h["mana"] = 300
 	h["max_mana"] = 300
 	h["mana_regen"] = 4.0
 	h["spell_dmg_bonus"] = 0.0
-	h["spell_range"] = 200 if is_melee else 400
+	h["spell_range"] = 200 if range_type == "melee" else 400
 	h["energy"] = 100
 	h["max_energy"] = 100
 	h["energy_regen"] = 12.0
@@ -401,6 +460,9 @@ func mk_ladder_hero(cfg: Dictionary, side: String) -> Dictionary:
 		h["equipment"] = {}
 		for ek in cfg.equip:
 			h["equipment"][ek] = cfg.equip[ek]
+
+	# Weapon visual type for VFX
+	_apply_weapon_visual(h, h.get("equipment", {}))
 
 	# Attach skills
 	h["spells"] = {}
@@ -448,6 +510,8 @@ func mk_dungeon_monster(m: Dictionary, side: String) -> Dictionary:
 	h["move_speed_bonus"] = 0.0
 	h["attack_range"] = 70
 	h["preferred_range"] = 50
+	h["weapon_visual_type"] = "claw"
+	h["weapon_glow"] = ""
 	# Monsters have no spells/resources by default
 	h["spells"] = {}
 	h["custom_skill_ids"] = []
@@ -464,7 +528,8 @@ func mk_dungeon_monster(m: Dictionary, side: String) -> Dictionary:
 func mk_dungeon_hero(run: Dictionary, side: String) -> Dictionary:
 	var is_left := side == "left"
 	var s := get_custom_total_stats()
-	var is_melee := get_weapon_range_type() == "melee"
+	var range_type := get_weapon_range_type()
+	var is_melee := range_type == "melee"
 	var h := _base_combat_fields(side)
 	h["type"] = "custom"
 	h["custom_sprite"] = _gs.custom_char.get("class_key", "barbarian")
@@ -483,8 +548,7 @@ func mk_dungeon_hero(run: Dictionary, side: String) -> Dictionary:
 	h["evasion"] = float(run.get("evasion", 0.0))
 	h["move_speed"] = int(s.get("move_speed", 100)) + int(run.get("move_speed", 0))
 	h["move_speed_bonus"] = 0.0
-	h["attack_range"] = 70 if is_melee else 350
-	h["preferred_range"] = 50 if is_melee else 300
+	_apply_hybrid_ranges(h, range_type)
 	h["mana"] = int(run.get("mana", 0))
 	h["max_mana"] = int(run.get("max_mana", 0))
 	h["mana_regen"] = float(run.get("mana_regen", 0.0))
@@ -515,6 +579,9 @@ func mk_dungeon_hero(run: Dictionary, side: String) -> Dictionary:
 	h["equipment"] = {}
 	for ek in _gs.equipment:
 		h["equipment"][ek] = _gs.equipment[ek]
+
+	# Weapon visual type for VFX
+	_apply_weapon_visual(h, h["equipment"])
 
 	# Attach skills from customChar
 	h["spells"] = {}
@@ -722,7 +789,7 @@ func serialize_build() -> Dictionary:
 func mk_arena_hero(build: Dictionary, side: String) -> Dictionary:
 	var is_left: bool = side == "left"
 	var stats: Dictionary = build.get("stats", {})
-	var is_melee: bool = build.get("range_type", "melee") == "melee"
+	var range_type: String = build.get("range_type", "melee")
 	var h := _base_combat_fields(side)
 	h["type"] = "custom"
 	h["custom_sprite"] = build.get("sprite", "")
@@ -740,13 +807,12 @@ func mk_arena_hero(build: Dictionary, side: String) -> Dictionary:
 	h["evasion"] = float(stats.get("evasion", 0.0))
 	h["move_speed"] = int(stats.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
-	h["attack_range"] = 70 if is_melee else 350
-	h["preferred_range"] = 50 if is_melee else 300
+	_apply_hybrid_ranges(h, range_type)
 	h["mana"] = int(stats.get("mana", 0))
 	h["max_mana"] = h["mana"]
 	h["mana_regen"] = float(stats.get("mana_regen", 0.0))
 	h["spell_dmg_bonus"] = float(stats.get("spell_dmg_bonus", 0.0))
-	h["spell_range"] = 200 if is_melee else 400
+	h["spell_range"] = 400 if range_type == "ranged" else 200
 	h["energy"] = int(stats.get("energy", 0))
 	h["max_energy"] = h["energy"]
 	h["energy_regen"] = float(stats.get("energy_regen", 0.0))
@@ -757,6 +823,9 @@ func mk_arena_hero(build: Dictionary, side: String) -> Dictionary:
 	# Copy equipment for rendering
 	if build.has("equipment"):
 		h["equipment"] = build.get("equipment", {})
+
+	# Weapon visual type for VFX
+	_apply_weapon_visual(h, h.get("equipment", {}))
 
 	# Attach skills
 	h["spells"] = {}

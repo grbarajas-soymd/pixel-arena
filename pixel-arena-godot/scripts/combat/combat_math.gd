@@ -195,7 +195,7 @@ static func add_charge(w: Dictionary, n: int) -> void:
 
 ## Port of JS calcDmg() (engine.js:36-48)
 ## CRITICAL: baseDmg * (1 - min(def/300, 0.8)) — NO attack speed multiplier!
-static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float, bt: int) -> float:
+static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float, bt: int, info: Dictionary = {}) -> float:
 	var dm: float = float(a.get("base_dmg", 50)) * (1.0 - minf(float(d.get("def", 0)) / 300.0, 0.8))
 
 	# Shocked: +10% damage taken
@@ -209,6 +209,10 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 	# Ranged penalty at close range
 	if is_ranged and dist < CombatConstants.MELEE:
 		dm *= CombatConstants.RANGED_PEN
+
+	# Thrown weapon penalty (hybrid melee weapons used at range — e.g. daggers)
+	if is_ranged and a.get("weapon_visual_type", "") == "daggers":
+		dm *= 0.75
 
 	# Stealth: 3x damage
 	if a.get("stealthed", false):
@@ -236,12 +240,18 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 		dm *= 1.2
 
 	# Stash crit (dungeon items)
+	var _is_crit := false
 	if float(a.get("_stash_crit", 0.0)) > 0.0 and randf() < float(a.get("_stash_crit", 0.0)):
 		dm *= 1.75
+		_is_crit = true
 
 	# Gear affix crit
-	if float(a.get("_crit_chance", 0.0)) > 0.0 and randf() < float(a.get("_crit_chance", 0.0)):
+	if not _is_crit and float(a.get("_crit_chance", 0.0)) > 0.0 and randf() < float(a.get("_crit_chance", 0.0)):
 		dm *= 1.75
+		_is_crit = true
+
+	if _is_crit:
+		info["is_crit"] = true
 
 	# Elemental damage bonus (highest element applies)
 	var elem: float = maxf(maxf(float(a.get("_fire_dmg", 0.0)), float(a.get("_ice_dmg", 0.0))), float(a.get("_lightning_dmg", 0.0)))

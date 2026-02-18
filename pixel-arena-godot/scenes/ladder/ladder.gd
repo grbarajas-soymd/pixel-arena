@@ -40,11 +40,17 @@ func _ready() -> void:
 	_gs = get_node("/root/GameState")
 	_hero_factory = HeroFactory.new()
 	add_child(_hero_factory)
-	_load_data()
-	_setup_background()
 
+	# Connect button signals FIRST — before any setup that could fail
 	fight_btn.pressed.connect(_on_fight_pressed)
 	back_btn.pressed.connect(_on_back_pressed)
+	fight_btn.disabled = false
+
+	_load_data()
+	_setup_background()
+	ThemeManager.style_button(fight_btn, ThemeManager.COLOR_GOLD_BRIGHT)
+	ThemeManager.style_button(back_btn)
+
 
 	# Check if returning from battle
 	var result: String = _gs._ladder_result
@@ -83,21 +89,28 @@ func _load_data() -> void:
 
 
 func _setup_background() -> void:
+	# Keep the existing Background ColorRect — just layer a texture on top of it
+	var old_bg := $Background
+	if old_bg:
+		old_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Also ensure the Margin doesn't eat mouse events itself
+	var margin := $Margin
+	if margin:
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tex = load("res://assets/tilesets/battle_backgrounds/graveyard.png")
 	if tex:
-		var bg = TextureRect.new()
+		var bg := TextureRect.new()
 		bg.texture = tex
 		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.modulate = Color(0.15, 0.15, 0.30, 1.0)
-		var old_bg = $Background
-		if old_bg:
-			old_bg.queue_free()
+		# Insert between Background and Margin (index 1) — no node replacement needed
 		add_child(bg)
-		move_child(bg, 0)
+		move_child(bg, 1)
 
-	var title = $Margin/VBox/Header/Title
+	var title := $Margin/VBox/Header/Title
 	if title:
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
@@ -120,7 +133,7 @@ func _show_picker() -> void:
 	wins_label.add_theme_color_override("font_color", cc)
 	wins_label.visible = true
 	opponent_preview.visible = false
-	fight_btn.text = "Start Ladder Run"
+	fight_btn.text = "Start Climb"
 	fight_btn.custom_minimum_size = Vector2(100, 20)
 	fight_btn.visible = true
 	back_btn.text = "Back"
@@ -473,6 +486,21 @@ func _pick_rarity(floor_level: int) -> String:
 	return "common"
 
 
+# ============ INPUT FALLBACK ============
+# Direct input handler — bypasses GUI system in case something blocks button events
+func _input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	if not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if fight_btn.visible and fight_btn.get_global_rect().has_point(event.position):
+		_on_fight_pressed()
+		get_viewport().set_input_as_handled()
+	elif back_btn.visible and back_btn.get_global_rect().has_point(event.position):
+		_on_back_pressed()
+		get_viewport().set_input_as_handled()
+
+
 # ============ ACTIONS ============
 
 func _on_fight_pressed() -> void:
@@ -727,4 +755,8 @@ func _quit_ladder() -> void:
 	_gs._ladder_mode = false
 	_gs._ladder_opponent = {}
 	_gs._ladder_result = ""
+	# Persist all progress (followers, ladder_wins)
+	var persistence = get_node_or_null("/root/Persistence")
+	if persistence:
+		persistence.save_game()
 	_show_picker()

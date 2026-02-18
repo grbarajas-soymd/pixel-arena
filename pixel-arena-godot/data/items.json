@@ -55,10 +55,10 @@
   "cloth_tunic":     {"slot": "chest",  "name": "Cloth Tunic",     "rarity": "starter",   "stats": {"def": 10, "hp": 200}, "visual": {"type": "cloth", "color": "#5a5a4a", "hilight": "#7a7a6a"}},
   "worn_sandals":    {"slot": "boots",  "name": "Worn Sandals",    "rarity": "starter",   "stats": {"def": 3, "move_speed": 12}, "visual": {"type": "sandals", "color": "#5a4a3a", "hilight": "#7a6a5a"}},
   "copper_ring":     {"slot": "accessory","name": "Copper Ring",   "rarity": "starter",   "stats": {"base_dmg": 15, "hp": 100}, "visual": {"type": "ring", "color": "#7a5a3a", "hilight": "#9a7a5a"}},
-  "rusty_daggers":   {"slot": "weapon", "name": "Rusty Daggers",   "rarity": "starter",   "range_type": "melee",  "stats": {"base_dmg": 40, "base_as": 0.6, "evasion": 0.04}, "visual": {"type": "daggers", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
+  "rusty_daggers":   {"slot": "weapon", "name": "Rusty Daggers",   "rarity": "starter",   "range_type": "hybrid", "stats": {"base_dmg": 40, "base_as": 0.6, "evasion": 0.04}, "visual": {"type": "daggers", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
 
   "iron_sword":      {"slot": "weapon", "name": "Iron Sword",      "rarity": "common",    "range_type": "melee",  "stats": {"base_dmg": 75, "base_as": 0.5}, "visual": {"type": "sword", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
-  "hunting_knives":  {"slot": "weapon", "name": "Hunting Knives",  "rarity": "common",    "range_type": "melee",  "stats": {"base_dmg": 55, "base_as": 0.75, "evasion": 0.03}, "visual": {"type": "daggers", "color": "#6a5a4a", "hilight": "#8a7a6a"}},
+  "hunting_knives":  {"slot": "weapon", "name": "Hunting Knives",  "rarity": "common",    "range_type": "hybrid", "stats": {"base_dmg": 55, "base_as": 0.75, "evasion": 0.03}, "visual": {"type": "daggers", "color": "#6a5a4a", "hilight": "#8a7a6a"}},
   "arcane_staff":    {"slot": "weapon", "name": "Arcane Staff",    "rarity": "common",    "range_type": "ranged", "stats": {"base_dmg": 60, "base_as": 0.55, "spell_dmg_bonus": 0.08}, "visual": {"type": "staff", "color": "#3a4a5a", "hilight": "#5a6a7a", "glow": "#6aaa8a"}},
   "steel_helm":      {"slot": "helmet", "name": "Steel Helm",      "rarity": "common",    "stats": {"def": 15, "hp": 200}, "visual": {"type": "steel_helm", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
   "chain_mail":      {"slot": "chest",  "name": "Chain Mail",      "rarity": "common",    "stats": {"def": 22, "hp": 300}, "visual": {"type": "chain", "color": "#5a5a5a", "hilight": "#7a7a7a"}},
@@ -72,7 +72,7 @@
   "swift_boots":     {"slot": "boots",  "name": "Swift Boots",     "rarity": "uncommon",  "stats": {"def": 3, "move_speed": 40, "evasion": 0.03}, "visual": {"type": "swift_boots", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
   "speed_charm":     {"slot": "accessory","name": "Speed Charm",   "rarity": "uncommon",  "stats": {"base_as": 0.15, "move_speed": 15}, "visual": {"type": "charm", "color": "#5a6a4a", "hilight": "#7a8a6a"}},
 
-  "frost_daggers":   {"slot": "weapon", "name": "Frost Daggers",   "rarity": "rare",      "range_type": "melee",  "stats": {"base_dmg": 100, "base_as": 0.85}, "visual": {"type": "daggers", "color": "#6a8aaa", "hilight": "#8aaacc"}},
+  "frost_daggers":   {"slot": "weapon", "name": "Frost Daggers",   "rarity": "rare",      "range_type": "hybrid", "stats": {"base_dmg": 100, "base_as": 0.85}, "visual": {"type": "daggers", "color": "#6a8aaa", "hilight": "#8aaacc"}},
   "cursed_scythe":   {"slot": "weapon", "name": "Cursed Scythe",   "rarity": "rare",      "range_type": "melee",  "stats": {"base_dmg": 130, "base_as": 0.65}, "visual": {"type": "scythe", "color": "#3a2a3a", "hilight": "#5a4a5a", "glow": "#6a4a8a"}},
   "mage_crown":      {"slot": "helmet", "name": "Arcane Crown",    "rarity": "rare",      "stats": {"def": 5, "mana": 100, "spell_dmg_bonus": 0.05}, "visual": {"type": "crown", "color": "#4a6a8a", "hilight": "#6a8aaa", "glow": "#6aaa8a"}},
   "berserker_helm":  {"slot": "helmet", "name": "Berserker Helm",  "rarity": "rare",      "stats": {"def": 10, "hp": 400}, "visual": {"type": "berserker_helm", "color": "#4a2a2a", "hilight": "#6a4a4a"}},

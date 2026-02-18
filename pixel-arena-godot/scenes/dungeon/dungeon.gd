@@ -59,6 +59,36 @@ const RARITY_FLASH_COLORS: Dictionary = {
 	"mythic": Color(0.9, 0.1, 0.1, 0.35),
 }
 
+# Flavor quotes from Dio's contemporaries — shown on victory/death intermissions
+const VICTORY_QUOTES: Array[String] = [
+	"\"The strong take what they will, and the weak suffer what they must.\" — Vex, War Oracle",
+	"\"Another dungeon falls. The abyss barely noticed.\" — Nyx, Void Shepherd",
+	"\"Glory fades, but the scars? Those are forever.\" — Kael, Blade Mendicant",
+	"\"You survived. That puts you ahead of ninety percent of applicants.\" — Mira, Guild Registrar",
+	"\"The dead don't clap, but I assure you they're impressed.\" — Ashara, Bone Whisperer",
+	"\"Victory is just the intermission between catastrophes.\" — Orin, Doomsayer General",
+	"\"To conquer a dungeon is to spit in entropy's eye. Well spat.\" — Theron, Lorekeeper",
+	"\"I've seen gods fall to lesser dungeons. Don't let it go to your head.\" — Sable, Twilight Sage",
+]
+const DEATH_QUOTES: Array[String] = [
+	"\"Every champion's story ends the same. Yours just ended sooner.\" — Nyx, Void Shepherd",
+	"\"The dungeon always wins eventually. It has patience you do not.\" — Orin, Doomsayer General",
+	"\"Fall seven times, stand up eight. Or don't. I'm not your mother.\" — Mira, Guild Registrar",
+	"\"At least you died doing what you loved: being underequipped.\" — Kael, Blade Mendicant",
+	"\"The abyss sends its regards. And a bill for cleaning fees.\" — Ashara, Bone Whisperer",
+	"\"Death is nature's way of telling you to bring more potions.\" — Sable, Twilight Sage",
+	"\"I've written your epitaph. It's short.\" — Theron, Lorekeeper",
+	"\"Some are born great. Some achieve greatness. You died to a goblin.\" — Vex, War Oracle",
+]
+const COMBAT_WIN_QUOTES: Array[String] = [
+	"\"Steel sings, blood flows. The usual.\" — Kael, Blade Mendicant",
+	"\"Another notch on the blade. The blade is mostly notches now.\" — Vex, War Oracle",
+	"\"Efficient. Brutal. Adequate.\" — Mira, Guild Registrar",
+	"\"The monster had a name once. Nobody will remember it.\" — Nyx, Void Shepherd",
+	"\"Press on. The dungeon grows restless.\" — Orin, Doomsayer General",
+	"\"Not dead yet? The prophecy holds... for now.\" — Sable, Twilight Sage",
+]
+
 const ROOM_ICONS: Dictionary = {
 	"combat": "Swords",
 	"treasure": "Chest",
@@ -158,16 +188,81 @@ func _setup_background() -> void:
 		move_child(bg, 0)
 
 
+# Dio's dungeon entry quotes — dismissive about our chances, reminders of debt
+const DIO_DUNGEON_QUOTES: Array[String] = [
+	"Try not to die on the first floor. It's embarrassing for both of us.",
+	"Remember: everything you find down there is mine. You're just... carrying it.",
+	"You still owe me for that resurrection. And the one before that.",
+	"I've placed a small wager against you. Nothing personal.",
+	"The last one I sent down there lasted three rooms. You look like a two.",
+	"Bring back gold or don't bother coming back at all.",
+	"Your debt accrues interest, by the way. Best hurry.",
+	"I've seen goblins with better equipment than yours.",
+	"If you die, I get your gear. Read the fine print.",
+	"The dungeon is endless. Your lifespan is not. Chop chop.",
+	"Every coin you pocket is a coin you owe me. Plus handling fees.",
+	"Don't look at me like that. You signed the contract willingly. Mostly.",
+]
+
 # ==================== PICK SCREEN ====================
 
 func _show_pick_screen() -> void:
 	pick_screen.visible = true
 	run_screen.visible = false
 	_update_pick_info()
+	_build_dio_section()
 	_update_companion_picker()
 
 	pick_title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	pick_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
+
+
+func _build_dio_section() -> void:
+	# Remove old Dio section if present
+	var old_dio := pick_screen.get_node_or_null("DioSection")
+	if old_dio:
+		old_dio.queue_free()
+
+	var dio_section := HBoxContainer.new()
+	dio_section.name = "DioSection"
+	dio_section.alignment = BoxContainer.ALIGNMENT_CENTER
+	dio_section.add_theme_constant_override("separation", 10)
+
+	# Dio portrait — large, slightly transparent
+	var dio_tex = load("res://assets/sprites/generated/npcs/dio_pointing.png")
+	if not dio_tex:
+		dio_tex = load("res://assets/sprites/generated/npcs/dio_idle.png")
+	if dio_tex:
+		var dio_sprite := TextureRect.new()
+		dio_sprite.texture = dio_tex
+		dio_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		dio_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		dio_sprite.custom_minimum_size = Vector2(100, 100)
+		dio_section.add_child(dio_sprite)
+
+	# Speech bubble with quote
+	var speech := VBoxContainer.new()
+	speech.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	speech.add_theme_constant_override("separation", 4)
+
+	var name_lbl := Label.new()
+	name_lbl.text = "Dio, Arena Master"
+	name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	name_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
+	speech.add_child(name_lbl)
+
+	var quote_lbl := Label.new()
+	quote_lbl.text = "\"" + DIO_DUNGEON_QUOTES[randi() % DIO_DUNGEON_QUOTES.size()] + "\""
+	quote_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quote_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	quote_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
+	speech.add_child(quote_lbl)
+
+	dio_section.add_child(speech)
+
+	# Insert after PickInfo (index 1), before PickCompanion (index 2)
+	pick_screen.add_child(dio_section)
+	pick_screen.move_child(dio_section, 2)
 
 
 func _update_pick_info() -> void:
@@ -433,6 +528,11 @@ func _render_room(room_type: String) -> void:
 	_clear_room_actions()
 	var r = _gs.dg_run
 	var is_boss = int(r.get("room", 0)) == 3
+
+	# Restore default panel style and size (intermission may have set ornate/shrink)
+	var rc_style := ThemeManager.make_inset_style(0.95)
+	room_content.add_theme_stylebox_override("panel", rc_style)
+	room_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 	# Brief fade-in on room content for smoother transitions
 	room_content.modulate.a = 0.0
@@ -1049,6 +1149,9 @@ func _show_follower_capture(f: Dictionary, after_fn: Callable = Callable()) -> v
 	r["_pending_capture_after"] = {} # Can't store callables, use flag
 
 	_clear_room_actions()
+	# Restore default panel style and size (intermission may have set ornate/shrink)
+	room_content.add_theme_stylebox_override("panel", ThemeManager.make_inset_style(0.95))
+	room_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	# Show the actual follower sprite instead of generic cage icon
 	var f_sprite_name: String = str(f.get("template_name", "")).to_lower().replace(" ", "_")
 	var f_sprite_path := "res://assets/sprites/generated/followers/" + f_sprite_name + ".png"
@@ -1138,6 +1241,9 @@ func _on_sell_follower(after_fn: Callable) -> void:
 # ==================== GEAR DROP ====================
 
 func _show_gear_drop(gear: Dictionary, after_fn: Callable = Callable()) -> void:
+	# Restore default panel style and size (intermission may have set ornate/shrink)
+	room_content.add_theme_stylebox_override("panel", ThemeManager.make_inset_style(0.95))
+	room_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var r = _gs.dg_run
 	if gear.is_empty():
 		if after_fn.is_valid():
@@ -1589,6 +1695,11 @@ func _handle_combat_victory() -> void:
 func _show_intermission(title: String, title_color: Color, body: String, next_label: String, next_fn: Callable) -> void:
 	_clear_room_actions()
 
+	# Ornate panel style for intermission — shrink to content, centered
+	var ornate := ThemeManager.make_ornate_panel_style(title_color)
+	room_content.add_theme_stylebox_override("panel", ornate)
+	room_content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
 	# Smooth fade-in
 	room_content.modulate.a = 0.0
 	var fade_tw := create_tween()
@@ -1596,12 +1707,21 @@ func _show_intermission(title: String, title_color: Color, body: String, next_la
 
 	room_sprite.visible = false
 	room_icon.visible = false
-	room_title.text = title
+	room_title.text = "~ " + title + " ~"
 	room_title.add_theme_color_override("font_color", title_color)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
+	# Pick a flavor quote from Dio's contemporaries
+	var quote: String = COMBAT_WIN_QUOTES[randi() % COMBAT_WIN_QUOTES.size()]
+	var dim_col := ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2).to_html(false)
+
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]" + body + "[/font_size]")
+	room_desc.append_text("[center]")
+	room_desc.append_text("[font_size=7][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=8]" + body + "[/font_size]\n")
+	room_desc.append_text("[font_size=7][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + quote + "[/color][/i][/font_size]")
+	room_desc.append_text("[/center]")
 
 	_add_room_button(next_label, next_fn)
 
@@ -1633,14 +1753,23 @@ func _show_victory() -> void:
 		_gs.followers.append(bonus_follower)
 
 	_clear_room_actions()
+
+	# Ornate gold panel for victory — shrink to content, centered
+	var ornate := ThemeManager.make_ornate_panel_style(ThemeManager.COLOR_GOLD_BRIGHT)
+	room_content.add_theme_stylebox_override("panel", ornate)
+	room_content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
 	_set_room_sprite(ROOM_SPRITE_PATHS["victory"], ThemeManager.COLOR_GOLD_BRIGHT)
-	room_title.text = "DUNGEON CONQUERED!"
+	room_title.text = "~ DUNGEON CONQUERED ~"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	var next_diff = _gs.dungeon_clears * 15
+	var gold_col := ThemeManager.COLOR_BORDER_GOLD.to_html(false)
 
 	room_desc.clear()
+	room_desc.append_text("[center]")
+	room_desc.append_text("[font_size=7][color=#" + gold_col + "]~  *  ~[/color][/font_size]\n")
 	room_desc.append_text("[font_size=8]")
 	room_desc.append_text("Clear [b]#" + str(_gs.dungeon_clears) + "[/b] complete!\n\n")
 	room_desc.append_text("Rooms: " + str(_room_history_size()) + "\n")
@@ -1653,7 +1782,12 @@ func _show_victory() -> void:
 			var col = _item_db.get_rarity_color(tmpl.get("rarity", "common"))
 			room_desc.append_text("Victory Reward: [color=" + col + "]" + str(tmpl.get("name", "")) + " (" + str(tmpl.get("rarity", "")) + ")[/color]\n")
 	room_desc.append_text("\n[color=#cc6666]Next descent: +" + str(next_diff) + "% difficulty[/color]")
-	room_desc.append_text("[/font_size]")
+	room_desc.append_text("[/font_size]\n\n")
+	var vq: String = VICTORY_QUOTES[randi() % VICTORY_QUOTES.size()]
+	var dim_col := ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2).to_html(false)
+	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + vq + "[/color][/i][/font_size]\n")
+	room_desc.append_text("[font_size=7][color=#" + gold_col + "]~  *  ~[/color][/font_size]")
+	room_desc.append_text("[/center]")
 
 	_add_room_button("Return Victorious", _end_dungeon_run)
 	_update_run_ui()
@@ -1678,12 +1812,22 @@ func _show_death() -> void:
 		_gs.followers.append(captured[i])
 
 	_clear_room_actions()
+
+	# Ornate red panel for defeat — shrink to content, centered
+	var ornate := ThemeManager.make_ornate_panel_style(ThemeManager.COLOR_HP_RED)
+	room_content.add_theme_stylebox_override("panel", ornate)
+	room_content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
 	_set_room_sprite(ROOM_SPRITE_PATHS["death"], ThemeManager.COLOR_HP_RED)
-	room_title.text = "DEFEATED"
+	room_title.text = "~ DEFEATED ~"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
+	var dim_red := ThemeManager.COLOR_HP_RED.darkened(0.3).to_html(false)
+
 	room_desc.clear()
+	room_desc.append_text("[center]")
+	room_desc.append_text("[font_size=7][color=#" + dim_red + "]~  *  ~[/color][/font_size]\n")
 	room_desc.append_text("[font_size=8]")
 	room_desc.append_text("Fell on [b]Floor " + str(int(r.get("floor", 1))) + ", Room " + str(int(r.get("room", 0))) + "[/b]\n\n")
 	room_desc.append_text("Rooms: " + str(_room_history_size()) + "\n")
@@ -1692,7 +1836,12 @@ func _show_death() -> void:
 	room_desc.append_text("Dmg Dealt: " + str(int(r.get("total_dmg_dealt", 0))) + "\n")
 	room_desc.append_text("Dmg Taken: " + str(int(r.get("total_dmg_taken", 0))) + "\n\n")
 	room_desc.append_text("Followers kept: [b]" + str(keep_count) + "/" + str(run_followers.size()) + "[/b]")
-	room_desc.append_text("[/font_size]")
+	room_desc.append_text("[/font_size]\n\n")
+	var dq: String = DEATH_QUOTES[randi() % DEATH_QUOTES.size()]
+	var dim_col := ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2).to_html(false)
+	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + dq + "[/color][/i][/font_size]\n")
+	room_desc.append_text("[font_size=7][color=#" + dim_red + "]~  *  ~[/color][/font_size]")
+	room_desc.append_text("[/center]")
 
 	_add_room_button("Return", _end_dungeon_run)
 	_update_run_ui()
@@ -1706,6 +1855,10 @@ func _show_death() -> void:
 func _end_dungeon_run() -> void:
 	_gs.reset_dungeon_run()
 	_selected_companion_idx = -1
+	# Persist all progress (gear, followers, gold, dungeon_clears)
+	var persistence = get_node_or_null("/root/Persistence")
+	if persistence:
+		persistence.save_game()
 	_show_pick_screen()
 
 

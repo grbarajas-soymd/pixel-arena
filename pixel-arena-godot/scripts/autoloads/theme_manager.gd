@@ -60,8 +60,6 @@ const CLASS_COLORS: Dictionary = {
 }
 
 var pixel_font: Font = null
-var decorative_font: Font = null
-
 
 func _ready() -> void:
 	var theme = Theme.new()
@@ -71,9 +69,6 @@ func _ready() -> void:
 	if pixel_font:
 		theme.default_font = pixel_font
 	theme.default_font_size = FONT_SIZES["body"]
-
-	# -- Load Alagard as decorative font (title screen only) --
-	decorative_font = load("res://assets/fonts/alagard.ttf")
 
 	# -- Set font for all common control types --
 	var control_types := ["Label", "Button", "RichTextLabel", "LineEdit",
@@ -198,6 +193,8 @@ func _ready() -> void:
 # ── Factory Methods ──────────────────────────────────────────────────
 
 ## Standard panel StyleBox (navy bg, gold border).
+## Always returns StyleBoxFlat — callers modify .border_color, .bg_color etc.
+## Texture panels are only used for the global theme default (not factory methods).
 static func make_panel_style(alpha: float = 0.95) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = Color(COLOR_BG_PANEL.r, COLOR_BG_PANEL.g, COLOR_BG_PANEL.b, alpha)
@@ -253,6 +250,43 @@ static func style_button(btn: Button, border_color: Color = COLOR_BORDER_GOLD) -
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", disabled)
+
+
+## Ornate double-border panel for victory/result overlays.
+## Returns a StyleBoxFlat with a bright outer border and dim inner border effect.
+static func make_ornate_panel_style(accent: Color = COLOR_GOLD_BRIGHT) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(COLOR_BG_PANEL.r * 0.9, COLOR_BG_PANEL.g * 0.9, COLOR_BG_PANEL.b * 0.9, 0.97)
+	s.border_color = accent
+	s.border_width_left = 2
+	s.border_width_right = 2
+	s.border_width_top = 2
+	s.border_width_bottom = 2
+	s.set_corner_radius_all(0)
+	s.set_content_margin_all(10)
+	# Expand/shadow for depth
+	s.shadow_color = Color(0, 0, 0, 0.5)
+	s.shadow_size = 3
+	return s
+
+
+## Create a decorative gold separator line (Label with centered ornamental chars).
+static func make_separator(accent: Color = COLOR_BORDER_GOLD) -> Label:
+	var sep := Label.new()
+	sep.text = "~  *  ~"
+	sep.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sep.add_theme_font_size_override("font_size", FONT_SIZES["small"])
+	sep.add_theme_color_override("font_color", accent)
+	return sep
+
+
+## Create a thin horizontal rule (ColorRect) for visual separation.
+static func make_hrule(color: Color = COLOR_BORDER_GOLD, height: float = 1.0) -> ColorRect:
+	var rule := ColorRect.new()
+	rule.color = color
+	rule.custom_minimum_size = Vector2(0, height)
+	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return rule
 
 
 ## Compact bordered button for follower/item pickers.

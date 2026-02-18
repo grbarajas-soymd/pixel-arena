@@ -18,6 +18,8 @@ Usage:
     python generate_sprites.py --category skills         # Generate skill/ultimate icons
     python generate_sprites.py --category logo           # Generate game logo
     python generate_sprites.py --category backgrounds    # Generate battle backgrounds
+    python generate_sprites.py --category vfx            # Generate combat VFX sprites
+    python generate_sprites.py --category ui_textures    # Generate UI panel/button textures
     python generate_sprites.py --category all            # Generate everything
     python generate_sprites.py --single barbarian_base   # Generate one specific sprite
     python generate_sprites.py --prototype               # Barbarian + 2 monsters test
@@ -126,6 +128,20 @@ STYLE_LOGO = (
     "golden yellow metallic text with dark red blood dripping, "
     "dramatic medieval fantasy font, transparent background, "
     "16-bit retro style, crisp clean pixel art, no character"
+)
+
+STYLE_VFX = (
+    "pixel art RPG combat effect, single bold effect centered, "
+    "simple minimalist design, high contrast, bright vivid colors on transparent background, "
+    "clean pixel edges, 16-bit style, no text, no character, "
+    "flat graphic game VFX, thick outlines, easily recognizable at small size"
+)
+
+STYLE_UI_TEXTURE = (
+    "pixel art RPG user interface texture element, seamless tileable surface, "
+    "simple minimalist design, high contrast, clean pixel edges, "
+    "16-bit style, no text, no character, texture pattern only, "
+    "flat graphic game UI, dark medieval fantasy aesthetic"
 )
 
 # ── Sprite Definitions ─────────────────────────────────────────────────────
@@ -579,6 +595,94 @@ ULT_ICON_SPRITES = {
     ),
 }
 
+VFX_SPRITES = {
+    # Melee slash effects (48x48)
+    "vfx_slash_sword": (
+        "single diagonal sword slash arc, bright white-yellow energy trail, "
+        "clean sweeping cut motion line, golden sparks at tip"
+    ),
+    "vfx_slash_daggers": (
+        "crossed X-pattern dual blade slashes, fast twin silver cuts forming an X, "
+        "blue-white speed lines, sharp blade trails"
+    ),
+    "vfx_chop_axe": (
+        "heavy vertical axe chop impact, top-down crushing strike, "
+        "red-orange shockwave burst at bottom, powerful overhead cleave arc"
+    ),
+    "vfx_sweep_scythe": (
+        "wide horizontal scythe sweep arc, dark purple energy trail, "
+        "death reaper slash motion, ghostly purple-black crescent blade path"
+    ),
+    "vfx_slash_claw": (
+        "three diagonal beast claw scratch marks, red bloody slash trails, "
+        "savage triple claw swipe, feral scratch marks with sparks"
+    ),
+    # Projectile sprites (32x32)
+    "vfx_proj_arrow": (
+        "single wooden arrow in flight, steel arrowhead gleaming, "
+        "feather fletching, horizontal arrow projectile with small speed trail"
+    ),
+    "vfx_proj_knife": (
+        "small throwing dagger spinning in flight, glinting steel blade, "
+        "compact spinning knife projectile, silver gleam trail"
+    ),
+    "vfx_proj_orb": (
+        "glowing magical energy orb sphere, bright arcane energy ball, "
+        "swirling inner light, soft magical glow aura radiating"
+    ),
+    # Hit impact effects (32x32)
+    "vfx_hit_slash": (
+        "blade impact spark burst, diagonal slash marks with white sparks scattering, "
+        "sharp metal impact flash, bright steel clash"
+    ),
+    "vfx_hit_arrow": (
+        "arrow impact burst, splintering wood fragments and dust cloud, "
+        "thud impact shockwave, small debris flying outward"
+    ),
+    "vfx_hit_magic": (
+        "magical sparkle burst explosion, prismatic energy shards scattering, "
+        "colorful arcane impact, bright magic particle scatter"
+    ),
+    "vfx_hit_crit": (
+        "massive critical hit starburst explosion, bright golden-white flash star, "
+        "radiating impact lines, epic power burst, screen-filling impact"
+    ),
+    # Death effect (32x32)
+    "vfx_death_soul": (
+        "rising ghostly soul wisp, translucent pale blue-white spirit ascending upward, "
+        "ethereal smoke trail, fading phantom essence"
+    ),
+    # Health bar frame (256x32) — will be hollowed out by post-processing
+    "vfx_hp_frame": (
+        "thick ornate golden metal rectangular frame border, bright shining gold with embedded gemstones, "
+        "heavy medieval RPG health bar frame, bold raised golden edges with intricate engravings, "
+        "solid bright gold trim with dark iron rivets, wide decorative border, centered horizontal rectangle"
+    ),
+}
+
+UI_TEXTURES = {
+    "ui_panel_stone": (
+        "dark grey-blue stone brick wall surface texture, medieval dungeon carved stone blocks, "
+        "subtle mortar lines between bricks, navy-blue tint cold stone, seamless tileable pattern"
+    ),
+    "ui_panel_inset": (
+        "darker recessed carved stone surface texture, deep indented shadow, "
+        "worn ancient stone with scratches, very dark navy-black carved depression, seamless tileable"
+    ),
+    "ui_button_normal": (
+        "polished dark stone button slab surface, subtle golden trim edges, "
+        "clean flat carved stone rectangle, dark grey-blue with faint gold border line, beveled stone"
+    ),
+    "ui_button_hover": (
+        "warm glowing stone button slab surface, bright golden highlight edges, "
+        "slightly brighter warm stone, amber glow emanating, illuminated carved stone rectangle"
+    ),
+    "ui_button_pressed": (
+        "pressed indented dark stone button surface, deeper inner shadow, "
+        "depressed inward carved stone, darker center with compressed edges, inset stone slab"
+    ),
+}
+
 LOGO_SPRITES = {
     "game_logo": (
         "text saying 'Some of you may die' in dramatic fantasy font, "
@@ -781,6 +885,11 @@ GEAR_ICON_SIZE = 32  # 32x32 inventory icons
 SKILL_ICON_SIZE = 48  # 48x48 ability icons (slightly larger for detail)
 LOGO_WIDTH = 480      # Game logo: 480x160
 LOGO_HEIGHT = 160
+VFX_SIZE_LARGE = 48   # Melee slash and crit effects: 48x48
+VFX_SIZE_SMALL = 32   # Projectiles, hits, death: 32x32
+UI_TEX_PANEL_SIZE = 64  # Panel textures: 64x64
+UI_TEX_BTN_WIDTH = 64   # Button textures: 64x24
+UI_TEX_BTN_HEIGHT = 24
 
 
 # ── Generation Functions ────────────────────────────────────────────────────
@@ -1003,6 +1112,100 @@ def gen_logo(logo_key: str, desc: str, seed: int = -1) -> "Path | None":
     return out_path
 
 
+def gen_vfx(vfx_key: str, desc: str, size: int = None, seed: int = -1) -> "Path | None":
+    """Generate a VFX combat sprite (48x48 for slashes/crit, 32x32 for others, 128x16 for hp_frame)."""
+    out_path = OUTPUT_DIR / "vfx" / f"{vfx_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"SKIP (exists): {out_path.name}")
+        return out_path
+
+    # HP bar frame is a special wide aspect ratio
+    is_hp_frame = vfx_key == "vfx_hp_frame"
+
+    if size is None:
+        if is_hp_frame:
+            size = 256  # width; height will be 32
+        elif vfx_key.startswith("vfx_slash") or vfx_key == "vfx_hit_crit":
+            size = VFX_SIZE_LARGE
+        else:
+            size = VFX_SIZE_SMALL
+
+    if seed == -1:
+        seed = _name_seed(vfx_key)
+
+    print(f"{vfx_key} (seed={seed})")
+    t0 = time.time()
+    prompt = f"{STYLE_VFX}, {desc}"
+    if is_hp_frame:
+        img = generate_image(prompt, seed=seed, width=1024, height=192)
+    else:
+        img = generate_image(prompt, seed=seed)
+    if img is None:
+        print(f"    FAILED ({time.time()-t0:.1f}s)")
+        return None
+
+    if is_hp_frame:
+        # No rembg for frame — downscale to 256x32, then hollow out center
+        img = img.resize((256, 32), Image.NEAREST)
+        img = img.convert("RGBA")
+        w, h = img.size
+        border = 4
+        # Make center transparent, keep border
+        for y in range(border, h - border):
+            for x in range(border, w - border):
+                r, g, b, a = img.getpixel((x, y))
+                img.putpixel((x, y), (r, g, b, 0))
+        print(f"    Hollowed center...", end=" ", flush=True)
+    else:
+        print(f"    Removing background...", end=" ", flush=True)
+        img = remove_bg(img)
+        img = downscale_nearest(img, size)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name} ({time.time()-t0:.1f}s)")
+    return out_path
+
+
+def gen_ui_texture(tex_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate a UI texture (64x64 panels, 64x24 buttons). No background removal."""
+    out_path = OUTPUT_DIR / "ui" / f"{tex_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(tex_key)
+
+    is_button = tex_key.startswith("ui_button_")
+    if is_button:
+        width = UI_TEX_BTN_WIDTH
+        height = UI_TEX_BTN_HEIGHT
+    else:
+        width = UI_TEX_PANEL_SIZE
+        height = UI_TEX_PANEL_SIZE
+
+    print(f"{tex_key} (seed={seed})")
+    t0 = time.time()
+    prompt = f"{STYLE_UI_TEXTURE}, {desc}"
+    # Generate at wider aspect for buttons, square for panels
+    if is_button:
+        img = generate_image(prompt, seed=seed, width=1024, height=384)
+    else:
+        img = generate_image(prompt, seed=seed)
+    if img is None:
+        print(f"    FAILED ({time.time()-t0:.1f}s)")
+        return None
+
+    # No rembg — UI textures need opaque backgrounds
+    img = img.resize((width, height), Image.NEAREST)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"    OK -> {out_path.name} ({time.time()-t0:.1f}s)")
+    return out_path
+
+
 # ── Batch Generation ────────────────────────────────────────────────────────
 
 def generate_heroes():
@@ -1116,6 +1319,44 @@ def generate_logo():
     return done
 
 
+def generate_vfx():
+    """Generate all VFX combat sprites."""
+    print("\n=== VFX SPRITES (48x48 / 32x32) ===")
+    total = len(VFX_SPRITES)
+    done = 0
+    batch_start = time.time()
+    for i, (vfx_key, desc) in enumerate(VFX_SPRITES.items()):
+        print(f"\n  [{i+1}/{total}] ", end="")
+        result = gen_vfx(vfx_key, desc)
+        if result:
+            done += 1
+        elapsed = time.time() - batch_start
+        avg = elapsed / (i + 1)
+        remaining = avg * (total - i - 1)
+        print(f"    Batch: {done}/{total} done, {elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining")
+    print(f"\nVFX sprites: {done}/{total} completed")
+    return done
+
+
+def generate_ui_textures():
+    """Generate all UI panel and button textures."""
+    print("\n=== UI TEXTURES (64x64 / 64x24) ===")
+    total = len(UI_TEXTURES)
+    done = 0
+    batch_start = time.time()
+    for i, (tex_key, desc) in enumerate(UI_TEXTURES.items()):
+        print(f"\n  [{i+1}/{total}] ", end="")
+        result = gen_ui_texture(tex_key, desc)
+        if result:
+            done += 1
+        elapsed = time.time() - batch_start
+        avg = elapsed / (i + 1)
+        remaining = avg * (total - i - 1)
+        print(f"    Batch: {done}/{total} done, {elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining")
+    print(f"\nUI textures: {done}/{total} completed")
+    return done
+
+
 def generate_prototype():
     """Generate a small test set to validate quality."""
     print("\n=== PROTOTYPE: Barbarian + 2 monsters + 1 follower + 1 background ===")
@@ -1171,6 +1412,12 @@ def generate_single(name: str):
     if name in LOGO_SPRITES:
         gen_logo(name, LOGO_SPRITES[name])
         return
+    if name in VFX_SPRITES:
+        gen_vfx(name, VFX_SPRITES[name])
+        return
+    if name in UI_TEXTURES:
+        gen_ui_texture(name, UI_TEXTURES[name])
+        return
 
     print(f"Unknown sprite name: {name}")
     print("Valid names:")
@@ -1183,6 +1430,8 @@ def generate_single(name: str):
     print(f"  Skills: {', '.join(SKILL_ICON_SPRITES.keys())}")
     print(f"  Ultimates: {', '.join(ULT_ICON_SPRITES.keys())}")
     print(f"  Logo: {', '.join(LOGO_SPRITES.keys())}")
+    print(f"  VFX: {', '.join(VFX_SPRITES.keys())}")
+    print(f"  UI Textures: {', '.join(UI_TEXTURES.keys())}")
 
 
 # ── Model Download ──────────────────────────────────────────────────────────
@@ -1312,8 +1561,17 @@ def show_status():
     bg_total = len(BATTLE_BACKGROUNDS)
     print(f"Backgrounds (640x360): {bg_count}/{bg_total}")
 
-    total = hero_total + monster_total + follower_total + gear_total + npc_total + skill_total + logo_total + bg_total
-    done = hero_count + monster_count + follower_count + gear_count + npc_count + skill_count + logo_count + bg_count
+    vfx_count = count_files(OUTPUT_DIR / "vfx")
+    vfx_total = len(VFX_SPRITES)
+    print(f"VFX (48x48/32x32):   {vfx_count}/{vfx_total}")
+
+    # UI textures share the "ui" folder with logos, so count by prefix
+    ui_tex_count = count_files(OUTPUT_DIR / "ui", "ui_*.png")
+    ui_tex_total = len(UI_TEXTURES)
+    print(f"UI textures (64x64/64x24): {ui_tex_count}/{ui_tex_total}")
+
+    total = hero_total + monster_total + follower_total + gear_total + npc_total + skill_total + logo_total + bg_total + vfx_total + ui_tex_total
+    done = hero_count + monster_count + follower_count + gear_count + npc_count + skill_count + logo_count + bg_count + vfx_count + ui_tex_count
     print(f"\nTotal:               {done}/{total} assets")
 
     # Check model files
@@ -1343,7 +1601,7 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Show sprite + model status")
     parser.add_argument("--category",
-                        choices=["heroes", "monsters", "followers", "gear", "npcs", "skills", "logo", "backgrounds", "all"],
+                        choices=["heroes", "monsters", "followers", "gear", "npcs", "skills", "logo", "backgrounds", "vfx", "ui_textures", "all"],
                         help="Generate assets by category")
     parser.add_argument("--single", type=str,
                         help="Generate a single sprite by name")
@@ -1417,6 +1675,10 @@ def main():
             generate_logo()
         if args.category in ("backgrounds", "all"):
             generate_backgrounds()
+        if args.category in ("vfx", "all"):
+            generate_vfx()
+        if args.category in ("ui_textures", "all"):
+            generate_ui_textures()
         elapsed = time.time() - start
         print(f"\nTotal time: {elapsed:.1f}s")
         show_status()

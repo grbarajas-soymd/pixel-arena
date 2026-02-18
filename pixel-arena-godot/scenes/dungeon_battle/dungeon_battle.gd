@@ -79,6 +79,24 @@ const SPRITE_Y: float = 100.0
 # Animation durations (seconds)
 const ANIM_ATTACK: float = 0.25
 const ANIM_SKILL: float = 0.35
+
+# Flavor quotes from Dio's contemporaries
+const COMBAT_WIN_QUOTES: Array[String] = [
+	"\"Steel sings, blood flows. The usual.\" — Kael, Blade Mendicant",
+	"\"Another notch on the blade. The blade is mostly notches now.\" — Vex, War Oracle",
+	"\"Efficient. Brutal. Adequate.\" — Mira, Guild Registrar",
+	"\"The monster had a name once. Nobody will remember it.\" — Nyx, Void Shepherd",
+	"\"Press on. The dungeon grows restless.\" — Orin, Doomsayer General",
+	"\"Not dead yet? The prophecy holds... for now.\" — Sable, Twilight Sage",
+]
+const COMBAT_LOSS_QUOTES: Array[String] = [
+	"\"Every champion's story ends the same. Yours just ended sooner.\" — Nyx, Void Shepherd",
+	"\"The dungeon always wins eventually. It has patience you do not.\" — Orin, Doomsayer General",
+	"\"At least you died doing what you loved: being underequipped.\" — Kael, Blade Mendicant",
+	"\"The abyss sends its regards. And a bill for cleaning fees.\" — Ashara, Bone Whisperer",
+	"\"Death is nature's way of telling you to bring more potions.\" — Sable, Twilight Sage",
+	"\"I've written your epitaph. It's short.\" — Theron, Lorekeeper",
+]
 const ANIM_ULT: float = 0.50
 const ANIM_POTION: float = 0.20
 const ANIM_FLEE: float = 0.30
@@ -555,7 +573,12 @@ func _on_action_resolved(action: String, result: Dictionary) -> void:
 
 	match action:
 		"attack":
-			_animate_lunge(hero_sprite, HERO_BASE_X, MONSTER_BASE_X, duration)
+			# Only lunge for melee weapons; ranged weapons flash instead
+			var weapon_range := GameState.get_weapon_range_type()
+			if weapon_range == "ranged":
+				_animate_flash(hero_sprite, Color(0.5, 0.7, 1.0), duration)
+			else:
+				_animate_lunge(hero_sprite, HERO_BASE_X, MONSTER_BASE_X, duration)
 		"skill":
 			var skill_idx: int = int(result.get("skill_idx", -1))
 			var vfx: Dictionary = SKILL_VFX.get(skill_idx, {})
@@ -773,10 +796,6 @@ func _build_turn_order_strip() -> void:
 	if turn_label:
 		turn_label.offset_top += 14
 		turn_label.offset_bottom += 14
-	if combat_log:
-		combat_log.offset_top += 14
-		combat_log.offset_bottom += 14
-
 	_update_turn_order_display()
 
 
@@ -836,6 +855,16 @@ func _toggle_combat_log() -> void:
 		ThemeManager.style_button(log_btn)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not _log_visible:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Dismiss log on click anywhere outside the log button
+		if not log_btn.get_global_rect().has_point(event.position):
+			_toggle_combat_log()
+			get_viewport().set_input_as_handled()
+
+
 func _style_hud() -> void:
 	# Color HP bars with themed fills
 	_style_progress_bar(hero_hp_bar, ThemeManager.COLOR_HP_GREEN, Color(0.05, 0.10, 0.05))
@@ -857,10 +886,19 @@ func _style_hud() -> void:
 		turn_label.add_theme_font_override("font", _compact_font)
 	turn_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 
-	# Combat log overlay styling (dark panel over battle area)
-	var log_style := ThemeManager.make_inset_style(0.95)
+	# Combat log — positioned between fighters, very transparent
+	combat_log.offset_left = 190.0
+	combat_log.offset_right = 450.0
+	combat_log.offset_top = 50.0
+	combat_log.offset_bottom = 195.0
+	var log_style := StyleBoxFlat.new()
+	log_style.bg_color = Color(0.04, 0.04, 0.08, 0.35)
 	log_style.set_content_margin_all(4)
+	log_style.set_border_width_all(1)
+	log_style.border_color = Color(ThemeManager.COLOR_BORDER_GOLD, 0.2)
+	log_style.set_corner_radius_all(2)
 	combat_log.add_theme_stylebox_override("normal", log_style)
+	combat_log.modulate.a = 0.85
 	if _compact_font:
 		combat_log.add_theme_font_override("normal_font", _compact_font)
 	combat_log.add_theme_font_size_override("normal_font_size", ThemeManager.FONT_SIZES["body"])
@@ -899,18 +937,40 @@ func _style_hud() -> void:
 
 
 func _style_progress_bar(bar: ProgressBar, fill_color: Color, bg_color: Color) -> void:
+	# Fill — brighter top edge for a subtle gradient/bevel effect
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = fill_color
-	fill.set_corner_radius_all(1)
+	fill.border_color = fill_color.lightened(0.3)
+	fill.border_width_top = 1
+	fill.border_width_bottom = 0
+	fill.border_width_left = 0
+	fill.border_width_right = 0
+	fill.set_corner_radius_all(0)
 	fill.set_content_margin_all(0)
 	bar.add_theme_stylebox_override("fill", fill)
+	# Background — dark with gold border
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = bg_color
-	bg.border_color = Color(ThemeManager.COLOR_BORDER_DIM.r, ThemeManager.COLOR_BORDER_DIM.g, ThemeManager.COLOR_BORDER_DIM.b, 0.6)
+	bg.border_color = ThemeManager.COLOR_BORDER_GOLD
 	bg.set_border_width_all(1)
-	bg.set_corner_radius_all(1)
+	bg.set_corner_radius_all(0)
 	bg.set_content_margin_all(0)
 	bar.add_theme_stylebox_override("background", bg)
+	# Overlay HP frame texture if available
+	var frame_tex = load("res://assets/sprites/generated/vfx/vfx_hp_frame.png")
+	if frame_tex:
+		# Remove existing frame overlay if re-styling
+		var old_frame := bar.get_node_or_null("FrameOverlay")
+		if old_frame:
+			old_frame.queue_free()
+		var frame := TextureRect.new()
+		frame.name = "FrameOverlay"
+		frame.texture = frame_tex
+		frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		frame.stretch_mode = TextureRect.STRETCH_SCALE
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(frame)
 
 
 func _setup_action_icons() -> void:
@@ -1259,19 +1319,77 @@ func _animate_flash(sprite: Node2D, color: Color, duration: float) -> void:
 		get_tree().create_timer(duration).timeout.connect(func(): sprite.modulate = original)
 
 
-func _spawn_float_text(text: String, pos: Vector2, color: Color) -> void:
+func _spawn_float_text(text: String, pos: Vector2, color: Color, category: String = "normal") -> void:
 	var lbl := Label.new()
 	lbl.text = text
+
+	# Infer category if not provided
+	if category == "normal":
+		if text == "MISS" or text == "RESIST":
+			category = "miss"
+		elif text == "BLOCKED":
+			category = "info"
+		elif text.begins_with("RIPOSTE") or text.begins_with("DETONATE"):
+			category = "info"
+		elif text.ends_with("!"):
+			category = "crit"
+		elif text.is_valid_int() and text.to_int() > 200:
+			category = "big"
+
+	# Category-based font size
+	var font_size: int
+	match category:
+		"crit": font_size = 20
+		"big": font_size = 18
+		"miss": font_size = 14
+		"info": font_size = 14
+		"heal": font_size = 16
+		_: font_size = 16
+
+	# LabelSettings for crisp outlines
+	var ls := LabelSettings.new()
 	if _compact_font:
-		lbl.add_theme_font_override("font", _compact_font)
-	lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
-	lbl.add_theme_color_override("font_color", color)
+		ls.font = _compact_font
+	ls.font_size = font_size
+	ls.font_color = color
+	ls.outline_size = 1
+	ls.outline_color = Color(0, 0, 0, 0.9)
+	ls.shadow_size = 1
+	ls.shadow_color = Color(0, 0, 0, 0.5)
+	ls.shadow_offset = Vector2(1, 1)
+	lbl.label_settings = ls
+
 	lbl.position = pos + Vector2(randf_range(-10, 10), -10)
 	float_container.add_child(lbl)
 
+	# Category-based animation
+	var drift: float
+	var duration: float
+	match category:
+		"crit":
+			drift = -40.0
+			duration = 1.0
+		"big":
+			drift = -35.0
+			duration = 0.9
+		"miss":
+			drift = -20.0
+			duration = 0.5
+		_:
+			drift = -30.0
+			duration = 0.8
+
 	var tw := create_tween()
-	tw.tween_property(lbl, "position:y", lbl.position.y - 30, 0.8)
-	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.8)
+	if category == "crit" or category == "big":
+		lbl.scale = Vector2(0.3, 0.3)
+		lbl.pivot_offset = Vector2(lbl.size.x / 2, lbl.size.y / 2)
+		tw.tween_property(lbl, "scale", Vector2(1.3, 1.3), 0.1)
+		tw.tween_property(lbl, "scale", Vector2(1.0, 1.0), 0.1)
+		tw.tween_property(lbl, "position:y", lbl.position.y + drift, duration - 0.5)
+		tw.tween_property(lbl, "modulate:a", 0.0, 0.3)
+	else:
+		tw.tween_property(lbl, "position:y", lbl.position.y + drift, duration)
+		tw.parallel().tween_property(lbl, "modulate:a", 0.0, duration)
 	tw.tween_callback(lbl.queue_free)
 
 
@@ -1366,11 +1484,16 @@ func _submit(action: String) -> void:
 # ── Result overlay ───────────────────────────────────────────────────
 
 func _show_result_overlay(result: String) -> void:
-	# Outer panel — gold border, navy bg, generous padding
-	var panel_style := ThemeManager.make_panel_style()
-	panel_style.border_color = ThemeManager.COLOR_GOLD_BRIGHT
-	panel_style.set_border_width_all(2)
-	panel_style.set_content_margin_all(12)
+	# Hide turn order so it doesn't show through
+	var turn_row := get_node_or_null("HUD/TurnOrderRow")
+	if turn_row:
+		turn_row.visible = false
+
+	# Ornate double-border panel
+	var accent := ThemeManager.COLOR_GOLD_BRIGHT if result == "victory" else ThemeManager.COLOR_HP_RED
+	if result == "flee":
+		accent = ThemeManager.COLOR_TEXT_LIGHT
+	var panel_style := ThemeManager.make_ornate_panel_style(accent)
 	result_overlay.add_theme_stylebox_override("panel", panel_style)
 	result_overlay.visible = true
 	for c in result_vbox.get_children():
@@ -1390,118 +1513,109 @@ func _show_result_overlay(result: String) -> void:
 		if int(r.get("room", 0)) == 3:
 			_gold_reward = roundi(float(_gold_reward) * 1.5)
 
-	# Title — large, decorative
+	# Top decorative line
+	result_vbox.add_child(ThemeManager.make_hrule(accent.darkened(0.3)))
+
+	# Title
 	var title := Label.new()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
+	title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 	if _compact_font:
 		title.add_theme_font_override("font", _compact_font)
 
 	if result == "victory":
-		title.text = "VICTORY!"
+		title.text = "~ VICTORY ~"
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		result_vbox.add_child(title)
 		_play_sfx_throttled(_sfx_victory_pool[randi() % _sfx_victory_pool.size()], 0.0)
 
-		# Subtitle — monster slain
-		var slain_lbl := Label.new()
-		slain_lbl.text = monster_name + " slain!"
-		slain_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		slain_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		slain_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-		slain_lbl.clip_text = true
+		# Separator
+		result_vbox.add_child(ThemeManager.make_separator(ThemeManager.COLOR_BORDER_GOLD))
+
+		# Subtitle — monster slain + gold on same line
+		var sub_lbl := Label.new()
+		sub_lbl.text = monster_name + " slain!  +" + str(_gold_reward) + " Gold"
+		sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sub_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		sub_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
 		if _compact_font:
-			slain_lbl.add_theme_font_override("font", _compact_font)
-		result_vbox.add_child(slain_lbl)
+			sub_lbl.add_theme_font_override("font", _compact_font)
+		result_vbox.add_child(sub_lbl)
 
-		# Gold reward — bright, prominent
-		var gold_lbl := Label.new()
-		gold_lbl.text = "+" + str(_gold_reward) + " Gold"
-		gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		gold_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["heading"])
-		gold_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
-		if _compact_font:
-			gold_lbl.add_theme_font_override("font", _compact_font)
-		result_vbox.add_child(gold_lbl)
-
-		# Stats inset panel
-		var stats_panel := PanelContainer.new()
-		stats_panel.add_theme_stylebox_override("panel", ThemeManager.make_inset_style())
-		var stats_vbox := VBoxContainer.new()
-		stats_vbox.add_theme_constant_override("separation", 2)
-		stats_panel.add_child(stats_vbox)
-		result_vbox.add_child(stats_panel)
-
+		# Compact stat line — centered, single row
 		var dmg_dealt: int = int(stats.get("dmg_dealt", 0))
 		var dmg_taken: int = int(stats.get("dmg_taken", 0))
-		_add_result_stat(stats_vbox, "Dealt", str(dmg_dealt), ThemeManager.COLOR_TEXT_LIGHT)
-		_add_result_stat(stats_vbox, "Taken", str(dmg_taken), ThemeManager.COLOR_HP_RED)
-		_add_result_stat(stats_vbox, "Turns", str(stats.get("turns", 0)), ThemeManager.COLOR_TEXT_DIM)
+		var turns: int = int(stats.get("turns", 0))
+		var stat_lbl := Label.new()
+		stat_lbl.text = str(dmg_dealt) + " dealt  /  " + str(dmg_taken) + " taken  /  " + str(turns) + " turns"
+		stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		stat_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+		stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
+		if _compact_font:
+			stat_lbl.add_theme_font_override("font", _compact_font)
+		result_vbox.add_child(stat_lbl)
 
 	elif result == "defeat":
-		title.text = "DEFEATED"
+		title.text = "~ DEFEATED ~"
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		result_vbox.add_child(title)
 		_play_sfx_throttled(_sfx_defeat_pool[randi() % _sfx_defeat_pool.size()], 0.0)
 
-		var killed_lbl := Label.new()
-		killed_lbl.text = "Slain by " + monster_name
-		killed_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		killed_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		killed_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
-		killed_lbl.clip_text = true
-		if _compact_font:
-			killed_lbl.add_theme_font_override("font", _compact_font)
-		result_vbox.add_child(killed_lbl)
+		result_vbox.add_child(ThemeManager.make_separator(ThemeManager.COLOR_HP_RED.darkened(0.3)))
 
-		# Stats inset panel
-		var stats_panel := PanelContainer.new()
-		stats_panel.add_theme_stylebox_override("panel", ThemeManager.make_inset_style())
-		var stats_vbox := VBoxContainer.new()
-		stats_vbox.add_theme_constant_override("separation", 2)
-		stats_panel.add_child(stats_vbox)
-		result_vbox.add_child(stats_panel)
+		var sub_lbl := Label.new()
+		sub_lbl.text = "Slain by " + monster_name
+		sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sub_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		sub_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED.lightened(0.2))
+		if _compact_font:
+			sub_lbl.add_theme_font_override("font", _compact_font)
+		result_vbox.add_child(sub_lbl)
 
 		var dmg_dealt2: int = int(stats.get("dmg_dealt", 0))
 		var dmg_taken2: int = int(stats.get("dmg_taken", 0))
-		_add_result_stat(stats_vbox, "Dealt", str(dmg_dealt2), ThemeManager.COLOR_TEXT_LIGHT)
-		_add_result_stat(stats_vbox, "Taken", str(dmg_taken2), ThemeManager.COLOR_HP_RED)
-		_add_result_stat(stats_vbox, "Turns", str(stats.get("turns", 0)), ThemeManager.COLOR_TEXT_DIM)
+		var turns2: int = int(stats.get("turns", 0))
+		var stat_lbl := Label.new()
+		stat_lbl.text = str(dmg_dealt2) + " dealt  /  " + str(dmg_taken2) + " taken  /  " + str(turns2) + " turns"
+		stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		stat_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+		stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
+		if _compact_font:
+			stat_lbl.add_theme_font_override("font", _compact_font)
+		result_vbox.add_child(stat_lbl)
 	else:
-		title.text = "ESCAPED"
+		title.text = "~ ESCAPED ~"
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
 		result_vbox.add_child(title)
 
+	# Flavor quote (skip for flee — no win/loss quote makes sense)
+	if result != "flee":
+		var quote_pool: Array[String] = COMBAT_WIN_QUOTES if result == "victory" else COMBAT_LOSS_QUOTES
+		var quote_lbl := Label.new()
+		quote_lbl.text = quote_pool[randi() % quote_pool.size()]
+		quote_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		quote_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		quote_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		quote_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2))
+		result_vbox.add_child(quote_lbl)
+
+	# Bottom decorative line
+	result_vbox.add_child(ThemeManager.make_hrule(accent.darkened(0.3)))
+
+	# Spacer
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 3)
+	result_vbox.add_child(spacer)
+
 	var continue_btn := Button.new()
-	continue_btn.text = "Continue"
-	continue_btn.custom_minimum_size = Vector2(100, 22)
+	continue_btn.text = ">> Continue"
+	continue_btn.custom_minimum_size = Vector2(100, 20)
 	continue_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	if _compact_font:
 		continue_btn.add_theme_font_override("font", _compact_font)
-	ThemeManager.style_button(continue_btn, ThemeManager.COLOR_GOLD_BRIGHT)
+	ThemeManager.style_button(continue_btn, accent)
 	continue_btn.pressed.connect(_on_continue)
 	result_vbox.add_child(continue_btn)
-
-
-func _add_result_stat(container: VBoxContainer, label_text: String, value_text: String, value_color: Color) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	var lbl := Label.new()
-	lbl.text = label_text + ":"
-	lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-	lbl.custom_minimum_size = Vector2(40, 0)
-	if _compact_font:
-		lbl.add_theme_font_override("font", _compact_font)
-	row.add_child(lbl)
-	var val := Label.new()
-	val.text = value_text
-	val.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	val.add_theme_color_override("font_color", value_color)
-	if _compact_font:
-		val.add_theme_font_override("font", _compact_font)
-	row.add_child(val)
-	container.add_child(row)
 
 
 func _spawn_screen_flash(color: Color) -> void:

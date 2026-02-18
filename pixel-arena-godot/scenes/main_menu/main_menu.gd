@@ -87,16 +87,12 @@ func _style_title() -> void:
 		title_label.text = "Some of you\nmay die.."
 		title_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		title_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
-		if ThemeManager.decorative_font:
-			title_label.add_theme_font_override("font", ThemeManager.decorative_font)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 		var shadow = Label.new()
 		shadow.text = title_label.text
 		shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		shadow.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
-		if ThemeManager.decorative_font:
-			shadow.add_theme_font_override("font", ThemeManager.decorative_font)
 		shadow.add_theme_color_override("font_color", Color(0.6, 0.1, 0.1))
 		shadow.position = title_label.position + Vector2(1, 1)
 		shadow.size = title_label.size

@@ -2,6 +2,8 @@ extends Node2D
 ## Real-time battle scene — renders CombatEngine state to Godot visuals.
 ## Maps logical coordinates (1000x500) to viewport (640x360).
 
+const BattleVFXScript = preload("res://scripts/rendering/battle_vfx.gd")
+
 @onready var entity_container: Node2D = $ArenaLayer/EntityContainer
 @onready var projectile_container: Node2D = $ArenaLayer/ProjectileContainer
 @onready var float_container: Node2D = $ArenaLayer/FloatTextContainer
@@ -25,6 +27,7 @@ extends Node2D
 @onready var victory_vbox: VBoxContainer = %VictoryVBox
 
 var engine: CombatEngine
+var _vfx: Node  # BattleVFX instance
 var _compact_font: Font
 var _log_visible: bool = false
 var _status_particle_timer: float = 0.0
@@ -72,6 +75,24 @@ const STATUS_PARTICLES: Dictionary = {
 }
 
 
+# Flavor quotes from Dio's contemporaries
+const WIN_QUOTES: Array[String] = [
+	"\"The strong take what they will, and the weak suffer what they must.\" — Vex, War Oracle",
+	"\"Glory fades, but the scars? Those are forever.\" — Kael, Blade Mendicant",
+	"\"You survived. That puts you ahead of ninety percent of applicants.\" — Mira, Guild Registrar",
+	"\"Victory is just the intermission between catastrophes.\" — Orin, Doomsayer General",
+	"\"I've seen gods fall to lesser foes. Don't let it go to your head.\" — Sable, Twilight Sage",
+	"\"Another one bites the dust. Literally.\" — Ashara, Bone Whisperer",
+]
+const LOSS_QUOTES: Array[String] = [
+	"\"Every champion's story ends the same. Yours just ended sooner.\" — Nyx, Void Shepherd",
+	"\"Fall seven times, stand up eight. Or don't. I'm not your mother.\" — Mira, Guild Registrar",
+	"\"The abyss sends its regards. And a bill for cleaning fees.\" — Ashara, Bone Whisperer",
+	"\"Some are born great. Some achieve greatness. You died.\" — Vex, War Oracle",
+	"\"I've written your epitaph. It's short.\" — Theron, Lorekeeper",
+	"\"Defeat builds character. You must have great character by now.\" — Orin, Doomsayer General",
+]
+
 # Combat mode context
 var _mode: String = "ladder"  # "ladder", "arena", "dungeon"
 var _combat_result_callback: Callable
@@ -95,6 +116,9 @@ func _ready() -> void:
 	if tm:
 		_compact_font = tm.pixel_font
 
+	_vfx = BattleVFXScript.new()
+	add_child(_vfx)
+
 	engine = CombatEngine.new()
 	add_child(engine)
 
@@ -114,6 +138,8 @@ func _ready() -> void:
 	engine.log_added.connect(_on_log)
 	engine.damage_dealt.connect(_on_damage_dealt)
 	engine.spell_cast.connect(_on_spell_cast)
+	engine.melee_attack.connect(_on_melee_attack)
+	engine.ranged_attack.connect(_on_ranged_attack)
 
 	# Determine mode and setup combatants
 	if _gs.has_active_run() and not _gs.dg_run.get("combat_enemy", {}).is_empty():
@@ -131,29 +157,25 @@ func _ready() -> void:
 
 
 func _setup_background() -> void:
+	# Remove any legacy Background ColorRect (Control nodes render on top of Node2D siblings)
+	var old_bg := get_node_or_null("Background")
+	if old_bg:
+		remove_child(old_bg)
+		old_bg.queue_free()
 	var bg_path: String = BATTLE_BGS[randi() % BATTLE_BGS.size()]
 	var tex: Texture2D = load(bg_path) as Texture2D
 	if tex:
-		var old_bg = $Background
-		if old_bg:
-			old_bg.queue_free()
 		var bg_sprite := Sprite2D.new()
 		bg_sprite.name = "BattleBg"
 		bg_sprite.texture = tex
 		bg_sprite.centered = false
-		# Scale texture to fill viewport (640x360)
 		var tex_size: Vector2 = tex.get_size()
 		if tex_size.x > 0 and tex_size.y > 0:
 			bg_sprite.scale = Vector2(640.0 / tex_size.x, 360.0 / tex_size.y)
-		bg_sprite.modulate = Color(0.15, 0.15, 0.30, 1.0)
+		bg_sprite.modulate = Color(0.35, 0.30, 0.40, 1.0)
 		bg_sprite.z_index = -10
 		add_child(bg_sprite)
 		move_child(bg_sprite, 0)
-	else:
-		# Fallback: keep the ColorRect from .tscn with dark color
-		var bg = $Background
-		if bg and bg is ColorRect:
-			bg.color = Color(ThemeManager.COLOR_BG_DARK.r, ThemeManager.COLOR_BG_DARK.g, ThemeManager.COLOR_BG_DARK.b, 1.0)
 
 
 # ============ COMBAT SETUP ============
@@ -289,6 +311,10 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 		hp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar.add_child(hp_lbl)
 
+	# Style HP bars — bevel + gold border + frame overlay
+	_style_hp_bar(hero1_hp_bar, ThemeManager.COLOR_HP_GREEN)
+	_style_hp_bar(hero2_hp_bar, ThemeManager.COLOR_HP_RED)
+
 	# Resource bar number overlays (using compact font)
 	for bar in [hero1_resource, hero2_resource]:
 		var res_lbl := Label.new()
@@ -321,15 +347,23 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 
 
 func _style_battle_hud() -> void:
-	# Subtle dark strip behind top bar area (HP bars + names + stat row)
+	# Dark strip behind top bar area (HP bars + names + stat row)
 	var top_bg := ColorRect.new()
-	top_bg.color = Color(0.08, 0.08, 0.15, 0.6)
+	top_bg.color = Color(0.06, 0.06, 0.10, 0.75)
 	top_bg.position = Vector2(0, 0)
 	top_bg.size = Vector2(640, 54)
 	top_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$HUD.add_child(top_bg)
 	$HUD.move_child(top_bg, 0)
 
+	# Dark strip behind bottom controls
+	var bot_bg := ColorRect.new()
+	bot_bg.color = Color(0.06, 0.06, 0.10, 0.75)
+	bot_bg.position = Vector2(0, 336)
+	bot_bg.size = Vector2(640, 24)
+	bot_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$HUD.add_child(bot_bg)
+	$HUD.move_child(bot_bg, 1)
 
 	# Style combat log (overlay panel)
 	var log_style := ThemeManager.make_inset_style(0.95)
@@ -339,13 +373,18 @@ func _style_battle_hud() -> void:
 		combat_log.add_theme_font_override("normal_font", _compact_font)
 	combat_log.add_theme_font_size_override("normal_font_size", ThemeManager.FONT_SIZES["body"])
 
-	# Make speed buttons mobile-friendly + ensure font
-	for btn in [speed1_btn, speed2_btn, speed3_btn, log_btn, back_btn]:
+	# Style all HUD buttons with ThemeManager
+	for btn in [speed1_btn, speed2_btn, speed3_btn, log_btn]:
 		btn.custom_minimum_size = Vector2(32, 20)
+		ThemeManager.style_button(btn)
 		if _compact_font:
 			btn.add_theme_font_override("font", _compact_font)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	back_btn.custom_minimum_size = Vector2(40, 20)
+	ThemeManager.style_button(back_btn, ThemeManager.COLOR_HP_RED.darkened(0.2))
+	if _compact_font:
+		back_btn.add_theme_font_override("font", _compact_font)
+	back_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 
 
 # ============ ENTITY CREATION ============
@@ -460,13 +499,11 @@ func _update_entity(node: Node2D, h: Dictionary, _delta: float) -> void:
 		hp_fill.size.x = 32.0 * hp_pct
 
 	# Shield indicator
-	if h.get("shield_active", false):
-		var hp_bg: ColorRect = node.get_node_or_null("HpBg")
-		if hp_bg:
+	var hp_bg: ColorRect = node.get_node_or_null("HpBg")
+	if hp_bg:
+		if h.get("shield_active", false):
 			hp_bg.color = Color(ThemeManager.COLOR_MANA_BLUE.r, ThemeManager.COLOR_MANA_BLUE.g, ThemeManager.COLOR_MANA_BLUE.b, 0.8)
-	else:
-		var hp_bg: ColorRect = node.get_node_or_null("HpBg")
-		if hp_bg:
+		else:
 			hp_bg.color = Color(0.10, 0.10, 0.18, 0.8)
 
 
@@ -564,18 +601,20 @@ func _update_projectiles(_delta: float) -> void:
 	# Render engine projectiles
 	for proj in engine.projectiles:
 		if not proj.has("_node"):
-			var pn := ColorRect.new()
-			pn.size = Vector2(4, 3)
-			pn.position = Vector2(-2, -1.5)
-			pn.color = Color.from_string(str(proj.get("color", "#fff")), Color.WHITE)
-			var wrapper := Node2D.new()
-			wrapper.add_child(pn)
+			var w_type: String = str(proj.get("type", "bow"))
+			var col: String = str(proj.get("color", "#fff"))
+			var wrapper: Node2D = _vfx.create_projectile_node(w_type, col)
 			projectile_container.add_child(wrapper)
 			proj["_node"] = wrapper
 			_projectile_nodes.append(wrapper)
 		var pnode: Node2D = proj.get("_node")
 		if pnode and is_instance_valid(pnode):
-			pnode.position = _logical_to_screen(float(proj.get("x", 0)), float(proj.get("y", 0)))
+			var new_pos := _logical_to_screen(float(proj.get("x", 0)), float(proj.get("y", 0)))
+			# Rotate projectile toward movement direction
+			var old_pos := pnode.position
+			if old_pos.distance_to(new_pos) > 0.5:
+				pnode.rotation = (new_pos - old_pos).angle()
+			pnode.position = new_pos
 
 
 func _y_sort_entities() -> void:
@@ -633,6 +672,37 @@ func _format_stats(h: Dictionary) -> String:
 	var spd := snappedf(float(h.get("base_as", h.get("as", 1.0))), 0.01)
 	var eva := roundi(float(h.get("evasion", 0.0)) * 100.0)
 	return "DMG:" + str(dmg) + " DEF:" + str(def) + " AS:" + str(spd) + " EVA:" + str(eva) + "%"
+
+
+func _style_hp_bar(bar: ProgressBar, fill_color: Color) -> void:
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = fill_color
+	fill.border_color = fill_color.lightened(0.3)
+	fill.border_width_top = 1
+	fill.border_width_bottom = 0
+	fill.border_width_left = 0
+	fill.border_width_right = 0
+	fill.set_corner_radius_all(0)
+	fill.set_content_margin_all(0)
+	bar.add_theme_stylebox_override("fill", fill)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.05, 0.10)
+	bg.border_color = ThemeManager.COLOR_BORDER_GOLD
+	bg.set_border_width_all(1)
+	bg.set_corner_radius_all(0)
+	bg.set_content_margin_all(0)
+	bar.add_theme_stylebox_override("background", bg)
+	# Frame overlay
+	var frame_tex = load("res://assets/sprites/generated/vfx/vfx_hp_frame.png")
+	if frame_tex:
+		var frame := TextureRect.new()
+		frame.name = "FrameOverlay"
+		frame.texture = frame_tex
+		frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		frame.stretch_mode = TextureRect.STRETCH_SCALE
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(frame)
 
 
 func _style_resource_bar(bar: ProgressBar, h: Dictionary) -> void:
@@ -739,19 +809,95 @@ func _update_buffs(h: Dictionary, container: HBoxContainer) -> void:
 # ============ SIGNALS ============
 
 func _on_float_spawned(x: float, y: float, text: String, color: String) -> void:
+	# Infer category from text/color for styling
+	var category := "normal"
+	if text.begins_with("+"):
+		category = "heal"
+	elif text == "MISS" or text == "RESIST":
+		category = "miss"
+	elif text.begins_with("CRIT"):
+		category = "crit"
+	elif text.begins_with("Shield") or text.begins_with("RIPOSTE") or text.begins_with("THORNS") \
+		or text == "BERSERKER" or text.contains("DEATH MARK"):
+		category = "info"
+	elif text.begins_with("ZAP"):
+		category = "dot"
+	elif text.begins_with("BOOM") or text.begins_with("DEATH "):
+		category = "big"
+	elif text.begins_with("-"):
+		# Check magnitude for big hits
+		var num_str := text.replace("-", "").replace(",", "")
+		if num_str.is_valid_int() and num_str.to_int() > 200:
+			category = "big"
+
 	var label := Label.new()
 	label.text = text
-	if _compact_font:
-		label.add_theme_font_override("font", _compact_font)
-	label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
-	label.add_theme_color_override("font_color", Color.from_string(color, Color.WHITE))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Category-based font size
+	var font_size: int
+	match category:
+		"crit": font_size = 20
+		"big": font_size = 18
+		"dot", "miss": font_size = 14
+		"info": font_size = 14
+		_: font_size = 16
+
+	# Category-based color override
+	var font_color := Color.from_string(color, Color.WHITE)
+	match category:
+		"crit": font_color = Color.from_string("#ffda66", Color.GOLD)
+		"heal": font_color = Color.from_string("#4a8a4a", Color.GREEN)
+		"miss": font_color = Color.from_string("#888888", Color.GRAY)
+
+	# LabelSettings for crisp outlines
+	var ls := LabelSettings.new()
+	if _compact_font:
+		ls.font = _compact_font
+	ls.font_size = font_size
+	ls.font_color = font_color
+	ls.outline_size = 1
+	ls.outline_color = Color(0, 0, 0, 0.9)
+	ls.shadow_size = 1
+	ls.shadow_color = Color(0, 0, 0, 0.5)
+	ls.shadow_offset = Vector2(1, 1)
+	label.label_settings = ls
+
 	label.position = _logical_to_screen(x, y)
 	float_container.add_child(label)
-	# Animate drift up + fade
+
+	# Category-based animation
+	var drift: float
+	var duration: float
+	match category:
+		"crit":
+			drift = -25.0
+			duration = 1.0
+		"big":
+			drift = -20.0
+			duration = 0.9
+		"dot":
+			drift = -10.0
+			duration = 0.6
+		"miss":
+			drift = -12.0
+			duration = 0.5
+		_:
+			drift = -15.0
+			duration = 0.8
+
 	var tween := create_tween()
-	tween.tween_property(label, "position:y", label.position.y - 15, 0.8)
-	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8)
+	if category == "crit" or category == "big":
+		# Pop scale animation: start small, pop up, settle, then drift + fade
+		label.scale = Vector2(0.3, 0.3)
+		label.pivot_offset = Vector2(label.size.x / 2, label.size.y / 2)
+		tween.tween_property(label, "scale", Vector2(1.3, 1.3), 0.1)
+		tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.1)
+		tween.tween_property(label, "position:y", label.position.y + drift, duration - 0.5)
+		tween.tween_property(label, "modulate:a", 0.0, 0.3)
+	else:
+		tween.tween_property(label, "position:y", label.position.y + drift, duration)
+		tween.parallel().tween_property(label, "modulate:a", 0.0, duration)
 	tween.tween_callback(label.queue_free)
 
 
@@ -790,16 +936,18 @@ const SPELL_TEXTURES: Dictionary = {
 }
 
 
-func _on_damage_dealt(_attacker: Dictionary, target: Dictionary, amount: float) -> void:
+func _on_damage_dealt(attacker: Dictionary, target: Dictionary, amount: float, info: Dictionary = {}) -> void:
 	if amount < 1.0:
 		return
 	var tx: float = float(target.get("x", 0))
 	var ty: float = float(target.get("y", CombatConstants.GY)) - 20
 	var screen_pos := _logical_to_screen(tx, ty)
-	_spawn_hit_sparks(screen_pos, amount)
+	var weapon_type: String = info.get("weapon_type", str(attacker.get("weapon_visual_type", "sword")))
+	var is_crit: bool = info.get("is_crit", false)
+	_vfx.spawn_hit_impact(weapon_type, screen_pos, amount, is_crit, float_container)
 	_play_sfx_throttled(_sfx_hit)
-	# Screen shake on big hits
-	if amount > 200:
+	# Screen shake on big hits or crits
+	if is_crit or amount > 200:
 		_screen_shake(minf(amount / 150.0, 4.0), 0.15)
 
 
@@ -811,19 +959,31 @@ func _on_spell_cast(caster: Dictionary, spell_name: String) -> void:
 	_play_sfx_throttled(_sfx_skill, 0.3)
 
 
-func _spawn_hit_sparks(pos: Vector2, amount: float) -> void:
-	var count := clampi(roundi(amount / 100.0), 2, 6)
-	for i in range(count):
-		var spark := ColorRect.new()
-		spark.size = Vector2(2, 2)
-		spark.position = pos + Vector2(randf_range(-6, 6), randf_range(-4, 4))
-		spark.color = Color(1.0, 0.8 + randf() * 0.2, 0.3, 1.0)
-		float_container.add_child(spark)
-		var tween := create_tween()
-		var dir := Vector2(randf_range(-12, 12), randf_range(-16, -4))
-		tween.tween_property(spark, "position", spark.position + dir, 0.3 + randf() * 0.15)
-		tween.parallel().tween_property(spark, "modulate:a", 0.0, 0.3 + randf() * 0.15)
-		tween.tween_callback(spark.queue_free)
+func _on_melee_attack(attacker: Dictionary, target: Dictionary, weapon_type: String) -> void:
+	# Play melee lunge animation on attacker sprite
+	var atk_node: Node2D = _h1_node if attacker.get("side", "") == "left" else _h2_node
+	if atk_node:
+		var ls: LayeredSprite = atk_node.get_node_or_null("LayeredSprite")
+		if ls:
+			var tx: float = float(target.get("x", 0))
+			var toward_screen_x := tx * SCALE_X
+			ls.play_attack(toward_screen_x, 0.2)
+	# Spawn melee slash VFX at target position
+	var tgt_x := float(target.get("x", 0))
+	var tgt_y := float(target.get("y", CombatConstants.GY)) - 20
+	var screen_pos := _logical_to_screen(tgt_x, tgt_y)
+	var dir := 1.0 if float(attacker.get("x", 0)) < tgt_x else -1.0
+	_vfx.spawn_melee_vfx(weapon_type, screen_pos, dir, float_container)
+
+
+func _on_ranged_attack(attacker: Dictionary, _weapon_type: String) -> void:
+	# Play cast/lean-back animation on attacker sprite
+	var atk_node: Node2D = _h1_node if attacker.get("side", "") == "left" else _h2_node
+	if atk_node:
+		var ls: LayeredSprite = atk_node.get_node_or_null("LayeredSprite")
+		if ls:
+			ls.play_cast(0.15)
+
 
 
 func _spawn_spell_flash(pos: Vector2, spell_name: String) -> void:
@@ -859,6 +1019,7 @@ func _on_combat_ended(winner: Dictionary) -> void:
 		var ls: LayeredSprite = loser_node.get_node_or_null("LayeredSprite")
 		if ls:
 			ls.play_death(0.5)
+		_vfx.spawn_death_effect(loser_node.position, float_container)
 		_screen_shake(3.0, 0.3)
 	_show_victory_overlay(player_won)
 	if _mode == "dungeon":
@@ -870,33 +1031,37 @@ func _on_combat_ended(winner: Dictionary) -> void:
 
 
 func _show_victory_overlay(player_won: bool) -> void:
-	# Outer panel — bright gold border, navy bg, generous padding
-	var panel_style := ThemeManager.make_panel_style()
-	panel_style.border_color = ThemeManager.COLOR_GOLD_BRIGHT
-	panel_style.set_border_width_all(2)
-	panel_style.set_content_margin_all(12)
+	# Ornate double-border panel
+	var accent := ThemeManager.COLOR_GOLD_BRIGHT if player_won else ThemeManager.COLOR_HP_RED
+	var panel_style := ThemeManager.make_ornate_panel_style(accent)
 	victory_overlay.add_theme_stylebox_override("panel", panel_style)
 
 	for child in victory_vbox.get_children():
 		child.queue_free()
 
-	# Title — large, prominent
+	# Top decorative line
+	victory_vbox.add_child(ThemeManager.make_hrule(accent.darkened(0.3)))
+
+	# Title
 	var result_label := Label.new()
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
+	result_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 	if _compact_font:
 		result_label.add_theme_font_override("font", _compact_font)
 
 	if player_won:
-		result_label.text = "VICTORY!"
+		result_label.text = "~ VICTORY ~"
 		result_label.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		victory_vbox.add_child(result_label)
 		_play_sfx_throttled(_sfx_victory, 0.0)
 	else:
-		result_label.text = "DEFEAT"
+		result_label.text = "~ DEFEAT ~"
 		result_label.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		victory_vbox.add_child(result_label)
 		_play_sfx_throttled(_sfx_defeat, 0.0)
+
+	# Separator
+	victory_vbox.add_child(ThemeManager.make_separator(accent.darkened(0.2)))
 
 	# Opponent name subtitle
 	var opp_name := str(engine.h2.get("name", "Opponent"))
@@ -904,32 +1069,27 @@ func _show_victory_overlay(player_won: bool) -> void:
 	opp_lbl.text = "vs " + opp_name
 	opp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	opp_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	opp_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-	opp_lbl.clip_text = true
+	opp_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
 	if _compact_font:
 		opp_lbl.add_theme_font_override("font", _compact_font)
 	victory_vbox.add_child(opp_lbl)
 
-	# Stats inset panel
-	var stats_panel := PanelContainer.new()
-	stats_panel.add_theme_stylebox_override("panel", ThemeManager.make_inset_style())
-	var stats_vbox := VBoxContainer.new()
-	stats_vbox.add_theme_constant_override("separation", 2)
-	stats_panel.add_child(stats_vbox)
-	victory_vbox.add_child(stats_panel)
-
+	# Compact stat line — centered
 	var h1_dmg := roundi(float(engine.h1.get("tot_dmg", 0)))
 	var h2_dmg := roundi(float(engine.h2.get("tot_dmg", 0)))
 	var h1_hp := maxi(0, roundi(float(engine.h1.get("hp", 0))))
 	var h1_max := maxi(1, roundi(float(engine.h1.get("max_hp", 1))))
 	var time_sec := snappedf(float(engine.bt) / 1000.0, 0.1)
 	var hp_pct := roundi(float(h1_hp) / float(h1_max) * 100.0)
-	var hp_col := ThemeManager.COLOR_HP_GREEN if hp_pct > 30 else ThemeManager.COLOR_HP_RED
 
-	_add_victory_stat(stats_vbox, "Dealt", str(h1_dmg), ThemeManager.COLOR_TEXT_LIGHT)
-	_add_victory_stat(stats_vbox, "Taken", str(h2_dmg), ThemeManager.COLOR_HP_RED)
-	_add_victory_stat(stats_vbox, "HP left", str(h1_hp) + " (" + str(hp_pct) + "%)", hp_col)
-	_add_victory_stat(stats_vbox, "Time", str(time_sec) + "s", ThemeManager.COLOR_TEXT_DIM)
+	var stat_lbl := Label.new()
+	stat_lbl.text = str(h1_dmg) + " dealt  /  " + str(h2_dmg) + " taken  /  " + str(hp_pct) + "% HP  /  " + str(time_sec) + "s"
+	stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stat_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+	stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
+	if _compact_font:
+		stat_lbl.add_theme_font_override("font", _compact_font)
+	victory_vbox.add_child(stat_lbl)
 
 	# Mode-specific info
 	if _mode == "ladder":
@@ -957,28 +1117,25 @@ func _show_victory_overlay(player_won: bool) -> void:
 			mode_lbl.add_theme_font_override("font", _compact_font)
 		victory_vbox.add_child(mode_lbl)
 
+	# Flavor quote
+	var quote_pool: Array[String] = WIN_QUOTES if player_won else LOSS_QUOTES
+	var quote_lbl := Label.new()
+	quote_lbl.text = quote_pool[randi() % quote_pool.size()]
+	quote_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	quote_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quote_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	quote_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2))
+	victory_vbox.add_child(quote_lbl)
+
+	# Bottom decorative line
+	victory_vbox.add_child(ThemeManager.make_hrule(accent.darkened(0.3)))
+
+	# Spacer
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 3)
+	victory_vbox.add_child(spacer)
+
 	victory_overlay.visible = true
-
-
-func _add_victory_stat(container: VBoxContainer, label_text: String, value_text: String, value_color: Color) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	var lbl := Label.new()
-	lbl.text = label_text + ":"
-	lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-	lbl.custom_minimum_size = Vector2(44, 0)
-	if _compact_font:
-		lbl.add_theme_font_override("font", _compact_font)
-	row.add_child(lbl)
-	var val := Label.new()
-	val.text = value_text
-	val.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	val.add_theme_color_override("font_color", value_color)
-	if _compact_font:
-		val.add_theme_font_override("font", _compact_font)
-	row.add_child(val)
-	container.add_child(row)
 
 
 func _spawn_screen_flash(color: Color) -> void:

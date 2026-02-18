@@ -244,10 +244,10 @@ scroll_following = true
 [node name="ResultOverlay" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 160.0
+offset_left = 170.0
 offset_top = 60.0
-offset_right = 480.0
-offset_bottom = 280.0
+offset_right = 470.0
+offset_bottom = 220.0
 
 [node name="ResultVBox" type="VBoxContainer" parent="HUD/ResultOverlay"]
 unique_name_in_owner = true

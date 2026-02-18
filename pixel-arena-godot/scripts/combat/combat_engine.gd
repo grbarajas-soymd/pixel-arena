@@ -5,7 +5,9 @@ class_name CombatEngine
 
 signal combat_started
 signal combat_ended(winner: Dictionary)
-signal damage_dealt(attacker: Dictionary, target: Dictionary, amount: float)
+signal damage_dealt(attacker: Dictionary, target: Dictionary, amount: float, info: Dictionary)
+signal melee_attack(attacker: Dictionary, target: Dictionary, weapon_type: String)
+signal ranged_attack(attacker: Dictionary, weapon_type: String)
 signal spell_cast(caster: Dictionary, spell_name: String)
 signal projectile_spawned(proj: Dictionary)
 signal float_spawned(x: float, y: float, text: String, color: String)
@@ -405,43 +407,54 @@ func _do_attack(h: Dictionary, t: int) -> bool:
 	var ty: float = float(tg["tgt"].get("y", CombatConstants.GY)) - (35.0 if tg["type"] == "hero" else 15.0)
 
 	var hero_type: String = h.get("type", "")
+	var w_type: String = h.get("weapon_visual_type", "sword")
 	var is_melee: bool = false
 	if hero_type == "assassin":
 		is_melee = d <= float(h.get("melee_range", CombatConstants.MELEE))
 	elif hero_type == "barbarian":
 		is_melee = true
 	elif hero_type == "custom":
-		is_melee = float(h.get("preferred_range", 300)) < 100
+		# Hybrid weapons (daggers): melee when close, throw when far
+		if h.has("melee_range") and h.has("throw_range"):
+			is_melee = d <= float(h.get("melee_range", 70))
+		else:
+			is_melee = float(h.get("preferred_range", 300)) < 100
 	# wizard and ranger are ranged by default
 
 	if is_melee:
-		# Melee: resolve hit after brief delay (80ms conceptual, immediate in tick)
+		# Melee: resolve hit immediately, emit melee attack signal for VFX
+		melee_attack.emit(h, tg["tgt"], w_type)
 		_resolve_hit(h, tg, t, d, false)
 	else:
-		# Ranged: spawn projectile
-		var p_type: String = "arrow"
+		# Ranged: spawn projectile with weapon-appropriate type
 		var p_speed: float = 520.0
-		var p_col: String = "#c87a4a"
-		if hero_type == "wizard":
-			p_type = "bolt"
-			p_speed = 650.0
+		var p_col: String = str(h.get("color", "#c87a4a"))
+		match w_type:
+			"staff":
+				p_speed = 650.0
+				p_col = str(h.get("weapon_glow", "#6aaa8a"))
+				if p_col.is_empty():
+					p_col = "#6aaa8a"
+			"daggers":
+				p_speed = 550.0
+			"bow":
+				p_speed = 520.0
+		# Fallback for class-based NPCs without weapon_visual_type
+		if hero_type == "wizard" and w_type == "staff":
 			p_col = "#6aaa8a"
-		elif hero_type == "assassin":
-			p_type = "dagger"
-			p_speed = 550.0
+		elif hero_type == "assassin" and w_type == "daggers":
 			p_col = "#6a9aba"
-		elif hero_type == "custom":
-			p_col = "#d8b858"
 
 		var proj := {
 			"x": float(h.get("x", 0)),
 			"y": float(h.get("y", CombatConstants.GY)) - 30.0,
 			"tx": tx, "ty": ty,
-			"speed": p_speed, "color": p_col, "type": p_type, "time": 0.0,
+			"speed": p_speed, "color": p_col, "type": w_type, "time": 0.0,
 			"attacker": h, "target_info": tg, "hit_time": t, "hit_dist": d,
 		}
 		projectiles.append(proj)
 		projectile_spawned.emit(proj)
+		ranged_attack.emit(h, w_type)
 
 	# Break stealth on attack (unless shadow dance)
 	if h.get("stealthed", false) and not (h.get("shadow_dance_active", false) and bt < int(h.get("shadow_dance_end", 0))):
@@ -502,7 +515,8 @@ func _resolve_hit(atk: Dictionary, tg: Dictionary, t: int, d: float, is_ranged: 
 		return
 	atk["mark_next"] = false
 
-	var dm: float = CombatMath.calc_dmg(atk, e, is_ranged, d, bt)
+	var dmg_info := {"is_melee": not is_ranged, "is_crit": false, "weapon_type": str(atk.get("weapon_visual_type", "sword"))}
+	var dm: float = CombatMath.calc_dmg(atk, e, is_ranged, d, bt, dmg_info)
 
 	# Shield absorption
 	if e.get("shield_active", false):
@@ -557,9 +571,14 @@ func _resolve_hit(atk: Dictionary, tg: Dictionary, t: int, d: float, is_ranged: 
 			atk["hurt_anim"] = 1.0
 
 	var col: String = "#ffffff" if atk.get("stealthed", false) else str(atk.get("color", "#fff"))
-	_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 60.0, "-" + str(roundi(dm)), col)
-	_add_log(t, str(atk.get("name", "")) + " > " + str(e.get("name", "")) + " " + str(roundi(dm)), "dmg")
-	damage_dealt.emit(atk, e, dm)
+	var is_crit: bool = dmg_info.get("is_crit", false)
+	var dmg_text := "-" + str(roundi(dm))
+	if is_crit:
+		dmg_text = "CRIT " + dmg_text
+		col = "#ffda66"
+	_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 60.0, dmg_text, col)
+	_add_log(t, str(atk.get("name", "")) + " > " + str(e.get("name", "")) + " " + str(roundi(dm)) + (" CRIT!" if is_crit else ""), "dmg")
+	damage_dealt.emit(atk, e, dm, dmg_info)
 
 	# Class-specific on-hit effects
 	var atk_type: String = atk.get("type", "")
@@ -730,7 +749,7 @@ func _move_y(h: Dictionary, e: Dictionary, ms: float, _d: float) -> void:
 	var hy: float = float(h.get("y", CombatConstants.GY))
 	var yms: float = ms * CombatConstants.STRAFE_SPEED
 	var hero_type: String = h.get("type", "")
-	var is_melee: bool = hero_type == "barbarian" or (hero_type == "assassin" and not h.get("stealthed", false)) or (hero_type == "custom" and float(h.get("preferred_range", 300)) < 100)
+	var is_melee: bool = hero_type == "barbarian" or (hero_type == "assassin" and not h.get("stealthed", false)) or (hero_type == "custom" and int(h.get("preferred_range", 300)) <= 80)
 	if is_melee:
 		var dy: float = ey - hy
 		if absf(dy) > 8.0:
