@@ -148,7 +148,7 @@ func _on_start() -> void:
 
 	var persistence = get_node("/root/Persistence")
 	persistence.create_character_slot(0, _selected_class, char_name)
-	TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
+	TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn")
 
 
 func _on_back() -> void:

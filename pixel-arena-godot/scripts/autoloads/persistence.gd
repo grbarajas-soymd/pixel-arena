@@ -112,6 +112,8 @@ func create_character_slot(slot_index: int, class_key: String, char_name: String
 		"ladder_wins": 0,
 		"arena_rating": 1000,
 		"potions": 3,
+		"tutorial_completed": false,
+		"arena_tutorial_completed": false,
 	}
 
 	# Ensure slots array is big enough
@@ -140,6 +142,8 @@ func _load_slot_into_state(index: int) -> void:
 	_gs.ladder_wins = slot.get("ladder_wins", 0)
 	_gs.arena_rating = slot.get("arena_rating", 1000)
 	_gs.potions = slot.get("potions", 3)
+	_gs.tutorial_completed = slot.get("tutorial_completed", false)
+	_gs.arena_tutorial_completed = slot.get("arena_tutorial_completed", false)
 
 
 func _serialize_slots() -> Array:
@@ -158,6 +162,8 @@ func _serialize_slots() -> Array:
 			slot["ladder_wins"] = _gs.ladder_wins
 			slot["arena_rating"] = _gs.arena_rating
 			slot["potions"] = _gs.potions
+			slot["tutorial_completed"] = _gs.tutorial_completed
+			slot["arena_tutorial_completed"] = _gs.arena_tutorial_completed
 		result.append(slot)
 	return result
 

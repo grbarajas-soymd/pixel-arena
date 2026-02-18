@@ -1539,4 +1539,8 @@ func _on_continue() -> void:
 	r["combat_enemy"] = {}
 	_gs.dg_run = r
 
-	TransitionManager.fade_to_scene("res://scenes/dungeon/dungeon.tscn")
+	if _gs._tutorial_return:
+		_gs._tutorial_return = false
+		TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn")
+	else:
+		TransitionManager.fade_to_scene("res://scenes/dungeon/dungeon.tscn")

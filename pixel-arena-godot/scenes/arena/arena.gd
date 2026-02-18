@@ -2,6 +2,8 @@ extends Control
 ## Online Arena — port of src/modes/arena.js
 ## Register, upload builds, browse opponents, assign followers, fight PvP.
 
+const TutorialDialogScene := preload("res://scenes/tutorial/tutorial_dialog.gd")
+
 @onready var status_label: Label = %StatusLabel
 @onready var reg_name_input: LineEdit = %RegNameInput
 @onready var register_btn: Button = %RegisterBtn
@@ -14,6 +16,7 @@ extends Control
 var _gs: Node
 var _net: Node
 var _hero_factory: HeroFactory
+var _tutorial_dialog  # TutorialDialog instance
 
 var _online_opponents: Array = []
 var _selected_opponent_id: String = ""
@@ -60,6 +63,10 @@ func _ready() -> void:
 	# Auto-refresh opponents if registered
 	if not _net.player_id.is_empty():
 		_net.fetch_opponents()
+
+	# Show arena tutorial on first visit
+	if not _gs.arena_tutorial_completed:
+		_show_arena_tutorial()
 
 
 func _load_data() -> void:
@@ -379,3 +386,30 @@ func _show_login_required() -> void:
 
 func _on_network_error(message: String) -> void:
 	status_label.text = "Offline — play Dungeon or Ladder!"
+
+
+# ============ ARENA TUTORIAL ============
+
+func _show_arena_tutorial() -> void:
+	_tutorial_dialog = TutorialDialogScene.new()
+	add_child(_tutorial_dialog)
+	_tutorial_dialog.show_dialog(
+		"Welcome to the [color=#bb88ff]Online Arena[/color]! " +
+		"Here you fight other players' builds in real-time combat. " +
+		"[color=#ffda66]Upload[/color] your build, pick an opponent, then choose a " +
+		"[color=#ff8844]Champion[/color] follower to wager. " +
+		"Win and you keep your champion — lose and they're gone! " +
+		"Your rating goes up with victories.",
+		["Got it!"],
+		"Commander Aldric"
+	)
+	_tutorial_dialog.option_selected.connect(_on_arena_tutorial_closed)
+
+
+func _on_arena_tutorial_closed(_idx: int) -> void:
+	if _tutorial_dialog:
+		_tutorial_dialog.queue_free()
+		_tutorial_dialog = null
+	_gs.arena_tutorial_completed = true
+	var persistence: Node = get_node("/root/Persistence")
+	persistence.save_game()

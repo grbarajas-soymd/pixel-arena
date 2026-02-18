@@ -1099,7 +1099,11 @@ func _handle_ladder_result(player_won: bool) -> void:
 	_gs.ladder_run["last_player_max_hp"] = roundi(float(engine.h1.get("max_hp", 1)))
 	_gs.ladder_run["last_opp_hp"] = maxi(0, roundi(float(engine.h2.get("hp", 0))))
 	var timer := get_tree().create_timer(1.0)
-	timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/ladder/ladder.tscn"))
+	if _gs._tutorial_return:
+		_gs._tutorial_return = false
+		timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn"))
+	else:
+		timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/ladder/ladder.tscn"))
 
 
 func _handle_arena_result(player_won: bool) -> void:

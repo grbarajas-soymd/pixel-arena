@@ -27,6 +27,10 @@ var ladder_wins: int = 0
 var arena_rating: int = 1000
 var potions: int = 3
 var max_potions: int = 3
+var tutorial_completed: bool = false
+var arena_tutorial_completed: bool = false
+var _tutorial_return: bool = false  # Transient — battle/dungeon scenes return to tutorial when true
+var _tutorial_step: int = 0         # Transient — current tutorial step (survives scene transitions)
 
 # Dungeon run state — persistent across scene changes
 var dungeon_floor: int = 0
