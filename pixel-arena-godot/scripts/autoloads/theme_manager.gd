@@ -1,5 +1,5 @@
 extends Node
-## Global theme — dark fantasy navy/gold aesthetic with Pixel Operator pixel font.
+## Global theme — dark fantasy navy/gold aesthetic with Somdie Mono pixel font.
 
 # === Navy/Gold Dark Fantasy Palette ===
 const COLOR_BG_DARK := Color(0.102, 0.102, 0.180)       # #1a1a2e - main background
@@ -19,14 +19,14 @@ const COLOR_ERROR_RED := Color(0.8, 0.3, 0.3)
 const COLOR_SUCCESS_GREEN := Color(0.3, 0.85, 0.3)
 const COLOR_OVERLAY_DIM := Color(0.0, 0.0, 0.0, 0.6)
 
-## Font size hierarchy for 640x360 viewport with Pixel Operator 8 (proportional pixel font).
+## Font size hierarchy for 960x540 viewport with Somdie Mono.
 const FONT_SIZES: Dictionary = {
-	"main_title": 16,
-	"title": 12,
-	"icon": 10,
-	"heading": 9,
-	"body": 8,
-	"small": 7,
+	"main_title": 24,
+	"title": 18,
+	"icon": 15,
+	"heading": 14,
+	"body": 12,
+	"small": 11,
 }
 
 ## Rarity colors — matches items.json _rarity_colors.
@@ -64,8 +64,8 @@ var pixel_font: Font = null
 func _ready() -> void:
 	var theme = Theme.new()
 
-	# -- Load Pixel Operator 8 (proportional pixel font, default for all UI) --
-	pixel_font = load("res://assets/fonts/PixelOperator8.ttf")
+	# -- Load Somdie Mono (custom 5x7 monospace pixel font, default for all UI) --
+	pixel_font = load("res://assets/fonts/somdie_mono.ttf")
 	if pixel_font:
 		theme.default_font = pixel_font
 	theme.default_font_size = FONT_SIZES["body"]

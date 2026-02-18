@@ -6,10 +6,10 @@ extends CanvasLayer
 signal dialog_closed
 signal option_selected(idx: int)
 
-const DIALOG_Y := 258
-const DIALOG_HEIGHT := 94
-const DIALOG_MARGIN_X := 8
-const PORTRAIT_SIZE := 56.0
+const DIALOG_Y := 387
+const DIALOG_HEIGHT := 141
+const DIALOG_MARGIN_X := 12
+const PORTRAIT_SIZE := 84.0
 
 const DIO_SPRITE_PATH := "res://assets/sprites/generated/npcs/dio_idle.png"
 
@@ -44,7 +44,7 @@ func show_dialog(text: String, buttons: Array = ["Continue"], mentor_name: Strin
 	panel_style.set_border_width_all(1)
 	_panel.add_theme_stylebox_override("panel", panel_style)
 	_panel.position = Vector2(DIALOG_MARGIN_X, DIALOG_Y)
-	_panel.custom_minimum_size = Vector2(640 - DIALOG_MARGIN_X * 2, DIALOG_HEIGHT)
+	_panel.custom_minimum_size = Vector2(960 - DIALOG_MARGIN_X * 2, DIALOG_HEIGHT)
 	_backdrop.add_child(_panel)
 
 	var hbox := HBoxContainer.new()

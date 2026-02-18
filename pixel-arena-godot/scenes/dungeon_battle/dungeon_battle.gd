@@ -104,37 +104,37 @@ const ANIM_AUTO_MULT: float = 0.6  # Faster in auto mode
 
 # Skill VFX: skill_idx → {tex, target ("hero"/"monster"), tint (Color), offset_y}
 const SKILL_VFX: Dictionary = {
-	0: {"tex": "res://assets/vfx/spells/Arcane Bolt.png", "target": "monster", "tint": Color(1.0, 1.0, 0.4, 0.3), "offset_y": 0},
-	1: {"tex": "res://assets/vfx/spells/Arcane Bolt.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
-	2: {"tex": "res://assets/vfx/spells/Pixelart Shield.png", "target": "hero", "tint": Color(0.3, 0.9, 0.9, 0.25), "offset_y": 0},
-	3: {"tex": "res://assets/vfx/spells/Magic Sparks.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
-	4: {"tex": "res://assets/vfx/spells/Firebomb.png", "target": "hero", "tint": Color(1.0, 0.5, 0.2, 0.2), "offset_y": 0},
-	5: {"tex": "res://assets/vfx/spells/Magic Sparks.png", "target": "hero", "tint": Color.TRANSPARENT, "offset_y": 0},
-	6: {"tex": "res://assets/vfx/spells/Darkness Orb.png", "target": "hero", "tint": Color(0.1, 0.1, 0.2, 0.3), "offset_y": 0},
-	7: {"tex": "res://assets/vfx/spells/Plant Missle.png", "target": "monster", "tint": Color(0.3, 0.8, 0.3, 0.25), "offset_y": 0},
-	8: {"tex": "res://assets/vfx/spells/Darkness Orb.png", "target": "hero", "tint": Color(0.1, 0.1, 0.2, 0.25), "offset_y": 0},
-	9: {"tex": "res://assets/vfx/spells/Rock Sling.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
-	10: {"tex": "res://assets/vfx/spells/Magic Sparks.png", "target": "monster", "tint": Color(1.0, 0.6, 0.2, 0.2), "offset_y": 0},
-	11: {"tex": "res://assets/vfx/spells/Ice Lance.png", "target": "monster", "tint": Color(0.3, 0.6, 1.0, 0.25), "offset_y": 20},
-	12: {"tex": "res://assets/vfx/spells/Darkness Bolt.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
-	13: {"tex": "res://assets/vfx/spells/Firebomb.png", "target": "monster", "tint": Color(1.0, 0.3, 0.2, 0.25), "offset_y": 0},
-	14: {"tex": "res://assets/vfx/spells/Darkness Orb.png", "target": "monster", "tint": Color(0.5, 0.2, 1.0, 0.25), "offset_y": 0},
-	15: {"tex": "res://assets/vfx/spells/Rock Sling.png", "target": "monster", "tint": Color(1.0, 0.3, 0.2, 0.2), "offset_y": 0},
-	16: {"tex": "res://assets/vfx/spells/Pixelart Shield.png", "target": "hero", "tint": Color(1.0, 0.85, 0.3, 0.2), "offset_y": 0},
-	17: {"tex": "res://assets/vfx/spells/Firebomb.png", "target": "hero", "tint": Color(1.0, 0.3, 0.2, 0.2), "offset_y": 0},
-	18: {"tex": "res://assets/vfx/spells/Plant Missle.png", "target": "hero", "tint": Color(0.3, 0.7, 0.3, 0.2), "offset_y": 0},
+	0: {"tex": "res://assets/sprites/generated/vfx/vfx_arcane_bolt.png", "target": "monster", "tint": Color(1.0, 1.0, 0.4, 0.3), "offset_y": 0},
+	1: {"tex": "res://assets/sprites/generated/vfx/vfx_arcane_bolt.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
+	2: {"tex": "res://assets/sprites/generated/vfx/vfx_shield.png", "target": "hero", "tint": Color(0.3, 0.9, 0.9, 0.25), "offset_y": 0},
+	3: {"tex": "res://assets/sprites/generated/vfx/vfx_magic_sparks.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
+	4: {"tex": "res://assets/sprites/generated/vfx/vfx_firebomb.png", "target": "hero", "tint": Color(1.0, 0.5, 0.2, 0.2), "offset_y": 0},
+	5: {"tex": "res://assets/sprites/generated/vfx/vfx_magic_sparks.png", "target": "hero", "tint": Color.TRANSPARENT, "offset_y": 0},
+	6: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_orb.png", "target": "hero", "tint": Color(0.1, 0.1, 0.2, 0.3), "offset_y": 0},
+	7: {"tex": "res://assets/sprites/generated/vfx/vfx_plant_missile.png", "target": "monster", "tint": Color(0.3, 0.8, 0.3, 0.25), "offset_y": 0},
+	8: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_orb.png", "target": "hero", "tint": Color(0.1, 0.1, 0.2, 0.25), "offset_y": 0},
+	9: {"tex": "res://assets/sprites/generated/vfx/vfx_rock_sling.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
+	10: {"tex": "res://assets/sprites/generated/vfx/vfx_magic_sparks.png", "target": "monster", "tint": Color(1.0, 0.6, 0.2, 0.2), "offset_y": 0},
+	11: {"tex": "res://assets/sprites/generated/vfx/vfx_ice_lance.png", "target": "monster", "tint": Color(0.3, 0.6, 1.0, 0.25), "offset_y": 20},
+	12: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_bolt.png", "target": "monster", "tint": Color.TRANSPARENT, "offset_y": 0},
+	13: {"tex": "res://assets/sprites/generated/vfx/vfx_firebomb.png", "target": "monster", "tint": Color(1.0, 0.3, 0.2, 0.25), "offset_y": 0},
+	14: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_orb.png", "target": "monster", "tint": Color(0.5, 0.2, 1.0, 0.25), "offset_y": 0},
+	15: {"tex": "res://assets/sprites/generated/vfx/vfx_rock_sling.png", "target": "monster", "tint": Color(1.0, 0.3, 0.2, 0.2), "offset_y": 0},
+	16: {"tex": "res://assets/sprites/generated/vfx/vfx_shield.png", "target": "hero", "tint": Color(1.0, 0.85, 0.3, 0.2), "offset_y": 0},
+	17: {"tex": "res://assets/sprites/generated/vfx/vfx_firebomb.png", "target": "hero", "tint": Color(1.0, 0.3, 0.2, 0.2), "offset_y": 0},
+	18: {"tex": "res://assets/sprites/generated/vfx/vfx_plant_missile.png", "target": "hero", "tint": Color(0.3, 0.7, 0.3, 0.2), "offset_y": 0},
 }
 
 # Ultimate VFX: ult_idx → {tex, target, flash (Color), shake (float), multi (int)}
 const ULT_VFX: Dictionary = {
-	0: {"tex": "res://assets/vfx/spells/Arcane Bolt.png", "target": "monster", "flash": Color(1.0, 1.0, 0.3, 0.35), "shake": 4.0, "multi": 4},
-	1: {"tex": "res://assets/vfx/spells/Firebomb.png", "target": "monster", "flash": Color(1.0, 0.5, 0.15, 0.35), "shake": 3.0, "multi": 1},
-	2: {"tex": "res://assets/vfx/spells/Darkness Orb.png", "target": "monster", "flash": Color(0.5, 0.2, 1.0, 0.3), "shake": 0.0, "multi": 1},
-	3: {"tex": "res://assets/vfx/spells/Firebomb.png", "target": "hero", "flash": Color(1.0, 0.2, 0.1, 0.3), "shake": 3.0, "multi": 1},
-	4: {"tex": "res://assets/vfx/spells/Magic Orb.png", "target": "monster", "flash": Color(0.3, 0.5, 1.0, 0.3), "shake": 3.0, "multi": 1},
-	5: {"tex": "res://assets/vfx/spells/Plant Missle.png", "target": "hero", "flash": Color(0.3, 0.8, 0.3, 0.3), "shake": 0.0, "multi": 1},
-	6: {"tex": "res://assets/vfx/spells/Darkness Bolt.png", "target": "hero", "flash": Color(0.5, 0.2, 1.0, 0.25), "shake": 0.0, "multi": 1},
-	7: {"tex": "res://assets/vfx/spells/Bolt Of Purity.png", "target": "hero", "flash": Color(1.0, 0.9, 0.4, 0.3), "shake": 0.0, "multi": 1},
+	0: {"tex": "res://assets/sprites/generated/vfx/vfx_arcane_bolt.png", "target": "monster", "flash": Color(1.0, 1.0, 0.3, 0.35), "shake": 4.0, "multi": 4},
+	1: {"tex": "res://assets/sprites/generated/vfx/vfx_firebomb.png", "target": "monster", "flash": Color(1.0, 0.5, 0.15, 0.35), "shake": 3.0, "multi": 1},
+	2: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_orb.png", "target": "monster", "flash": Color(0.5, 0.2, 1.0, 0.3), "shake": 0.0, "multi": 1},
+	3: {"tex": "res://assets/sprites/generated/vfx/vfx_firebomb.png", "target": "hero", "flash": Color(1.0, 0.2, 0.1, 0.3), "shake": 3.0, "multi": 1},
+	4: {"tex": "res://assets/sprites/generated/vfx/vfx_magic_orb.png", "target": "monster", "flash": Color(0.3, 0.5, 1.0, 0.3), "shake": 3.0, "multi": 1},
+	5: {"tex": "res://assets/sprites/generated/vfx/vfx_plant_missile.png", "target": "hero", "flash": Color(0.3, 0.8, 0.3, 0.3), "shake": 0.0, "multi": 1},
+	6: {"tex": "res://assets/sprites/generated/vfx/vfx_darkness_bolt.png", "target": "hero", "flash": Color(0.5, 0.2, 1.0, 0.25), "shake": 0.0, "multi": 1},
+	7: {"tex": "res://assets/sprites/generated/vfx/vfx_holy_bolt.png", "target": "hero", "flash": Color(1.0, 0.9, 0.4, 0.3), "shake": 0.0, "multi": 1},
 }
 
 # Status particle configs: status_id → {color, offset_y, dir_y, spread_x}
@@ -595,7 +595,7 @@ func _on_action_resolved(action: String, result: Dictionary) -> void:
 					_spawn_screen_flash(tint)
 				# Arcane Drain: also show heal bolt at hero
 				if skill_idx == 12:
-					_spawn_spell_flash(hero_sprite.position, "res://assets/vfx/spells/Light Bolt.png")
+					_spawn_spell_flash(hero_sprite.position, "res://assets/sprites/generated/vfx/vfx_light_bolt.png")
 			else:
 				_animate_lunge(hero_sprite, HERO_BASE_X, MONSTER_BASE_X, duration)
 		"ultimate":
@@ -620,7 +620,7 @@ func _on_action_resolved(action: String, result: Dictionary) -> void:
 					_screen_shake(shake, 0.3)
 		"potion":
 			_animate_flash(hero_sprite, Color(0.3, 0.8, 0.3), duration)
-			_spawn_spell_flash(hero_sprite.position, "res://assets/vfx/spells/Light Bolt.png")
+			_spawn_spell_flash(hero_sprite.position, "res://assets/sprites/generated/vfx/vfx_light_bolt.png")
 
 
 func _on_damage_dealt(source_id: String, target_id: String, amount: int, info: Dictionary) -> void:
@@ -920,8 +920,8 @@ func _style_hud() -> void:
 	# Dark bottom strip behind combat log + turn label + buttons
 	var bottom_bg := ColorRect.new()
 	bottom_bg.color = Color(0.08, 0.08, 0.15, 0.9)
-	bottom_bg.position = Vector2(0, 230)
-	bottom_bg.size = Vector2(640, 130)
+	bottom_bg.position = Vector2(0, 345)
+	bottom_bg.size = Vector2(960, 195)
 	bottom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	get_node("HUD").add_child(bottom_bg)
 	get_node("HUD").move_child(bottom_bg, 0)
@@ -930,7 +930,7 @@ func _style_hud() -> void:
 	var top_bg := ColorRect.new()
 	top_bg.color = Color(0.08, 0.08, 0.15, 0.7)
 	top_bg.position = Vector2(0, 0)
-	top_bg.size = Vector2(640, 30)
+	top_bg.size = Vector2(960, 45)
 	top_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	get_node("HUD").add_child(top_bg)
 	get_node("HUD").move_child(top_bg, 0)
@@ -1042,7 +1042,7 @@ func _setup_action_icons() -> void:
 	# Potion button: "Pot(N)"
 	var pot_count: int = int(_engine.run.get("potions", 0))
 	pot_btn.text = "Pot(" + str(pot_count) + ")"
-	var pot_tex = load("res://assets/sprites/gear/rpg_icons/I_Bottle02.png")
+	var pot_tex = load("res://assets/sprites/generated/gear/event_potion.png")
 	if pot_tex:
 		pot_btn.icon = pot_tex
 	pot_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])

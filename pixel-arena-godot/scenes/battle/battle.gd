@@ -1,6 +1,6 @@
 extends Node2D
 ## Real-time battle scene — renders CombatEngine state to Godot visuals.
-## Maps logical coordinates (1000x500) to viewport (640x360).
+## Maps logical coordinates (1000x500) to viewport (960x540).
 
 const BattleVFXScript = preload("res://scripts/rendering/battle_vfx.gd")
 
@@ -41,8 +41,8 @@ var _follower_nodes: Dictionary = {}  # stable string key -> Node2D
 var _projectile_nodes: Array[Node2D] = []
 
 # Coordinate mapping
-const SCALE_X: float = 640.0 / 1000.0
-const SCALE_Y: float = 360.0 / 500.0
+const SCALE_X: float = 960.0 / 1000.0
+const SCALE_Y: float = 540.0 / 500.0
 
 # Battle backgrounds
 const BATTLE_BGS: Array[String] = [
@@ -171,7 +171,7 @@ func _setup_background() -> void:
 		bg_sprite.centered = false
 		var tex_size: Vector2 = tex.get_size()
 		if tex_size.x > 0 and tex_size.y > 0:
-			bg_sprite.scale = Vector2(640.0 / tex_size.x, 360.0 / tex_size.y)
+			bg_sprite.scale = Vector2(960.0 / tex_size.x, 540.0 / tex_size.y)
 		bg_sprite.modulate = Color(0.35, 0.30, 0.40, 1.0)
 		bg_sprite.z_index = -10
 		add_child(bg_sprite)
@@ -351,7 +351,7 @@ func _style_battle_hud() -> void:
 	var top_bg := ColorRect.new()
 	top_bg.color = Color(0.06, 0.06, 0.10, 0.75)
 	top_bg.position = Vector2(0, 0)
-	top_bg.size = Vector2(640, 54)
+	top_bg.size = Vector2(960, 81)
 	top_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$HUD.add_child(top_bg)
 	$HUD.move_child(top_bg, 0)
@@ -359,8 +359,8 @@ func _style_battle_hud() -> void:
 	# Dark strip behind bottom controls
 	var bot_bg := ColorRect.new()
 	bot_bg.color = Color(0.06, 0.06, 0.10, 0.75)
-	bot_bg.position = Vector2(0, 336)
-	bot_bg.size = Vector2(640, 24)
+	bot_bg.position = Vector2(0, 504)
+	bot_bg.size = Vector2(960, 36)
 	bot_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$HUD.add_child(bot_bg)
 	$HUD.move_child(bot_bg, 1)
@@ -919,20 +919,20 @@ func _on_log(time_sec: float, text: String, log_type: String) -> void:
 # ============ COMBAT VFX ============
 
 const SPELL_TEXTURES: Dictionary = {
-	"lightning": "res://assets/vfx/spells/Arcane Bolt.png",
-	"chain_lightning": "res://assets/vfx/spells/Arcane Bolt.png",
-	"fireball": "res://assets/vfx/spells/Fireball.png",
-	"fire": "res://assets/vfx/spells/Firebomb.png",
-	"ice": "res://assets/vfx/spells/Ice Lance.png",
-	"frost": "res://assets/vfx/spells/Ice Lance.png",
-	"shadow": "res://assets/vfx/spells/Darkness Bolt.png",
-	"dark": "res://assets/vfx/spells/Darkness Orb.png",
-	"arcane": "res://assets/vfx/spells/Magic Orb.png",
-	"heal": "res://assets/vfx/spells/Light Bolt.png",
-	"shield": "res://assets/vfx/spells/Pixelart Shield.png",
-	"water": "res://assets/vfx/spells/Water Bolt.png",
-	"wind": "res://assets/vfx/spells/Wind Bolt.png",
-	"nature": "res://assets/vfx/spells/Plant Missle.png",
+	"lightning": "res://assets/sprites/generated/vfx/vfx_arcane_bolt.png",
+	"chain_lightning": "res://assets/sprites/generated/vfx/vfx_arcane_bolt.png",
+	"fireball": "res://assets/sprites/generated/vfx/vfx_fireball.png",
+	"fire": "res://assets/sprites/generated/vfx/vfx_firebomb.png",
+	"ice": "res://assets/sprites/generated/vfx/vfx_ice_lance.png",
+	"frost": "res://assets/sprites/generated/vfx/vfx_ice_lance.png",
+	"shadow": "res://assets/sprites/generated/vfx/vfx_darkness_bolt.png",
+	"dark": "res://assets/sprites/generated/vfx/vfx_darkness_orb.png",
+	"arcane": "res://assets/sprites/generated/vfx/vfx_magic_orb.png",
+	"heal": "res://assets/sprites/generated/vfx/vfx_light_bolt.png",
+	"shield": "res://assets/sprites/generated/vfx/vfx_shield.png",
+	"water": "res://assets/sprites/generated/vfx/vfx_water_bolt.png",
+	"wind": "res://assets/sprites/generated/vfx/vfx_wind_bolt.png",
+	"nature": "res://assets/sprites/generated/vfx/vfx_plant_missile.png",
 }
 
 
@@ -994,7 +994,7 @@ func _spawn_spell_flash(pos: Vector2, spell_name: String) -> void:
 			tex_path = SPELL_TEXTURES[keyword]
 			break
 	if tex_path.is_empty():
-		tex_path = "res://assets/vfx/spells/Magic Sparks.png"
+		tex_path = "res://assets/sprites/generated/vfx/vfx_magic_sparks.png"
 
 	var tex = load(tex_path)
 	if not tex:
@@ -1141,7 +1141,7 @@ func _show_victory_overlay(player_won: bool) -> void:
 func _spawn_screen_flash(color: Color) -> void:
 	var flash := ColorRect.new()
 	flash.color = color
-	flash.size = Vector2(640, 360)
+	flash.size = Vector2(960, 540)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(flash)
 	var tw := create_tween()

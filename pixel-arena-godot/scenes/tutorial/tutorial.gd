@@ -645,8 +645,8 @@ func _show_complete() -> void:
 	header.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
 	header.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.position = Vector2(140, 40)
-	header.custom_minimum_size = Vector2(360, 0)
+	header.position = Vector2(210, 60)
+	header.custom_minimum_size = Vector2(540, 0)
 	_content.add_child(header)
 
 	var class_key: String = _gs.custom_char.get("class_key", "barbarian")

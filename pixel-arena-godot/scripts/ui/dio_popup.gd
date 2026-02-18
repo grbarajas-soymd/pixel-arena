@@ -205,17 +205,17 @@ func _animate_entrance() -> void:
 			start_pos = Vector2(-200, 140)
 			end_pos = Vector2(8, 140)
 		"slide_right":
-			start_pos = Vector2(640, 140)
-			end_pos = Vector2(640 - SPRITE_SIZE - BUBBLE_MAX_W - 24, 140)
+			start_pos = Vector2(960, 210)
+			end_pos = Vector2(960 - SPRITE_SIZE - BUBBLE_MAX_W - 24, 210)
 		"pop_bottom":
-			start_pos = Vector2(200, 370)
-			end_pos = Vector2(200, 260)
+			start_pos = Vector2(300, 555)
+			end_pos = Vector2(300, 390)
 		"peek_left":
 			start_pos = Vector2(-180, 100)
 			end_pos = Vector2(-30, 100)
 		"peek_right":
-			start_pos = Vector2(650, 100)
-			end_pos = Vector2(640 - SPRITE_SIZE - 40, 100)
+			start_pos = Vector2(975, 150)
+			end_pos = Vector2(960 - SPRITE_SIZE - 40, 150)
 		_:
 			start_pos = Vector2(-200, 140)
 			end_pos = Vector2(8, 140)

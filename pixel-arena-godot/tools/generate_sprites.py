@@ -96,6 +96,25 @@ def _name_seed(name: str) -> int:
     return int(hashlib.md5(name.encode()).hexdigest()[:8], 16) % (2**31)
 
 
+def _try_img2img(prompt: str, name: str, seed: int = -1,
+                 width: int = None, height: int = None) -> "Image.Image | None":
+    """If --reference-dir is set and a matching file exists, use img2img; else txt2img."""
+    ref_dir = CONFIG.get("reference_dir")
+    if ref_dir:
+        ref_dir = Path(ref_dir)
+        # Try common extensions
+        for ext in (".png", ".jpg", ".jpeg", ".webp"):
+            ref_path = ref_dir / f"{name}{ext}"
+            if ref_path.exists():
+                print(f"(img2img ref={ref_path.name}, strength={CONFIG['strength']}) ", end="", flush=True)
+                return generate_image_img2img(
+                    prompt, str(ref_path),
+                    strength=CONFIG["strength"],
+                    seed=seed, width=width, height=height
+                )
+    return generate_image(prompt, seed=seed, width=width, height=height)
+
+
 # ── Style Prompts ─────────────────────────────────────────────────────────
 
 STYLE_SPRITE = (
@@ -660,6 +679,69 @@ VFX_SPRITES = {
     ),
 }
 
+SPELL_VFX_SPRITES = {
+    "vfx_arcane_bolt": (
+        "bright blue-white arcane energy bolt projectile, crackling lightning magic missile, "
+        "glowing electric energy, fast moving spell projectile"
+    ),
+    "vfx_fireball": (
+        "blazing orange fireball projectile, large ball of fire with flame trail, "
+        "bright hot fire magic, explosive fire spell"
+    ),
+    "vfx_firebomb": (
+        "fiery explosion burst, orange-red fire detonation, "
+        "expanding flame blast, incendiary spell"
+    ),
+    "vfx_ice_lance": (
+        "sharp ice crystal lance projectile, frozen blue-white ice shard, "
+        "cold frost magic, crystalline ice spike"
+    ),
+    "vfx_darkness_bolt": (
+        "dark purple shadow bolt projectile, dark energy missile, "
+        "black-purple shadow magic, sinister dark spell"
+    ),
+    "vfx_darkness_orb": (
+        "swirling dark void orb, black-purple sphere of shadow energy, "
+        "dark magic sphere, menacing void spell"
+    ),
+    "vfx_magic_orb": (
+        "glowing blue magical energy orb, bright arcane sphere, "
+        "swirling magical essence, generic spell projectile"
+    ),
+    "vfx_light_bolt": (
+        "bright golden holy light bolt, radiant healing energy, "
+        "warm yellow-white divine light, restoration spell"
+    ),
+    "vfx_shield": (
+        "translucent blue-gold protective shield barrier, magical ward, "
+        "glowing defensive barrier dome, protection spell"
+    ),
+    "vfx_water_bolt": (
+        "swirling blue water bolt projectile, water magic missile, "
+        "liquid splash trail, aqua spell"
+    ),
+    "vfx_wind_bolt": (
+        "swirling white-green wind gust projectile, air magic spiral, "
+        "tornado wind slash, fast air spell"
+    ),
+    "vfx_plant_missile": (
+        "green thorny vine projectile, nature magic missile, "
+        "leafy plant tendril, organic nature spell"
+    ),
+    "vfx_magic_sparks": (
+        "scattered magical sparkle particles, multi-colored magic sparks, "
+        "generic spell particle effect, shimmering magic dust"
+    ),
+    "vfx_rock_sling": (
+        "brown stone boulder projectile, earth magic rock, "
+        "hurled rock sling stone, earthen spell"
+    ),
+    "vfx_holy_bolt": (
+        "radiant golden holy light beam, divine purity bolt, "
+        "bright yellow-white celestial energy, purifying spell"
+    ),
+}
+
 UI_TEXTURES = {
     "ui_panel_stone": (
         "dark grey-blue stone brick wall surface texture, medieval dungeon carved stone blocks, "
@@ -680,6 +762,52 @@ UI_TEXTURES = {
     "ui_button_pressed": (
         "pressed indented dark stone button surface, deeper inner shadow, "
         "depressed inward carved stone, darker center with compressed edges, inset stone slab"
+    ),
+}
+
+SLOT_ICONS = {
+    "slot_weapon": (
+        "simple dark iron sword silhouette icon, single weapon centered, "
+        "empty equipment slot placeholder, muted grey metal, minimal detail"
+    ),
+    "slot_helmet": (
+        "simple medieval helmet silhouette icon, single helm centered, "
+        "empty equipment slot placeholder, muted grey metal, minimal detail"
+    ),
+    "slot_chest": (
+        "simple chestplate breastplate silhouette icon, single armor centered, "
+        "empty equipment slot placeholder, muted grey metal, minimal detail"
+    ),
+    "slot_boots": (
+        "simple medieval boots silhouette icon, single pair of boots centered, "
+        "empty equipment slot placeholder, muted grey metal, minimal detail"
+    ),
+    "slot_accessory": (
+        "simple magical ring silhouette icon, single ring centered, "
+        "empty equipment slot placeholder, muted grey metal, minimal detail"
+    ),
+}
+
+EVENT_ICONS = {
+    "event_treasure": (
+        "golden treasure chest, open wooden chest overflowing with gold coins, "
+        "sparkle gleam, classic RPG loot chest"
+    ),
+    "event_rest": (
+        "warm campfire torch, lit wooden torch with orange flame, "
+        "rest and healing, warm firelight glow"
+    ),
+    "event_merchant": (
+        "pile of gold coins, shining golden coins stacked, "
+        "merchant shop currency, gleaming gold"
+    ),
+    "event_cage": (
+        "iron prison cage bars, metal cage with lock, "
+        "trapped prisoner cage, dark iron bars"
+    ),
+    "event_potion": (
+        "red health potion bottle, glass flask with glowing red liquid, "
+        "healing elixir, cork stopper, bubbling"
     ),
 }
 
@@ -807,6 +935,84 @@ def generate_image(prompt: str, seed: int = -1,
         return None
 
 
+def generate_image_img2img(prompt: str, reference_path: str, strength: float = 0.5,
+                           seed: int = -1, width: int = None, height: int = None) -> "Image.Image | None":
+    """Generate an image via Forge img2img API using a reference image.
+
+    Args:
+        prompt: Text prompt describing desired output.
+        reference_path: Path to the reference image file.
+        strength: Denoising strength (0.0=copy reference, 1.0=ignore reference).
+        seed: RNG seed (-1 for random).
+        width: Output width (default: CONFIG gen_size).
+        height: Output height (default: CONFIG gen_size).
+    """
+    width = width or CONFIG["gen_size"]
+    height = height or CONFIG["gen_size"]
+
+    ref_img = Image.open(reference_path).convert("RGB")
+    ref_img = ref_img.resize((width, height), Image.LANCZOS)
+    buf = io.BytesIO()
+    ref_img.save(buf, format="PNG")
+    ref_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    payload = {
+        "prompt": prompt,
+        "negative_prompt": "",
+        "init_images": [ref_b64],
+        "denoising_strength": strength,
+        "steps": CONFIG["sd_steps"],
+        "cfg_scale": CONFIG["sd_cfg"],
+        "sampler_name": CONFIG["sd_sampler"],
+        "scheduler": "Simple",
+        "distilled_cfg_scale": CONFIG["guidance"],
+        "width": width,
+        "height": height,
+        "seed": seed,
+        "batch_size": 1,
+        "n_iter": 1,
+    }
+
+    stop_event = threading.Event()
+    poll_thread = threading.Thread(target=_poll_progress, args=(stop_event,), daemon=True)
+    poll_thread.start()
+
+    try:
+        t0 = time.time()
+        r = requests.post(
+            f"{CONFIG['sd_url']}/sdapi/v1/img2img",
+            json=payload, timeout=900
+        )
+        elapsed = time.time() - t0
+
+        stop_event.set()
+        poll_thread.join(timeout=2)
+        print(f"\r    {'':60}", end="\r", flush=True)
+
+        if r.status_code != 200:
+            print(f"  ERROR: Forge API returned {r.status_code}: {r.text[:200]}")
+            return None
+
+        data = r.json()
+        images = data.get("images", [])
+        if not images:
+            print("  ERROR: No images returned")
+            return None
+
+        img_data = base64.b64decode(images[0])
+        img = Image.open(io.BytesIO(img_data))
+        return img
+
+    except requests.ConnectionError:
+        stop_event.set()
+        print("  ERROR: Lost connection to Forge")
+        return None
+    except Exception as e:
+        stop_event.set()
+        print(f"  ERROR: {e}")
+        return None
+
+
 # ── Background Removal ──────────────────────────────────────────────────────
 
 _rembg_session = None
@@ -906,7 +1112,7 @@ def gen_hero(class_key: str, desc: str, seed: int = -1) -> "Path | None":
 
     print(f"  Generating hero: {class_key} (seed={seed})...", end=" ", flush=True)
     prompt = f"{STYLE_SPRITE}, {desc}"
-    img = generate_image(prompt, seed=seed)
+    img = _try_img2img(prompt, f"{class_key}_base", seed=seed)
     if img is None:
         print("FAILED")
         return None
@@ -935,7 +1141,7 @@ def gen_monster(monster_key: str, desc: str, seed: int = -1) -> "Path | None":
         f"{STYLE_SPRITE}, {desc}, "
         f"single monster creature, enemy sprite, menacing"
     )
-    img = generate_image(prompt, seed=seed)
+    img = _try_img2img(prompt, monster_key, seed=seed)
     if img is None:
         print("FAILED")
         return None
@@ -964,7 +1170,7 @@ def gen_follower(follower_key: str, desc: str, seed: int = -1) -> "Path | None":
         f"{STYLE_SPRITE}, {desc}, "
         f"tiny companion creature, small cute monster pet"
     )
-    img = generate_image(prompt, seed=seed)
+    img = _try_img2img(prompt, follower_key, seed=seed)
     if img is None:
         print("FAILED")
         return None
@@ -1167,6 +1373,32 @@ def gen_vfx(vfx_key: str, desc: str, size: int = None, seed: int = -1) -> "Path 
     return out_path
 
 
+def gen_slot_icon(slot_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate a slot placeholder icon (single 32x32 icon)."""
+    out_path = OUTPUT_DIR / "gear" / f"{slot_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(slot_key)
+
+    print(f"  Generating slot icon: {slot_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_ICON}, {desc}"
+    img = generate_image(prompt, seed=seed)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = downscale_nearest(img, GEAR_ICON_SIZE)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
 def gen_ui_texture(tex_key: str, desc: str, seed: int = -1) -> "Path | None":
     """Generate a UI texture (64x64 panels, 64x24 buttons). No background removal."""
     out_path = OUTPUT_DIR / "ui" / f"{tex_key}.png"
@@ -1338,6 +1570,51 @@ def generate_vfx():
     return done
 
 
+def generate_event_icons():
+    """Generate all dungeon event icons."""
+    print("\n=== EVENT ICONS (32x32) ===")
+    total = len(EVENT_ICONS)
+    done = 0
+    for event_key, desc in EVENT_ICONS.items():
+        result = gen_slot_icon(event_key, desc)  # same pipeline as slot icons (32x32 gear)
+        if result:
+            done += 1
+    print(f"\nEvent icons: {done}/{total} completed")
+    return done
+
+
+def generate_slot_icons():
+    """Generate all slot placeholder icons."""
+    print("\n=== SLOT ICONS (32x32) ===")
+    total = len(SLOT_ICONS)
+    done = 0
+    for slot_key, desc in SLOT_ICONS.items():
+        result = gen_slot_icon(slot_key, desc)
+        if result:
+            done += 1
+    print(f"\nSlot icons: {done}/{total} completed")
+    return done
+
+
+def generate_spell_vfx():
+    """Generate all spell VFX projectile sprites."""
+    print("\n=== SPELL VFX SPRITES (32x32) ===")
+    total = len(SPELL_VFX_SPRITES)
+    done = 0
+    batch_start = time.time()
+    for i, (vfx_key, desc) in enumerate(SPELL_VFX_SPRITES.items()):
+        print(f"\n  [{i+1}/{total}] ", end="")
+        result = gen_vfx(vfx_key, desc, size=VFX_SIZE_SMALL)
+        if result:
+            done += 1
+        elapsed = time.time() - batch_start
+        avg = elapsed / (i + 1)
+        remaining = avg * (total - i - 1)
+        print(f"    Batch: {done}/{total} done, {elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining")
+    print(f"\nSpell VFX: {done}/{total} completed")
+    return done
+
+
 def generate_ui_textures():
     """Generate all UI panel and button textures."""
     print("\n=== UI TEXTURES (64x64 / 64x24) ===")
@@ -1415,8 +1692,17 @@ def generate_single(name: str):
     if name in VFX_SPRITES:
         gen_vfx(name, VFX_SPRITES[name])
         return
+    if name in SPELL_VFX_SPRITES:
+        gen_vfx(name, SPELL_VFX_SPRITES[name], size=VFX_SIZE_SMALL)
+        return
     if name in UI_TEXTURES:
         gen_ui_texture(name, UI_TEXTURES[name])
+        return
+    if name in SLOT_ICONS:
+        gen_slot_icon(name, SLOT_ICONS[name])
+        return
+    if name in EVENT_ICONS:
+        gen_slot_icon(name, EVENT_ICONS[name])
         return
 
     print(f"Unknown sprite name: {name}")
@@ -1426,11 +1712,14 @@ def generate_single(name: str):
     print(f"  Followers: {', '.join(FOLLOWERS.keys())}")
     print(f"  Backgrounds: {', '.join(BATTLE_BACKGROUNDS.keys())}")
     print(f"  Gear: {', '.join(GEAR_ICONS.keys())}")
+    print(f"  Slot icons: {', '.join(SLOT_ICONS.keys())}")
+    print(f"  Event icons: {', '.join(EVENT_ICONS.keys())}")
     print(f"  NPCs: {', '.join(NPC_SPRITES.keys())}")
     print(f"  Skills: {', '.join(SKILL_ICON_SPRITES.keys())}")
     print(f"  Ultimates: {', '.join(ULT_ICON_SPRITES.keys())}")
     print(f"  Logo: {', '.join(LOGO_SPRITES.keys())}")
     print(f"  VFX: {', '.join(VFX_SPRITES.keys())}")
+    print(f"  Spell VFX: {', '.join(SPELL_VFX_SPRITES.keys())}")
     print(f"  UI Textures: {', '.join(UI_TEXTURES.keys())}")
 
 
@@ -1544,6 +1833,14 @@ def show_status():
     gear_total = len(GEAR_ICONS)
     print(f"Gear icons (32x32):  {gear_count}/{gear_total}")
 
+    slot_count = sum(1 for k in SLOT_ICONS if (OUTPUT_DIR / "gear" / f"{k}.png").exists())
+    slot_total = len(SLOT_ICONS)
+    print(f"Slot icons (32x32):  {slot_count}/{slot_total}")
+
+    event_count = sum(1 for k in EVENT_ICONS if (OUTPUT_DIR / "gear" / f"{k}.png").exists())
+    event_total = len(EVENT_ICONS)
+    print(f"Event icons (32x32): {event_count}/{event_total}")
+
     npc_count = count_files(OUTPUT_DIR / "npcs")
     npc_total = len(NPC_SPRITES)
     print(f"NPCs (128x128):      {npc_count}/{npc_total}")
@@ -1565,13 +1862,17 @@ def show_status():
     vfx_total = len(VFX_SPRITES)
     print(f"VFX (48x48/32x32):   {vfx_count}/{vfx_total}")
 
+    spell_vfx_count = sum(1 for k in SPELL_VFX_SPRITES if (OUTPUT_DIR / "vfx" / f"{k}.png").exists())
+    spell_vfx_total = len(SPELL_VFX_SPRITES)
+    print(f"Spell VFX (32x32):   {spell_vfx_count}/{spell_vfx_total}")
+
     # UI textures share the "ui" folder with logos, so count by prefix
     ui_tex_count = count_files(OUTPUT_DIR / "ui", "ui_*.png")
     ui_tex_total = len(UI_TEXTURES)
     print(f"UI textures (64x64/64x24): {ui_tex_count}/{ui_tex_total}")
 
-    total = hero_total + monster_total + follower_total + gear_total + npc_total + skill_total + logo_total + bg_total + vfx_total + ui_tex_total
-    done = hero_count + monster_count + follower_count + gear_count + npc_count + skill_count + logo_count + bg_count + vfx_count + ui_tex_count
+    total = hero_total + monster_total + follower_total + gear_total + slot_total + event_total + npc_total + skill_total + logo_total + bg_total + vfx_total + spell_vfx_total + ui_tex_total
+    done = hero_count + monster_count + follower_count + gear_count + slot_count + event_count + npc_count + skill_count + logo_count + bg_count + vfx_count + spell_vfx_count + ui_tex_count
     print(f"\nTotal:               {done}/{total} assets")
 
     # Check model files
@@ -1601,7 +1902,7 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Show sprite + model status")
     parser.add_argument("--category",
-                        choices=["heroes", "monsters", "followers", "gear", "npcs", "skills", "logo", "backgrounds", "vfx", "ui_textures", "all"],
+                        choices=["heroes", "monsters", "followers", "gear", "slot_icons", "event_icons", "npcs", "skills", "logo", "backgrounds", "vfx", "spell_vfx", "ui_textures", "all"],
                         help="Generate assets by category")
     parser.add_argument("--single", type=str,
                         help="Generate a single sprite by name")
@@ -1615,6 +1916,10 @@ def main():
                         help=f"Sampling steps (default: {CONFIG['sd_steps']})")
     parser.add_argument("--guidance", type=float, default=None,
                         help=f"FLUX guidance scale (default: {CONFIG['guidance']})")
+    parser.add_argument("--reference-dir", type=str, default=None,
+                        help="Directory of reference images for img2img (matched by filename)")
+    parser.add_argument("--strength", type=float, default=0.5,
+                        help="Denoising strength for img2img (0.0=copy, 1.0=ignore ref, default: 0.5)")
     parser.add_argument("--force", action="store_true",
                         help="Regenerate even if file exists")
 
@@ -1649,6 +1954,10 @@ def main():
             print(f"Expected at: {CONFIG['sd_url']}")
             sys.exit(1)
 
+    if args.reference_dir:
+        CONFIG["reference_dir"] = args.reference_dir
+        CONFIG["strength"] = args.strength
+        print(f"img2img mode: reference_dir={args.reference_dir}, strength={args.strength}")
     if args.force:
         print("--force: Will overwrite existing sprites\n")
         CONFIG["force"] = True
@@ -1667,6 +1976,10 @@ def main():
             generate_followers()
         if args.category in ("gear", "all"):
             generate_gear_icons()
+        if args.category in ("slot_icons", "all"):
+            generate_slot_icons()
+        if args.category in ("event_icons", "all"):
+            generate_event_icons()
         if args.category in ("npcs", "all"):
             generate_npcs()
         if args.category in ("skills", "all"):
@@ -1677,6 +1990,8 @@ def main():
             generate_backgrounds()
         if args.category in ("vfx", "all"):
             generate_vfx()
+        if args.category in ("spell_vfx", "all"):
+            generate_spell_vfx()
         if args.category in ("ui_textures", "all"):
             generate_ui_textures()
         elapsed = time.time() - start

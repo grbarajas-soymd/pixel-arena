@@ -565,17 +565,17 @@ func _clear_room_actions() -> void:
 
 
 const ROOM_SPRITE_PATHS: Dictionary = {
-	"treasure": "res://assets/sprites/gear/rpg_icons/I_Chest01.png",
-	"trap_spike": "res://assets/sprites/gear/rpg_icons/S_Sword05.png",
-	"trap_poison": "res://assets/sprites/gear/rpg_icons/S_Poison04.png",
-	"trap_rocks": "res://assets/sprites/gear/rpg_icons/I_Rock03.png",
-	"rest": "res://assets/sprites/gear/rpg_icons/I_Torch02.png",
-	"shrine": "res://assets/sprites/gear/rpg_icons/S_Holy05.png",
-	"merchant": "res://assets/sprites/gear/rpg_icons/I_GoldCoin.png",
-	"cage": "res://assets/sprites/gear/rpg_icons/E_Metal03.png",
-	"gear": "res://assets/sprites/gear/rpg_icons/W_Axe001.png",
-	"victory": "res://assets/sprites/gear/rpg_icons/S_Buff05.png",
-	"death": "res://assets/sprites/gear/rpg_icons/S_Shadow07.png",
+	"treasure": "res://assets/sprites/generated/gear/event_treasure.png",
+	"trap_spike": "res://assets/sprites/generated/skills/lacerate.png",
+	"trap_poison": "res://assets/sprites/generated/skills/envenom.png",
+	"trap_rocks": "res://assets/sprites/generated/skills/thorns.png",
+	"rest": "res://assets/sprites/generated/gear/event_rest.png",
+	"shrine": "res://assets/sprites/generated/skills/last_stand.png",
+	"merchant": "res://assets/sprites/generated/gear/event_merchant.png",
+	"cage": "res://assets/sprites/generated/gear/event_cage.png",
+	"gear": "res://assets/sprites/generated/gear/war_axe.png",
+	"victory": "res://assets/sprites/generated/skills/bloodlust.png",
+	"death": "res://assets/sprites/generated/skills/death_mark.png",
 }
 
 

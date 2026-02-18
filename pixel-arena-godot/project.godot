@@ -34,17 +34,17 @@ TransitionManager="*res://scripts/autoloads/transition_manager.gd"
 
 [display]
 
-window/size/viewport_width=640
-window/size/viewport_height=360
+window/size/viewport_width=960
+window/size/viewport_height=540
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="viewport"
 
 [gui]
 
-theme/default_font_antialiasing=0
-theme/default_font_hinting=0
-theme/default_font_subpixel_positioning=0
+theme/default_font_antialiasing=1
+theme/default_font_hinting=1
+theme/default_font_subpixel_positioning=1
 
 [input]
 

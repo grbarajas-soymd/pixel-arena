@@ -1,80 +1,31 @@
 # Asset Credits
 
-All assets used in Pixel Arena are free/open-source with permissive licenses.
+All visual assets used in Pixel Arena are AI-generated through the FLUX.1 Dev
+pipeline (see tools/generate_sprites.py) or created in-house. The custom font
+(somdie_mono.ttf) is procedurally generated (see tools/generate_font.py).
 
-## CC0 (Public Domain — No Attribution Required)
+## AI-Generated Assets (Full Ownership — SoftBacon Software)
 
-### Tiny Creatures (sprites/monsters/tiny_creatures/)
-- **Author:** Kenney
-- **Source:** https://opengameart.org/content/tiny-creatures
-- **Contents:** 180+ monster and animal sprites, 16x16 tiles
-- **License:** CC0 1.0
+- 4 hero sprites (128x128)
+- 19 monster sprites (128x128)
+- 19 follower sprites (64x64)
+- 48 gear item icons (32x32)
+- 5 slot placeholder icons (32x32)
+- 5 dungeon event icons (32x32)
+- 27 skill/ultimate icons (48x48)
+- 14 melee/projectile/hit VFX sprites (48x48 / 32x32)
+- 15 spell VFX sprites (32x32)
+- 12 battle backgrounds (640x360)
+- 12 NPC portraits (128x128)
+- 7 UI textures (64x64 / 64x24)
+- 2 logos (480x160)
 
-### 16x16 Weapon RPG Icons (sprites/gear/weapons_16x16/)
-- **Author:** Antifarea
-- **Source:** https://opengameart.org/content/16x16-weapon-rpg-icons
-- **Contents:** 480 weapon icons (rapier, katana, sword, axe, staff, etc.) in iron/steel/bronze/gold
-- **License:** CC0 1.0
+Generated with FLUX.1 Dev via SD WebUI Forge + rembg neural background removal.
 
-### 496 RPG Icons (sprites/gear/rpg_icons/)
-- **Author:** 7Soul1 (compiled)
-- **Source:** https://opengameart.org/content/496-pixel-art-icons-for-medievalfantasy-rpg
-- **Contents:** 496 item icons — weapons, armor, spells, food, potions, rings, scrolls
-- **License:** CC0 1.0
+## In-House Assets
 
-### Puny Dungeon Tileset (tilesets/puny_dungeon/)
-- **Author:** Kenney / Vryell
-- **Source:** https://opengameart.org/content/16x16-puny-dungeon-tileset
-- **Contents:** 16x16 dungeon tiles, walls, water, torches, traps
-- **License:** CC0 1.0
+- **somdie_mono.ttf** — Custom 5x7 monospace pixel font (tools/generate_font.py)
 
-### Dungeon Tileset (tilesets/buch_dungeon/)
-- **Author:** Buch
-- **Source:** https://opengameart.org/content/dungeon-tileset
-- **Contents:** 16x16 dungeon tileset with props and characters
-- **License:** CC0 1.0
+## Audio (Third-Party — CC0)
 
-### Roguelike/RPG Pack (tilesets/kenney_roguelike/)
-- **Author:** Kenney
-- **Source:** https://opengameart.org/content/roguelikerpg-pack-1700-tiles
-- **Contents:** 1,700+ roguelike tiles — floors, walls, flora, doors, furniture, UI
-- **License:** CC0 1.0
-
-### Pixel Art Spells (vfx/spells/)
-- **Author:** Matriax
-- **Source:** https://opengameart.org/content/pixel-art-spells
-- **Contents:** 22 animated spell effects — fireball, ice lance, lightning, shields, etc.
-- **License:** CC0 1.0
-
-### Golden UI (ui/golden/)
-- **Author:** Buch
-- **Source:** https://opengameart.org/content/golden-ui
-- **Contents:** RPG-themed golden UI elements — frames, bars, buttons, menus
-- **License:** CC0 1.0
-
-### Kenney Pixel UI Pack (ui/kenney/)
-- **Author:** Kenney
-- **Source:** https://kenney.nl/assets/pixel-ui-pack
-- **Contents:** 750 pixel-art UI elements — panels, buttons, interface components
-- **License:** CC0 1.0
-
-### Superpowers Asset Packs (multiple directories)
-- **Author:** Pixel-boy / Superpowers
-- **Source:** https://github.com/sparklinlabs/superpowers-asset-packs
-- **Contents:**
-  - Medieval Fantasy: characters, monsters, animals, items, FX, HUD, backgrounds, music, sounds
-  - RPG Battle System: characters, monsters, items, FX, HUD, battle backgrounds, music, sounds
-- **License:** CC0 1.0
-- **Directories:** sprites/monsters/medieval_fantasy/, sprites/monsters/rpg_battle/,
-  sprites/heroes/medieval_fantasy/, sprites/heroes/rpg_battle/, sprites/companions/,
-  sprites/gear/medieval_items/, sprites/gear/rpg_battle_items/, vfx/medieval_fx/,
-  vfx/battle_fx/, ui/hud/, tilesets/battle_backgrounds/, audio/music/, audio/sfx/
-
-## CC-BY 4.0 (Attribution Required)
-
-### Animated Monsters Pack (sprites/monsters/animated/)
-- **Author:** CookieEfedu
-- **Source:** https://opengameart.org/content/monsters-slime-skeleton-and-goblin
-- **Contents:** Animated goblin, slime, skeleton spritesheets (idle, run, attack, jump, damage, dead)
-- **License:** CC-BY 4.0
-- **Attribution:** Sprites by CookieEfedu (https://opengameart.org/users/cookieefedu)
+Audio assets are from third-party CC0 sources and are tracked separately.
