@@ -66,7 +66,7 @@ var animAction_ult=null;
 var fleeResult=false;
 var autoBattle=false;
 function getSkillDmg(idx,src){
-  if(idx===0)return Math.round(180+(src.maxHp||1500)*0.05);
+  if(idx===0)return Math.round(140+(src.maxHp||1500)*0.04);
   if(idx===1)return Math.round(90+(src.maxHp||1500)*0.03);
   if(idx===9)return Math.round(src.baseDmg*1.5+(src.def||0));
   if(idx===11)return Math.round(80+(src.def||0)*3);
@@ -836,7 +836,7 @@ function applySkillEffect(src,tgt){
     }
   }else{
     if(idx===2){
-      src.shieldActive=true;src.shieldHp=(320+(src.def||0)*4)*(1+(src.spellDmgBonus||0));
+      src.shieldActive=true;src.shieldHp=(380+(src.def||0)*5)*(1+(src.spellDmgBonus||0));
       addStatus(playerStatuses,'shield',2);
       addFloat(src.x,src.y-60,'SHIELD +'+Math.round(src.shieldHp),'#44ddbb');SFX.shield();
       combatLog('Shield activated ('+Math.round(src.shieldHp)+' HP)','spell');

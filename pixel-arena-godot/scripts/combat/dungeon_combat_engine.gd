@@ -638,7 +638,7 @@ func _calc_skill_damage(base_dmg: float, defender: Dictionary) -> Dictionary:
 func _apply_skill_effect(idx: int) -> void:
 	match idx:
 		0:  # Chain Lightning — stun + damage
-			var bd := 180.0 + float(hero["max_hp"]) * 0.05
+			var bd := 140.0 + float(hero["max_hp"]) * 0.04
 			var r := _calc_skill_damage(bd, monster)
 			_deal_skill_damage(r, "Chain Lightning")
 			if not r.get("evaded", false):
@@ -649,7 +649,7 @@ func _apply_skill_effect(idx: int) -> void:
 			var r := _calc_skill_damage(bd, monster)
 			_deal_skill_damage(r, "Lightning Bolt")
 		2:  # Static Shield
-			var sh := 320.0 + float(hero["def"]) * 4.0
+			var sh := 380.0 + float(hero["def"]) * 5.0
 			sh *= (1.0 + float(hero.get("spell_dmg_bonus", 0.0)))
 			shield_hp = sh
 			shield_rounds = 2

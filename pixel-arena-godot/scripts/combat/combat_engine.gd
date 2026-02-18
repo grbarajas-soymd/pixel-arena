@@ -838,7 +838,7 @@ func _wiz_ai(w: Dictionary, t: int) -> void:
 			CombatMath.add_charge(w, 1)
 			_add_log(t, "Chain Zap DODGED!", "miss")
 			return
-		var dm: float = float(c.get("chain_dmg", 260)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
+		var dm: float = float(c.get("chain_dmg", 220)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
 		if e.get("type", "") == "barbarian" and float(_cls("barbarian").get("spell_dodge", 0)) > 0 and randf() < float(_cls("barbarian").get("spell_dodge", 0)):
 			dm *= 0.5
 			_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 40.0, "RESIST", "#ff8888")
@@ -858,11 +858,11 @@ func _wiz_ai(w: Dictionary, t: int) -> void:
 				_kill_follower(e, t)
 		e["shocked"] = true
 		e["shocked_end"] = t + 3000
-		e["slow"] = float(c.get("chain_slow", 0.12))
+		e["slow"] = float(c.get("chain_slow", 0.10))
 		e["slow_end"] = t + int(c.get("chain_slow_dur", 1500))
 		if not e.get("stealthed", false) and not (e.get("type", "") == "barbarian" and float(_cls("barbarian").get("stun_resist", 0)) > 0 and randf() < float(_cls("barbarian").get("stun_resist", 0))):
-			e["stun_end"] = t + int(c.get("chain_stun", 450))
-			_add_log(t, str(e.get("name", "")) + " STUNNED " + str(c.get("chain_stun", 450)) + "ms!", "stun")
+			e["stun_end"] = t + int(c.get("chain_stun", 300))
+			_add_log(t, str(e.get("name", "")) + " STUNNED " + str(c.get("chain_stun", 300)) + "ms!", "stun")
 		CombatMath.add_charge(w, 1)
 		spell_cast.emit(w, "Chain Lightning")
 

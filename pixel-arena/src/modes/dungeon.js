@@ -38,9 +38,9 @@ var DG_MONSTERS=[
   {name:'Lich',icon:'\u2620\uFE0F',hp:950,dmg:140,def:15,tier:3,monsterType:'humanoid',colors:{body:'#2a3a4a',accent:'#4a5a6a',eye:'#44ffcc'},specials:['poisonSpit','heal']},
   {name:'Stone Golem',icon:'\u{1F5FF}',hp:1800,dmg:85,def:50,tier:3,monsterType:'beast',colors:{body:'#5a5a5a',accent:'#3a3a3a',eye:'#ffaa22'},specials:['warStomp','enrage']},
   {name:'Wyvern',icon:'\u{1F409}',hp:1100,dmg:130,def:22,tier:3,monsterType:'winged',colors:{body:'#6a4a2a',accent:'#8a5a2a',eye:'#ff6622'},specials:['enrage','poisonSpit']},
-  {name:'Dragon',icon:'\u{1F432}',hp:2500,dmg:170,def:40,tier:4,monsterType:'winged',colors:{body:'#6a2a2a',accent:'#8a3a1a',eye:'#ff4400'},specials:['enrage','heavyStrike']},
-  {name:'Demon Lord',icon:'\u{1F608}',hp:2200,dmg:190,def:35,tier:4,monsterType:'humanoid',colors:{body:'#4a1a2a',accent:'#6a2a3a',eye:'#ff2244'},specials:['warStomp','poisonSpit']},
-  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:3200,dmg:150,def:45,tier:4,monsterType:'winged',colors:{body:'#2a4a3a',accent:'#3a6a4a',eye:'#44ff88'},specials:['heal','enrage']},
+  {name:'Dragon',icon:'\u{1F432}',hp:2000,dmg:150,def:35,tier:4,monsterType:'winged',colors:{body:'#6a2a2a',accent:'#8a3a1a',eye:'#ff4400'},specials:['enrage','heavyStrike']},
+  {name:'Demon Lord',icon:'\u{1F608}',hp:1900,dmg:165,def:30,tier:4,monsterType:'humanoid',colors:{body:'#4a1a2a',accent:'#6a2a3a',eye:'#ff2244'},specials:['warStomp','poisonSpit']},
+  {name:'Ancient Wyrm',icon:'\u{1F40D}',hp:2600,dmg:130,def:40,tier:4,monsterType:'winged',colors:{body:'#2a4a3a',accent:'#3a6a4a',eye:'#44ff88'},specials:['heal','enrage']},
 ];
 
 export function buildDungeonPicker(){

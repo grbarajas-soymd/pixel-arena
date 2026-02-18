@@ -65,12 +65,12 @@
   "steel_boots":     {"slot": "boots",  "name": "Steel Boots",     "rarity": "common",    "stats": {"def": 8, "move_speed": 10}, "visual": {"type": "steel_boots", "color": "#4a4a4a", "hilight": "#6a6a6a"}},
   "power_ring":      {"slot": "accessory","name": "Ring of Power", "rarity": "common",    "stats": {"base_dmg": 30}, "visual": {"type": "ring", "color": "#6a3a3a", "hilight": "#8a5a5a", "glow": "#aa5a5a"}},
 
-  "crystal_staff":   {"slot": "weapon", "name": "Crystal Staff",   "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 80, "base_as": 0.6, "spell_dmg_bonus": 0.12}, "visual": {"type": "staff", "color": "#4a6a8a", "hilight": "#6a9aba", "glow": "#88bbdd"}},
-  "shortbow":        {"slot": "weapon", "name": "Swift Shortbow",  "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 60, "base_as": 0.8}, "visual": {"type": "bow", "color": "#6a4a2a", "hilight": "#8a6a4a"}},
-  "shadow_hood":     {"slot": "helmet", "name": "Shadow Hood",     "rarity": "uncommon",  "stats": {"def": 8, "evasion": 0.05, "move_speed": 10}, "visual": {"type": "shadow_hood", "color": "#2a2a3a", "hilight": "#3a3a4a"}},
-  "leather_vest":    {"slot": "chest",  "name": "Leather Vest",    "rarity": "uncommon",  "stats": {"def": 15, "evasion": 0.08, "move_speed": 15}, "visual": {"type": "leather", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
-  "swift_boots":     {"slot": "boots",  "name": "Swift Boots",     "rarity": "uncommon",  "stats": {"def": 3, "move_speed": 40, "evasion": 0.03}, "visual": {"type": "swift_boots", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
-  "speed_charm":     {"slot": "accessory","name": "Speed Charm",   "rarity": "uncommon",  "stats": {"base_as": 0.15, "move_speed": 15}, "visual": {"type": "charm", "color": "#5a6a4a", "hilight": "#7a8a6a"}},
+  "crystal_staff":   {"slot": "weapon", "name": "Crystal Staff",   "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 90, "base_as": 0.65, "spell_dmg_bonus": 0.12}, "visual": {"type": "staff", "color": "#4a6a8a", "hilight": "#6a9aba", "glow": "#88bbdd"}},
+  "shortbow":        {"slot": "weapon", "name": "Swift Shortbow",  "rarity": "uncommon",  "range_type": "ranged", "stats": {"base_dmg": 75, "base_as": 0.85}, "visual": {"type": "bow", "color": "#6a4a2a", "hilight": "#8a6a4a"}},
+  "shadow_hood":     {"slot": "helmet", "name": "Shadow Hood",     "rarity": "uncommon",  "stats": {"def": 10, "hp": 100, "evasion": 0.05, "move_speed": 10}, "visual": {"type": "shadow_hood", "color": "#2a2a3a", "hilight": "#3a3a4a"}},
+  "leather_vest":    {"slot": "chest",  "name": "Leather Vest",    "rarity": "uncommon",  "stats": {"def": 18, "hp": 200, "evasion": 0.08, "move_speed": 15}, "visual": {"type": "leather", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+  "swift_boots":     {"slot": "boots",  "name": "Swift Boots",     "rarity": "uncommon",  "stats": {"def": 5, "move_speed": 45, "evasion": 0.04}, "visual": {"type": "swift_boots", "color": "#5a3a2a", "hilight": "#7a5a4a"}},
+  "speed_charm":     {"slot": "accessory","name": "Speed Charm",   "rarity": "uncommon",  "stats": {"base_as": 0.18, "move_speed": 15, "base_dmg": 10}, "visual": {"type": "charm", "color": "#5a6a4a", "hilight": "#7a8a6a"}},
 
   "frost_daggers":   {"slot": "weapon", "name": "Frost Daggers",   "rarity": "rare",      "range_type": "hybrid", "stats": {"base_dmg": 100, "base_as": 0.85}, "visual": {"type": "daggers", "color": "#6a8aaa", "hilight": "#8aaacc"}},
   "cursed_scythe":   {"slot": "weapon", "name": "Cursed Scythe",   "rarity": "rare",      "range_type": "melee",  "stats": {"base_dmg": 130, "base_as": 0.65}, "visual": {"type": "scythe", "color": "#3a2a3a", "hilight": "#5a4a5a", "glow": "#6a4a8a"}},

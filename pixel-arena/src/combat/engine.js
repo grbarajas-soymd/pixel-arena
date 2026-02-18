@@ -42,6 +42,7 @@ export function calcDmg(a, d, isRanged, dist) {
   if (a.type === 'assassin' && dist <= a.meleeRange) dm *= 1.30;
   if (a.type === 'wizard' && a.charge > 0) dm *= (1 + a.charge * 0.06);
   if (a.type === 'barbarian') { dm *= getRage(a).d; if (a.ultActive) dm *= (1 + (CLASSES.barbarian.ultDmg || 0)); if (CLASSES.barbarian.dmgVariance) dm *= (1 + (Math.random() - .5) * 2 * CLASSES.barbarian.dmgVariance) }
+  if (a.type === 'custom' && !isRanged && dist <= MELEE) dm *= 1.12;
   if (a.type === 'custom' && a.ultActive) dm *= 1.2;
   if (a._stashCrit && Math.random() < a._stashCrit) { dm *= 1.75; spFloat(a.x, a.y - 70, 'CRIT!', '#ffcc22') }
   return dm;

@@ -29,12 +29,12 @@
    "colors": {"body": "#4a6a3a", "accent": "#2a4a2a", "eye": "#88ff44"}, "specials": ["poison_spit", "heal"]},
   {"name": "Yeti", "icon": "", "hp": 1600, "dmg": 120, "def": 35, "tier": 3, "type": "beast",
    "colors": {"body": "#ccddee", "accent": "#8899aa", "eye": "#4466aa"}, "specials": ["war_stomp", "enrage"]},
-  {"name": "Dragon", "icon": "", "hp": 2500, "dmg": 170, "def": 40, "tier": 4, "type": "winged",
+  {"name": "Dragon", "icon": "", "hp": 2000, "dmg": 150, "def": 35, "tier": 4, "type": "winged",
    "colors": {"body": "#6a2a2a", "accent": "#8a3a1a", "eye": "#ff4400"}, "specials": ["enrage", "heavy_strike"]},
-  {"name": "Demon Lord", "icon": "", "hp": 2200, "dmg": 190, "def": 35, "tier": 4, "type": "humanoid",
+  {"name": "Demon Lord", "icon": "", "hp": 1900, "dmg": 165, "def": 30, "tier": 4, "type": "humanoid",
    "colors": {"body": "#4a1a2a", "accent": "#6a2a3a", "eye": "#ff2244"}, "specials": ["war_stomp", "poison_spit"]},
-  {"name": "Ancient Wyrm", "icon": "", "hp": 3200, "dmg": 150, "def": 45, "tier": 4, "type": "winged",
+  {"name": "Ancient Wyrm", "icon": "", "hp": 2600, "dmg": 130, "def": 40, "tier": 4, "type": "winged",
    "colors": {"body": "#2a4a3a", "accent": "#3a6a4a", "eye": "#44ff88"}, "specials": ["heal", "enrage"]},
-  {"name": "Abyssal Kraken", "icon": "", "hp": 2800, "dmg": 160, "def": 38, "tier": 4, "type": "beast",
+  {"name": "Abyssal Kraken", "icon": "", "hp": 2300, "dmg": 140, "def": 33, "tier": 4, "type": "beast",
    "colors": {"body": "#2a3a5a", "accent": "#1a2a4a", "eye": "#ff2244"}, "specials": ["poison_spit", "war_stomp"]}
 ]

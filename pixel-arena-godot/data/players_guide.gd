@@ -24,12 +24,12 @@ You have [color=#ffd700]3 save slots[/color] for different characters. Progress 
 		"content": """[color=#ffd700][b]Character Classes[/b][/color]
 
 [color=#44ddbb][b]Iron Mage "Voltaris"[/b][/color] — Ranged spellcaster
-  HP 4200 | DMG 130 | AS 0.75 | DEF 45 | Mana 650
+  HP 3900 | DMG 115 | AS 0.75 | DEF 45 | Mana 650
   [color=#aaaaaa]Charge stacks: +6% spell/basic dmg per stack (max 10)
   High spell damage, strong shields, no evasion[/color]
 
 [color=#ff8844][b]Flame Ranger "Pyralis"[/b][/color] — Ranged bleed specialist
-  HP 4800 | DMG 180 | AS 0.95 | DEF 58 | Eva 5%
+  HP 5000 | DMG 180 | AS 1.05 | DEF 58 | Eva 10%
   [color=#aaaaaa]Every 3rd attack bleeds (1% current HP/s, 2s)
   Bloodlust: +5% AS per active bleed on target[/color]
 
@@ -52,7 +52,7 @@ Pick [color=#44ff88]2 skills[/color] + [color=#44ff88]1 ultimate[/color] at crea
 [color=#44ddbb][b]Mage Skills[/b][/color]
   Chain Lightning — 35 mana, 2T cd — Damage + stun
   Lightning Bolt — 20 mana, 1T cd — Quick damage
-  Static Shield — 45 mana, 3T cd — Absorb shield (320+DEF*4)
+  Static Shield — 45 mana, 3T cd — Absorb shield (380+DEF*5)
   Frost Nova — 30 mana, 2T cd — Damage + slow 2T
   Arcane Drain — 25 mana, 3T cd — Damage + heal
 

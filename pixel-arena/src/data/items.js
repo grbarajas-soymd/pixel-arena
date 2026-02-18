@@ -31,12 +31,12 @@ export const ITEMS = {
   power_ring:{slot:'accessory',icon:'\u{1F48D}',name:'Ring of Power',rarity:'common',stats:{baseDmg:30},desc:'+30Dmg',visual:{type:'ring',color:'#6a3a3a',hilight:'#8a5a5a',glow:'#aa5a5a'}},
 
   // — Uncommon —
-  crystal_staff:{slot:'weapon',icon:'\u{1F52E}',name:'Crystal Staff',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:80,baseAS:0.6,spellDmgBonus:0.12},desc:'+80Dmg 0.6AS +12%Spell',visual:{type:'staff',color:'#4a6a8a',hilight:'#6a9aba',glow:'#88bbdd'}},
-  shortbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Swift Shortbow',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:60,baseAS:0.8},desc:'+60Dmg 0.8AS',visual:{type:'bow',color:'#6a4a2a',hilight:'#8a6a4a'}},
-  shadow_hood:{slot:'helmet',icon:'\u{1F3AD}',name:'Shadow Hood',rarity:'uncommon',stats:{def:8,evasion:0.05,moveSpeed:10},desc:'+5%Eva +10Spd',visual:{type:'shadow_hood',color:'#2a2a3a',hilight:'#3a3a4a'}},
-  leather_vest:{slot:'chest',icon:'\u{1F9BA}',name:'Leather Vest',rarity:'uncommon',stats:{def:15,evasion:0.08,moveSpeed:15},desc:'+8%Eva +15Spd',visual:{type:'leather',color:'#5a3a2a',hilight:'#7a5a4a'}},
-  swift_boots:{slot:'boots',icon:'\u{1F45F}',name:'Swift Boots',rarity:'uncommon',stats:{def:3,moveSpeed:40,evasion:0.03},desc:'+40Spd +3%Eva',visual:{type:'swift_boots',color:'#5a3a2a',hilight:'#7a5a4a'}},
-  speed_charm:{slot:'accessory',icon:'\u26A1',name:'Speed Charm',rarity:'uncommon',stats:{baseAS:0.15,moveSpeed:15},desc:'+0.15AS +15Spd',visual:{type:'charm',color:'#5a6a4a',hilight:'#7a8a6a'}},
+  crystal_staff:{slot:'weapon',icon:'\u{1F52E}',name:'Crystal Staff',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:90,baseAS:0.65,spellDmgBonus:0.12},desc:'+90Dmg 0.65AS +12%Spell',visual:{type:'staff',color:'#4a6a8a',hilight:'#6a9aba',glow:'#88bbdd'}},
+  shortbow:{slot:'weapon',icon:'\u{1F3F9}',name:'Swift Shortbow',rarity:'uncommon',rangeType:'ranged',stats:{baseDmg:75,baseAS:0.85},desc:'+75Dmg 0.85AS',visual:{type:'bow',color:'#6a4a2a',hilight:'#8a6a4a'}},
+  shadow_hood:{slot:'helmet',icon:'\u{1F3AD}',name:'Shadow Hood',rarity:'uncommon',stats:{def:10,hp:100,evasion:0.05,moveSpeed:10},desc:'+10DEF +100HP +5%Eva +10Spd',visual:{type:'shadow_hood',color:'#2a2a3a',hilight:'#3a3a4a'}},
+  leather_vest:{slot:'chest',icon:'\u{1F9BA}',name:'Leather Vest',rarity:'uncommon',stats:{def:18,hp:200,evasion:0.08,moveSpeed:15},desc:'+18DEF +200HP +8%Eva +15Spd',visual:{type:'leather',color:'#5a3a2a',hilight:'#7a5a4a'}},
+  swift_boots:{slot:'boots',icon:'\u{1F45F}',name:'Swift Boots',rarity:'uncommon',stats:{def:5,moveSpeed:45,evasion:0.04},desc:'+5DEF +45Spd +4%Eva',visual:{type:'swift_boots',color:'#5a3a2a',hilight:'#7a5a4a'}},
+  speed_charm:{slot:'accessory',icon:'\u26A1',name:'Speed Charm',rarity:'uncommon',stats:{baseAS:0.18,moveSpeed:15,baseDmg:10},desc:'+0.18AS +15Spd +10Dmg',visual:{type:'charm',color:'#5a6a4a',hilight:'#7a8a6a'}},
 
   // — Rare —
   frost_daggers:{slot:'weapon',icon:'\u{1F5E1}',name:'Frost Daggers',rarity:'rare',rangeType:'melee',stats:{baseDmg:100,baseAS:0.85},desc:'+100Dmg 0.85AS',visual:{type:'daggers',color:'#6a8aaa',hilight:'#8aaacc'}},

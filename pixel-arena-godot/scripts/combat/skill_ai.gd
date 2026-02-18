@@ -97,7 +97,7 @@ static func _chain_lightning(h: Dictionary, t: int, eng: Node) -> bool:
 	if randf() < _eff_ev(e) * 0.6:
 		eng._add_log(t, "Chain DODGED!", "miss")
 		return true
-	var dm: float = (180.0 + float(h.get("max_hp", 1500)) * 0.05) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
+	var dm: float = (140.0 + float(h.get("max_hp", 1500)) * 0.04) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
 	e["hp"] = float(e.get("hp", 0)) - dm
 	h["tot_dmg"] = float(h.get("tot_dmg", 0)) + dm
 	e["hurt_anim"] = 1.0
@@ -105,10 +105,10 @@ static func _chain_lightning(h: Dictionary, t: int, eng: Node) -> bool:
 	eng._add_log(t, "Chain>" + str(e.get("name", "")) + " " + str(roundi(dm)), "shock")
 	e["shocked"] = true
 	e["shocked_end"] = t + 3000
-	e["slow"] = 0.12
+	e["slow"] = 0.10
 	e["slow_end"] = t + 1500
 	if not e.get("stealthed", false) and e.get("type", "") != "barbarian":
-		e["stun_end"] = t + 450
+		e["stun_end"] = t + 300
 	return true
 
 
@@ -135,19 +135,19 @@ static func _lightning_bolt(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 2: Static Shield — 45 mana, 10s CD, absorb 320+def*4, when HP<65%
+# 2: Static Shield — 45 mana, 10s CD, absorb 380+def*5, when HP<70%
 static func _static_shield(h: Dictionary, t: int, eng: Node) -> bool:
 	if float(h.get("resource", 0)) < 45:
 		return false
-	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.65:
+	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.70:
 		return false
 	if h.get("shield_active", false):
 		return false
 	h["resource"] = float(h.get("resource", 0)) - 45
 	_set_skill_cd(h, 2, 10000)
 	h["shield_active"] = true
-	h["shield_hp"] = 320.0 + float(h.get("def", 0)) * 4.0
-	h["shield_end"] = t + 5000
+	h["shield_hp"] = 380.0 + float(h.get("def", 0)) * 5.0
+	h["shield_end"] = t + 6000
 	h["cast_anim"] = 1.0
 	eng._add_log(t, str(h.get("name", "")) + " Shield!", "spell")
 	return true
@@ -260,16 +260,16 @@ static func _envenom(h: Dictionary, t: int, eng: Node) -> bool:
 	_set_skill_cd(h, 7, 8000)
 	h["cast_anim"] = 1.0
 	h["envenomed"] = true
-	h["envenomed_end"] = t + 3500 + roundi(float(h.get("move_speed", 160)) * 10.0)
+	h["envenomed_end"] = t + 4500 + roundi(float(h.get("move_speed", 160)) * 12.0)
 	eng._add_log(t, str(h.get("name", "")) + " Envenom!", "poison")
 	return true
 
 
-# 8: Smoke Bomb — 35 energy, 12s CD, +45% evasion AoE, when HP<55%
+# 8: Smoke Bomb — 35 energy, 12s CD, +45% evasion AoE, when HP<65%
 static func _smoke_bomb(h: Dictionary, t: int, eng: Node) -> bool:
 	if float(h.get("resource", 0)) < 35:
 		return false
-	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.55:
+	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.65:
 		return false
 	if h.get("smoke_bomb_active", false):
 		return false
@@ -277,7 +277,7 @@ static func _smoke_bomb(h: Dictionary, t: int, eng: Node) -> bool:
 	_set_skill_cd(h, 8, 12000)
 	h["cast_anim"] = 1.0
 	h["smoke_bomb_active"] = true
-	h["smoke_bomb_end"] = t + 3000 + roundi(float(h.get("evasion", 0.0)) * 6000.0)
+	h["smoke_bomb_end"] = t + 3500 + roundi(float(h.get("evasion", 0.0)) * 8000.0)
 	h["smoke_bomb_x"] = float(h.get("x", 0))
 	eng._add_log(t, str(h.get("name", "")) + " Smoke Bomb!", "stealth")
 	return true
@@ -643,7 +643,7 @@ static func _ult_last_stand(h: Dictionary, t: int, eng: Node) -> bool:
 		return false
 	spells.get("ultimate", {})["used"] = true
 	h["last_stand_active"] = true
-	h["last_stand_end"] = t + 2500 + roundi(float(h.get("def", 0)) * 25.0)
+	h["last_stand_end"] = t + 1800 + roundi(float(h.get("def", 0)) * 18.0)
 	h["cast_anim"] = 1.0
 	eng._sp_float(float(h.get("x", 0)), float(h.get("y", 0)) - 70, "LAST STAND", "#ffcc22")
 	eng._add_log(t, str(h.get("name", "")) + " LAST STAND!", "ult")

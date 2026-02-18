@@ -235,6 +235,10 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 		if variance > 0.0:
 			dm *= (1.0 + (randf() - 0.5) * 2.0 * variance)
 
+	# Custom melee bonus
+	if a.get("type", "") == "custom" and not is_ranged and dist <= CombatConstants.MELEE:
+		dm *= 1.12
+
 	# Custom ult bonus
 	if a.get("type", "") == "custom" and a.get("ult_active", false):
 		dm *= 1.2

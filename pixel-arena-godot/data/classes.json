@@ -2,12 +2,12 @@
   "wizard": {
     "icon": "🧙", "name": "Iron Mage", "name_short": "Voltaris",
     "color": "#44ddbb", "color_dark": "#1a6a5a", "color_light": "#88ffdd",
-    "hp": 4200, "mana": 650, "mana_regen": 5.5,
-    "base_dmg": 130, "base_as": 0.75, "def": 45, "evasion": 0,
+    "hp": 3900, "mana": 650, "mana_regen": 5.5,
+    "base_dmg": 115, "base_as": 0.75, "def": 45, "evasion": 0,
     "move_speed": 88, "move_speed_bonus": 0.08,
     "cast_speed_bonus": 0.12, "spell_dmg_bonus": 0.08,
     "attack_range": 320, "spell_range": 430, "preferred_range": 380,
-    "chain_dmg": 260, "chain_bcd": 5000, "chain_cost": 35, "chain_bounce": 0.5,
+    "chain_dmg": 220, "chain_bcd": 5000, "chain_cost": 35, "chain_bounce": 0.5,
     "chain_stun": 450, "chain_slow": 0.12, "chain_slow_dur": 1500,
     "bolt_dmg": 140, "bolt_bcd": 2200, "bolt_cost": 20,
     "shield_hp": 420, "shield_bcd": 10000, "shield_cost": 45, "shield_dur": 5000, "shield_reflect": 45,
@@ -16,7 +16,7 @@
   "ranger": {
     "icon": "🔥", "name": "Flame Ranger", "name_short": "Pyralis",
     "color": "#ffaa44", "color_dark": "#8a4400", "color_light": "#ffcc88",
-    "hp": 4800, "base_dmg": 180, "base_as": 0.95, "def": 58, "evasion": 0.05,
+    "hp": 5000, "base_dmg": 180, "base_as": 1.05, "def": 58, "evasion": 0.10,
     "move_speed": 100, "move_speed_bonus": 0.15,
     "attack_range": 420, "spell_range": 420, "preferred_range": 340,
     "follower_max_hp": 450
