@@ -43,6 +43,14 @@ var _sfx_loot_common: AudioStream = preload("res://assets/audio/sfx/5.ogg")
 var _sfx_loot_rare: AudioStream = preload("res://assets/audio/sfx/7.ogg")
 var _sfx_loot_epic: AudioStream = preload("res://assets/audio/sfx/9.ogg")
 
+# Room-clear victory SFX pool — cycles sequentially to avoid repeats
+var _room_clear_pool: Array[AudioStream] = [
+	preload("res://assets/audio/sfx/victory-1.wav"),
+	preload("res://assets/audio/sfx/victory-2.wav"),
+	preload("res://assets/audio/sfx/victory-3.wav"),
+]
+var _room_clear_idx: int = 0
+
 const RARITY_FLASH_COLORS: Dictionary = {
 	"uncommon": Color(0.2, 0.8, 0.2, 0.15),
 	"rare": Color(0.2, 0.4, 0.9, 0.2),
@@ -425,6 +433,11 @@ func _render_room(room_type: String) -> void:
 	_clear_room_actions()
 	var r = _gs.dg_run
 	var is_boss = int(r.get("room", 0)) == 3
+
+	# Brief fade-in on room content for smoother transitions
+	room_content.modulate.a = 0.0
+	var fade_tw := create_tween()
+	fade_tw.tween_property(room_content, "modulate:a", 1.0, 0.3)
 
 	match room_type:
 		"combat":
@@ -1285,6 +1298,13 @@ func _show_gear_drop(gear: Dictionary, after_fn: Callable = Callable()) -> void:
 	if dust_val > 0:
 		_add_room_button("Salvage (" + str(dust_val) + ")", func(): _on_salvage_gear(after_fn))
 
+	# Dio reacts to extreme quality rolls
+	if quality >= 95 or quality <= 10:
+		get_tree().create_timer(0.6).timeout.connect(func():
+			var ctx := "perfect_gear" if quality >= 95 else "trash_gear"
+			DioPopup.spawn(self, ctx, quality)
+		)
+
 
 func _on_equip_gear(after_fn: Callable) -> void:
 	var r = _gs.dg_run
@@ -1463,6 +1483,23 @@ func _handle_combat_victory() -> void:
 	var floor_num = int(r.get("floor", 1))
 	var is_boss = room_num == 3
 
+	# Rotating room-clear SFX
+	var sfx_mgr := get_node_or_null("/root/SfxManager")
+	if sfx_mgr and not _room_clear_pool.is_empty():
+		var is_final_boss := floor_num >= 8 and room_num == 3
+		if is_final_boss:
+			# Special boss fanfare — louder victory-3
+			sfx_mgr.play_sfx(_room_clear_pool[2], 2.0)
+		else:
+			sfx_mgr.play_sfx(_room_clear_pool[_room_clear_idx])
+			_room_clear_idx = (_room_clear_idx + 1) % _room_clear_pool.size()
+
+	# Dio boss kill comment (non-final bosses only)
+	if is_boss and not (floor_num >= 8 and room_num == 3):
+		get_tree().create_timer(0.5).timeout.connect(func():
+			DioPopup.spawn(self, "boss_kill")
+		)
+
 	# Gold reward
 	var gold_scale = 1.0 + float(_gs.dungeon_clears) * 0.1
 	var gold_reward = roundi((5.0 + randf() * 10.0) * float(floor_num) * gold_scale)
@@ -1552,6 +1589,11 @@ func _handle_combat_victory() -> void:
 func _show_intermission(title: String, title_color: Color, body: String, next_label: String, next_fn: Callable) -> void:
 	_clear_room_actions()
 
+	# Smooth fade-in
+	room_content.modulate.a = 0.0
+	var fade_tw := create_tween()
+	fade_tw.tween_property(room_content, "modulate:a", 1.0, 0.35)
+
 	room_sprite.visible = false
 	room_icon.visible = false
 	room_title.text = title
@@ -1616,6 +1658,11 @@ func _show_victory() -> void:
 	_add_room_button("Return Victorious", _end_dungeon_run)
 	_update_run_ui()
 
+	# Dio victory celebration
+	get_tree().create_timer(1.0).timeout.connect(func():
+		DioPopup.spawn(self, "victory")
+	)
+
 
 func _show_death() -> void:
 	var r = _gs.dg_run
@@ -1649,6 +1696,11 @@ func _show_death() -> void:
 
 	_add_room_button("Return", _end_dungeon_run)
 	_update_run_ui()
+
+	# Dio death commentary
+	get_tree().create_timer(0.8).timeout.connect(func():
+		DioPopup.spawn(self, "death")
+	)
 
 
 func _end_dungeon_run() -> void:
@@ -1986,5 +2038,5 @@ func _room_history_size() -> int:
 
 
 func _delayed_generate_room() -> void:
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.6).timeout
 	_generate_room()

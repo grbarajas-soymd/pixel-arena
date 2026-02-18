@@ -160,7 +160,12 @@ func _show_picker() -> void:
 func _show_follower_pick() -> void:
 	_screen = "follower_pick"
 	_clear_dynamic()
-	_companion_index = -1
+	# Auto-select companion: use active_follower from game state, or first available
+	if _gs.followers.size() > 0:
+		var active_f: int = int(_gs.active_follower) if _gs.active_follower >= 0 else 0
+		_companion_index = clampi(active_f, 0, _gs.followers.size() - 1)
+	else:
+		_companion_index = -1
 
 	var run: Dictionary = _gs.ladder_run
 	var fight_num: int = int(run.get("wins", 0)) + 1

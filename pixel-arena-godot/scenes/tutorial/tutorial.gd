@@ -74,7 +74,7 @@ func _ready() -> void:
 		TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
 		return
 
-	ThemeManager.setup_scene_background(self, "res://assets/tilesets/battle_backgrounds/3.png", Color(0.12, 0.08, 0.14, 1.0))
+	_setup_background()
 
 	_content = Control.new()
 	_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -124,7 +124,6 @@ func _show_intro() -> void:
 	# Hero sprite centered on screen
 	var hero_sprite := LayeredSprite.new()
 	hero_sprite.set_class(class_key)
-	hero_sprite.set_weapon_from_equipment(_gs.equipment)
 	hero_sprite.scale = Vector2(2.0, 2.0)
 	hero_sprite.position = Vector2(320, 130)
 	hero_sprite.start_idle_bob(0.5, 2.0)
@@ -156,6 +155,18 @@ func _show_gear_reward() -> void:
 		return
 
 	_gs.gear_bag.append(_reward_weapon)
+
+	# Gear icon — centered above panel
+	var icon_tex: Texture2D = IconMap.get_item_icon(_reward_weapon.get("base_key", ""))
+	if icon_tex:
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = icon_tex
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.custom_minimum_size = Vector2(40, 40)
+		icon_rect.position = Vector2(300, 12)
+		_content.add_child(icon_rect)
 
 	var rarity: String = _reward_weapon.get("rarity", "common")
 	var panel := PanelContainer.new()
@@ -410,13 +421,27 @@ func _show_follower_reward() -> void:
 		_gs.active_follower = _gs.followers.size() - 1
 
 	var rarity: String = tmpl.get("rarity", "common")
+
+	# Follower sprite — centered above panel
+	var safe_name: String = _reward_follower_name.to_lower().replace(" ", "_")
+	var f_tex = load("res://assets/sprites/generated/followers/" + safe_name + ".png")
+	if f_tex:
+		var f_sprite := TextureRect.new()
+		f_sprite.texture = f_tex
+		f_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		f_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		f_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		f_sprite.custom_minimum_size = Vector2(48, 48)
+		f_sprite.position = Vector2(296, 2)
+		_content.add_child(f_sprite)
+
 	var panel := PanelContainer.new()
 	var pstyle := ThemeManager.make_panel_style()
 	pstyle.border_color = ThemeManager.get_rarity_color(rarity)
 	pstyle.set_border_width_all(2)
 	panel.add_theme_stylebox_override("panel", pstyle)
-	panel.position = Vector2(190, 40)
-	panel.custom_minimum_size = Vector2(260, 130)
+	panel.position = Vector2(190, 52)
+	panel.custom_minimum_size = Vector2(260, 120)
 	_content.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -434,10 +459,6 @@ func _show_follower_reward() -> void:
 	name_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	name_row.add_theme_constant_override("separation", 6)
 	vbox.add_child(name_row)
-	var icon_lbl := Label.new()
-	icon_lbl.text = tmpl.get("icon", "")
-	icon_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
-	name_row.add_child(icon_lbl)
 	var name_lbl := Label.new()
 	name_lbl.text = tmpl.get("name", "")
 	name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["heading"])
@@ -472,6 +493,28 @@ func _show_follower_reward() -> void:
 
 func _show_dungeon_intro() -> void:
 	_clear_content()
+
+	# Show goblin sprite as preview
+	var goblin_tex = load("res://assets/sprites/generated/monsters/goblin_scout.png")
+	if goblin_tex:
+		var goblin_sprite := TextureRect.new()
+		goblin_sprite.texture = goblin_tex
+		goblin_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		goblin_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		goblin_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		goblin_sprite.custom_minimum_size = Vector2(80, 80)
+		goblin_sprite.position = Vector2(280, 60)
+		_content.add_child(goblin_sprite)
+
+		var goblin_label := Label.new()
+		goblin_label.text = "Goblin Scout"
+		goblin_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		goblin_label.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
+		goblin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		goblin_label.position = Vector2(268, 142)
+		goblin_label.custom_minimum_size = Vector2(104, 0)
+		_content.add_child(goblin_label)
+
 	_show_dialog(
 		"Time for your first [color=#44ff88]Dungeon[/color] fight. It's turn-based — " +
 		"Attack, Skills, Potions, or Flee like the coward I suspect you are. " +
@@ -598,7 +641,6 @@ func _show_complete() -> void:
 	var class_key: String = _gs.custom_char.get("class_key", "barbarian")
 	var hero_sprite := LayeredSprite.new()
 	hero_sprite.set_class(class_key)
-	hero_sprite.set_weapon_from_equipment(_gs.equipment)
 	hero_sprite.scale = Vector2(1.2, 1.2)
 	hero_sprite.position = Vector2(320, 128)
 	hero_sprite.start_idle_bob(0.5, 2.0)
@@ -802,6 +844,26 @@ func _clear_content() -> void:
 		_dialog.close()
 		_dialog.queue_free()
 		_dialog = null
+	# Fade in new content
+	_content.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(_content, "modulate:a", 1.0, 0.3)
+
+
+func _setup_background() -> void:
+	var tex = load("res://assets/tilesets/battle_backgrounds/dark_forest.png")
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		bg.modulate = Color(0.12, 0.08, 0.14, 1.0)
+		var old_bg = $Background
+		if old_bg:
+			old_bg.queue_free()
+		add_child(bg)
+		move_child(bg, 0)
 
 
 func _stat_display_name(key: String) -> String:

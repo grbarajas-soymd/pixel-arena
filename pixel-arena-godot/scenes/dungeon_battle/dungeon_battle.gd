@@ -59,8 +59,15 @@ var _turn_order_container: HBoxContainer
 # SFX preloads
 var _sfx_hit: AudioStream = preload("res://assets/audio/sfx/woosh-1.wav")
 var _sfx_crit: AudioStream = preload("res://assets/audio/sfx/woosh-2.wav")
-var _sfx_victory: AudioStream = preload("res://assets/audio/sfx/victory-1.wav")
-var _sfx_defeat: AudioStream = preload("res://assets/audio/sfx/monster-1.wav")
+var _sfx_victory_pool: Array[AudioStream] = [
+	preload("res://assets/audio/sfx/victory-1.wav"),
+	preload("res://assets/audio/sfx/victory-2.wav"),
+	preload("res://assets/audio/sfx/victory-3.wav"),
+]
+var _sfx_defeat_pool: Array[AudioStream] = [
+	preload("res://assets/audio/sfx/monster-1.wav"),
+	preload("res://assets/audio/sfx/monster-2.wav"),
+]
 var _sfx_heal: AudioStream = preload("res://assets/audio/sfx/2.ogg")
 var _sfx_skill: AudioStream = preload("res://assets/audio/sfx/4.ogg")
 
@@ -1394,7 +1401,7 @@ func _show_result_overlay(result: String) -> void:
 		title.text = "VICTORY!"
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		result_vbox.add_child(title)
-		_play_sfx_throttled(_sfx_victory, 0.0)
+		_play_sfx_throttled(_sfx_victory_pool[randi() % _sfx_victory_pool.size()], 0.0)
 
 		# Subtitle — monster slain
 		var slain_lbl := Label.new()
@@ -1435,7 +1442,7 @@ func _show_result_overlay(result: String) -> void:
 		title.text = "DEFEATED"
 		title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		result_vbox.add_child(title)
-		_play_sfx_throttled(_sfx_defeat, 0.0)
+		_play_sfx_throttled(_sfx_defeat_pool[randi() % _sfx_defeat_pool.size()], 0.0)
 
 		var killed_lbl := Label.new()
 		killed_lbl.text = "Slain by " + monster_name
