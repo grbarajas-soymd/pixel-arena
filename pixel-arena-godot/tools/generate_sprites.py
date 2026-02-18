@@ -36,6 +36,7 @@ import io
 import json
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -114,9 +115,10 @@ STYLE_ICON = (
 )
 
 STYLE_SKILL = (
-    "pixel art RPG ability icon, single spell effect centered, "
-    "clean pixel edges, dark background, 16-bit style, "
-    "glowing magical effect, no text, no character, crisp sharp pixels"
+    "pixel art RPG ability icon, single bold symbol centered, "
+    "simple minimalist design, high contrast, bright vivid colors on solid dark background, "
+    "clean pixel edges, 16-bit style, no text, no character, "
+    "flat graphic game icon, thick outlines, easily recognizable at small size"
 )
 
 STYLE_LOGO = (
@@ -504,12 +506,12 @@ SKILL_ICON_SPRITES = {
     ),
     # ── Rogue Skills ──
     "shadow_step": (
-        "dark shadow dash trail, black smoke teleport effect, "
-        "ghostly dark afterimage, speed blur shadow motion"
+        "single boot footprint made of purple-black smoke, "
+        "ghostly dark speed lines behind it, simple teleport symbol"
     ),
     "envenom": (
-        "dripping green poison vial, toxic green liquid drops, "
-        "venomous coating on dagger blade, poison splash"
+        "bright green poison bottle with skull label, "
+        "dripping toxic green liquid, simple potion vial icon"
     ),
     "smoke_bomb": (
         "dark grey smoke cloud explosion, round bomb with fuse, "
@@ -548,8 +550,8 @@ ULT_ICON_SPRITES = {
         "epic electrical tempest, purple-blue storm fury, torrential power"
     ),
     "rain_of_fire": (
-        "fiery meteors raining down from above, fire storm, "
-        "multiple flame projectiles falling, apocalyptic red-orange sky"
+        "three bright orange fireballs falling downward with flame tails, "
+        "simple meteor shower icon, bold fire streaks on dark sky"
     ),
     "death_mark": (
         "glowing death skull with timer, ticking death countdown, "
@@ -568,8 +570,8 @@ ULT_ICON_SPRITES = {
         "feral green-orange nature fury, wild beast power"
     ),
     "shadow_dance": (
-        "multiple shadow afterimages dancing, dark silhouettes overlapping, "
-        "rapid shadow clones spinning, phantom blade dance"
+        "pair of crossed daggers with purple shadow aura, "
+        "glowing violet crescent slash marks around blades, simple rogue icon"
     ),
     "last_stand": (
         "golden unbreakable shield glowing, divine protective barrier, "
@@ -582,6 +584,12 @@ LOGO_SPRITES = {
         "text saying 'Some of you may die' in dramatic fantasy font, "
         "golden yellow metallic letters with dark red blood dripping down, "
         "medieval dark fantasy RPG title, ominous threatening text"
+    ),
+    "softbacon_logo": (
+        "pixel art game studio logo, crispy bacon strip with a soft warm glow, "
+        "text saying 'SoftBacon Software' in playful rounded pixel font, "
+        "warm orange and red bacon colors, cozy indie game studio branding, "
+        "simple clean design, charming retro pixel art style"
     ),
 }
 
@@ -610,6 +618,28 @@ def test_connection() -> bool:
         return False
 
 
+def _poll_progress(stop_event: threading.Event, bar_width: int = 30):
+    """Poll Forge progress endpoint and display a live progress bar."""
+    while not stop_event.is_set():
+        try:
+            r = requests.get(f"{CONFIG['sd_url']}/sdapi/v1/progress", timeout=3)
+            if r.status_code == 200:
+                data = r.json()
+                pct = data.get("progress", 0)
+                state = data.get("state", {})
+                step = state.get("sampling_step", 0)
+                total_steps = state.get("sampling_steps", CONFIG["sd_steps"])
+                eta = data.get("eta_relative", 0)
+
+                filled = int(bar_width * pct)
+                bar = "█" * filled + "░" * (bar_width - filled)
+                eta_str = f"~{eta:.0f}s" if eta > 0 else "..."
+                print(f"\r    [{bar}] {pct*100:5.1f}% step {step}/{total_steps} ETA {eta_str}  ", end="", flush=True)
+        except Exception:
+            pass
+        stop_event.wait(1.0)  # Poll every 1s
+
+
 def generate_image(prompt: str, seed: int = -1,
                    width: int = None, height: int = None) -> "Image.Image | None":
     """Generate a single image via Forge txt2img API (FLUX.1 Dev settings)."""
@@ -631,11 +661,24 @@ def generate_image(prompt: str, seed: int = -1,
         "n_iter": 1,
     }
 
+    # Start progress polling thread
+    stop_event = threading.Event()
+    poll_thread = threading.Thread(target=_poll_progress, args=(stop_event,), daemon=True)
+    poll_thread.start()
+
     try:
+        t0 = time.time()
         r = requests.post(
             f"{CONFIG['sd_url']}/sdapi/v1/txt2img",
             json=payload, timeout=900
         )
+        elapsed = time.time() - t0
+
+        stop_event.set()
+        poll_thread.join(timeout=2)
+        # Clear progress bar line
+        print(f"\r    {'':60}", end="\r", flush=True)
+
         if r.status_code != 200:
             print(f"  ERROR: Forge API returned {r.status_code}: {r.text[:200]}")
             return None
@@ -651,9 +694,11 @@ def generate_image(prompt: str, seed: int = -1,
         return img
 
     except requests.ConnectionError:
+        stop_event.set()
         print("  ERROR: Lost connection to Forge")
         return None
     except Exception as e:
+        stop_event.set()
         print(f"  ERROR: {e}")
         return None
 
@@ -907,25 +952,27 @@ def gen_skill_icon(skill_key: str, desc: str, seed: int = -1) -> "Path | None":
     """Generate a skill/ultimate ability icon (single 48x48 icon)."""
     out_path = OUTPUT_DIR / "skills" / f"{skill_key}.png"
     if out_path.exists() and not CONFIG.get("force"):
-        print(f"  SKIP (exists): {out_path.name}")
+        print(f"SKIP (exists): {out_path.name}")
         return out_path
 
     if seed == -1:
         seed = _name_seed(skill_key)
 
-    print(f"  Generating skill icon: {skill_key} (seed={seed})...", end=" ", flush=True)
+    print(f"{skill_key} (seed={seed})")
+    t0 = time.time()
     prompt = f"{STYLE_SKILL}, {desc}"
     img = generate_image(prompt, seed=seed)
     if img is None:
-        print("FAILED")
+        print(f"    FAILED ({time.time()-t0:.1f}s)")
         return None
 
+    print(f"    Removing background...", end=" ", flush=True)
     img = remove_bg(img)
     img = downscale_nearest(img, SKILL_ICON_SIZE)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
-    print(f"OK -> {out_path.name}")
+    print(f"OK -> {out_path.name} ({time.time()-t0:.1f}s)")
     return out_path
 
 
@@ -1042,10 +1089,16 @@ def generate_skill_icons():
     all_skills = {**SKILL_ICON_SPRITES, **ULT_ICON_SPRITES}
     total = len(all_skills)
     done = 0
-    for skill_key, desc in all_skills.items():
+    batch_start = time.time()
+    for i, (skill_key, desc) in enumerate(all_skills.items()):
+        print(f"\n  [{i+1}/{total}] ", end="")
         result = gen_skill_icon(skill_key, desc)
         if result:
             done += 1
+        elapsed = time.time() - batch_start
+        avg = elapsed / (i + 1)
+        remaining = avg * (total - i - 1)
+        print(f"    Batch: {done}/{total} done, {elapsed:.0f}s elapsed, ~{remaining:.0f}s remaining")
     print(f"\nSkill icons: {done}/{total} completed")
     return done
 

@@ -354,6 +354,14 @@ Seeds are deterministic from sprite name (`md5(name)[:8]` → int) for reproduci
 
 - Workflow at `.github/workflows/deploy.yml` deploys `pixel-arena/dist/` on push to `master`
 
+### Godot Editor
+
+Godot 4.6 is installed at `C:\Users\grbar\Godot\Godot_v4.6-stable_win64.exe`. To launch with the project:
+
+```bash
+start "" "C:/Users/grbar/Godot/Godot_v4.6-stable_win64.exe" --path "D:/pixel-arena/pixel-arena-godot"
+```
+
 ### Godot Web Export
 
 The Godot build lives at `pixel-arena/public/game/`. To update:

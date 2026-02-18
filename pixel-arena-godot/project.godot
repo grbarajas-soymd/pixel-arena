@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Some of you may die.."
 config/description="Gear RPG autobattler with dungeon roguelike, ladder gauntlet, and async online PvP."
-run/main_scene="res://scenes/main_menu/main_menu.tscn"
+run/main_scene="res://scenes/splash/splash.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
@@ -59,6 +59,6 @@ ui_accept={
 
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="mobile"
-environment/defaults/default_clear_color=Color(0.102, 0.102, 0.180, 1)
+environment/defaults/default_clear_color=Color(0.102, 0.102, 0.18, 1)
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true
