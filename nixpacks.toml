@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "npm"]
+
+[phases.install]
+cmds = ["cd pixel-arena && npm ci"]
+
+[phases.build]
+cmds = ["cd pixel-arena && npm run build"]
+
+[start]
+cmd = "cd pixel-arena && node server/index.js"
