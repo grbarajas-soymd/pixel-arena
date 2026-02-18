@@ -254,12 +254,13 @@ func _build_center_panel() -> void:
 		fl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fl_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		follower_content.add_child(fl_label)
-		var change_btn := Button.new()
-		change_btn.text = "Change"
-		change_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		change_btn.pressed.connect(_cycle_follower)
-		change_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		follower_content.add_child(change_btn)
+		if _gs.followers.size() > 1:
+			var change_btn := Button.new()
+			change_btn.text = "Change"
+			change_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+			change_btn.pressed.connect(_cycle_follower)
+			change_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			follower_content.add_child(change_btn)
 	elif _gs.followers.size() > 0:
 		var pick_fl_btn := Button.new()
 		pick_fl_btn.text = "Set Follower"

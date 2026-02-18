@@ -11,7 +11,7 @@ const DIALOG_HEIGHT := 94
 const DIALOG_MARGIN_X := 8
 const PORTRAIT_SIZE := 56.0
 
-const DIO_SPRITE_PATH := "res://assets/sprites/generated/npcs/dio.png"
+const DIO_SPRITE_PATH := "res://assets/sprites/generated/npcs/dio_idle.png"
 
 var _backdrop: ColorRect
 var _panel: PanelContainer
@@ -136,8 +136,11 @@ func show_dialog(text: String, buttons: Array = ["Continue"], mentor_name: Strin
 		ThemeManager.style_button(btn)
 		var idx := i
 		btn.pressed.connect(func():
-			option_selected.emit(idx)
-			close()
+			if _typewriter_tween and _typewriter_tween.is_running():
+				skip_typewriter()
+			else:
+				option_selected.emit(idx)
+				close()
 		)
 		btn_row.add_child(btn)
 		_buttons.append(btn)

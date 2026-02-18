@@ -34,7 +34,7 @@ var _gs: Node
 # Visual entity nodes
 var _h1_node: Node2D
 var _h2_node: Node2D
-var _follower_nodes: Dictionary = {}  # af reference -> Node2D
+var _follower_nodes: Dictionary = {}  # stable string key -> Node2D
 var _projectile_nodes: Array[Node2D] = []
 
 # Coordinate mapping
@@ -330,14 +330,6 @@ func _style_battle_hud() -> void:
 	$HUD.add_child(top_bg)
 	$HUD.move_child(top_bg, 0)
 
-	# Subtle dark strip behind combat log / speed buttons
-	var bottom_bg := ColorRect.new()
-	bottom_bg.color = Color(0.08, 0.08, 0.15, 0.6)
-	bottom_bg.position = Vector2(0, 296)
-	bottom_bg.size = Vector2(640, 64)
-	bottom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$HUD.add_child(bottom_bg)
-	$HUD.move_child(bottom_bg, 1)
 
 	# Style combat log (overlay panel)
 	var log_style := ThemeManager.make_inset_style(0.95)
@@ -478,32 +470,36 @@ func _update_entity(node: Node2D, h: Dictionary, _delta: float) -> void:
 			hp_bg.color = Color(0.10, 0.10, 0.18, 0.8)
 
 
-func _update_followers(delta: float) -> void:
+func _update_followers(_delta: float) -> void:
 	for h in [engine.h1, engine.h2]:
-		# Ranger follower
+		var side: String = str(h.get("side", "left"))
+		# Ranger follower — use stable string key instead of mutable dict
 		if h.get("follower_alive", false):
 			var f: Dictionary = h.get("follower", {})
 			if not f.is_empty():
-				var fnode: Node2D = _follower_nodes.get(f, null)
+				var fkey: String = side + "_ranger_follower"
+				var fnode: Node2D = _follower_nodes.get(fkey, null)
 				if fnode == null:
-					fnode = _create_follower_node(f, h.get("side", "left"))
-					_follower_nodes[f] = fnode
+					fnode = _create_follower_node(f, side)
+					_follower_nodes[fkey] = fnode
 					entity_container.add_child(fnode)
 				fnode.position = _logical_to_screen(float(f.get("x", 0)), float(f.get("y", CombatConstants.GY)))
 				fnode.visible = true
 		elif h.has("follower"):
-			var f: Dictionary = h.get("follower", {})
-			var fnode: Node2D = _follower_nodes.get(f, null)
+			var fkey: String = side + "_ranger_follower"
+			var fnode: Node2D = _follower_nodes.get(fkey, null)
 			if fnode:
 				fnode.visible = false
 
-		# Arena followers
+		# Arena followers — use stable string key (side + index)
 		var afs: Array = h.get("arena_followers", [])
-		for af in afs:
-			var afnode: Node2D = _follower_nodes.get(af, null)
+		for i in range(afs.size()):
+			var af: Dictionary = afs[i]
+			var afkey: String = side + "_arena_" + str(i)
+			var afnode: Node2D = _follower_nodes.get(afkey, null)
 			if afnode == null:
-				afnode = _create_follower_node(af, af.get("owner_side", "left"))
-				_follower_nodes[af] = afnode
+				afnode = _create_follower_node(af, af.get("owner_side", side))
+				_follower_nodes[afkey] = afnode
 				entity_container.add_child(afnode)
 			if af.get("alive", false):
 				afnode.position = _logical_to_screen(float(af.get("x", 0)), float(af.get("y", CombatConstants.GY)))
