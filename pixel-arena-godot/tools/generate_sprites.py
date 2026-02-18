@@ -13,6 +13,10 @@ Usage:
     python generate_sprites.py --category heroes         # Generate hero bases
     python generate_sprites.py --category monsters       # Generate monster sprites
     python generate_sprites.py --category followers      # Generate follower sprites
+    python generate_sprites.py --category gear           # Generate gear item icons
+    python generate_sprites.py --category npcs           # Generate NPC sprites (Dio)
+    python generate_sprites.py --category skills         # Generate skill/ultimate icons
+    python generate_sprites.py --category logo           # Generate game logo
     python generate_sprites.py --category backgrounds    # Generate battle backgrounds
     python generate_sprites.py --category all            # Generate everything
     python generate_sprites.py --single barbarian_base   # Generate one specific sprite
@@ -107,6 +111,19 @@ STYLE_ICON = (
     "pixel art RPG item icon, single item centered, "
     "clean pixel edges, dark background, 16-bit style, "
     "no text, no character, item only, crisp sharp pixels"
+)
+
+STYLE_SKILL = (
+    "pixel art RPG ability icon, single spell effect centered, "
+    "clean pixel edges, dark background, 16-bit style, "
+    "glowing magical effect, no text, no character, crisp sharp pixels"
+)
+
+STYLE_LOGO = (
+    "pixel art game logo title text, dark fantasy RPG style, "
+    "golden yellow metallic text with dark red blood dripping, "
+    "dramatic medieval fantasy font, transparent background, "
+    "16-bit retro style, crisp clean pixel art, no character"
 )
 
 # ── Sprite Definitions ─────────────────────────────────────────────────────
@@ -442,6 +459,132 @@ GEAR_ICONS = {
     "heart_of_abyss": "abyss heart amulet, dark void gem, purple-black tendrils",
 }
 
+SKILL_ICON_SPRITES = {
+    # ── Mage Skills ──
+    "chain_lightning": (
+        "forked lightning bolt chain, branching blue-white electricity arcs, "
+        "crackling energy, electric sparks scattering"
+    ),
+    "lightning_bolt": (
+        "single bright lightning bolt, intense blue-white electric strike, "
+        "sharp jagged bolt, small spark trail"
+    ),
+    "static_shield": (
+        "glowing electric shield barrier, circular blue energy dome, "
+        "crackling static sparks around edges, protective ward"
+    ),
+    "frost_nova": (
+        "ice explosion burst, radiating frost shards, snowflake center, "
+        "frozen crystalline shards flying outward, icy blue-white glow"
+    ),
+    "arcane_drain": (
+        "swirling purple life-drain vortex, dark arcane energy spiral, "
+        "purple and green soul siphon, magical essence flowing"
+    ),
+    # ── Ranger Skills ──
+    "hunters_mark": (
+        "glowing red crosshair target reticle, targeting mark, "
+        "circular aim sight, red bullseye with lines"
+    ),
+    "bloodlust": (
+        "crimson blood droplets splash, red frenzy aura, "
+        "swirling blood energy, berserker rage red glow"
+    ),
+    "summon_pet": (
+        "ghostly spirit wolf head, spectral blue-white animal spirit, "
+        "glowing summoning circle beneath, ethereal beast"
+    ),
+    "rupture": (
+        "exploding blood burst, crimson shards detonating outward, "
+        "red gore splash effect, violent rupture explosion"
+    ),
+    "marked_for_death": (
+        "dark skull crosshair mark, death targeting symbol, "
+        "red and black death sigil, ominous glowing death mark"
+    ),
+    # ── Rogue Skills ──
+    "shadow_step": (
+        "dark shadow dash trail, black smoke teleport effect, "
+        "ghostly dark afterimage, speed blur shadow motion"
+    ),
+    "envenom": (
+        "dripping green poison vial, toxic green liquid drops, "
+        "venomous coating on dagger blade, poison splash"
+    ),
+    "smoke_bomb": (
+        "dark grey smoke cloud explosion, round bomb with fuse, "
+        "billowing smoke grenade burst, dark cloud spreading"
+    ),
+    "lacerate": (
+        "three bloody slash marks, diagonal red claw cuts, "
+        "bleeding wound slashes, sharp blade cuts with blood"
+    ),
+    "riposte": (
+        "sword parry and counter-strike, crossed blades deflection, "
+        "sparks from blade clash, defensive counter stance"
+    ),
+    # ── Warrior Skills ──
+    "charge": (
+        "rushing impact burst, speed lines with fist, "
+        "powerful forward dash shockwave, yellow-orange impact"
+    ),
+    "war_cry": (
+        "sonic shout shockwave rings, expanding sound waves, "
+        "powerful battle roar emanating, orange-red voice blast"
+    ),
+    "battle_trance": (
+        "fiery red aura surrounding figure silhouette, "
+        "burning rage flames, berserker power-up glow, inner fire"
+    ),
+    "thorns": (
+        "sharp green thorny vines coiled, spiky bramble barrier, "
+        "nature thorn shield, barbed plant tendrils"
+    ),
+}
+
+ULT_ICON_SPRITES = {
+    "thunderstorm": (
+        "massive storm cloud with multiple lightning bolts, "
+        "epic electrical tempest, purple-blue storm fury, torrential power"
+    ),
+    "rain_of_fire": (
+        "fiery meteors raining down from above, fire storm, "
+        "multiple flame projectiles falling, apocalyptic red-orange sky"
+    ),
+    "death_mark": (
+        "glowing death skull with timer, ticking death countdown, "
+        "dark purple death rune with cracks, ominous final mark"
+    ),
+    "berserker": (
+        "screaming berserker skull wreathed in flame, "
+        "rage explosion red aura, berserk fury symbol, burning skull"
+    ),
+    "arcane_overload": (
+        "massive arcane crystal explosion, prismatic purple-blue burst, "
+        "overloading magical energy shattering, mana detonation"
+    ),
+    "primal_fury": (
+        "beast claw swipe with primal energy, glowing animal paw print, "
+        "feral green-orange nature fury, wild beast power"
+    ),
+    "shadow_dance": (
+        "multiple shadow afterimages dancing, dark silhouettes overlapping, "
+        "rapid shadow clones spinning, phantom blade dance"
+    ),
+    "last_stand": (
+        "golden unbreakable shield glowing, divine protective barrier, "
+        "holy invulnerable aura, radiant golden defense, final stand"
+    ),
+}
+
+LOGO_SPRITES = {
+    "game_logo": (
+        "text saying 'Some of you may die' in dramatic fantasy font, "
+        "golden yellow metallic letters with dark red blood dripping down, "
+        "medieval dark fantasy RPG title, ominous threatening text"
+    ),
+}
+
 
 # ── SD API Functions ────────────────────────────────────────────────────────
 
@@ -590,6 +733,9 @@ def downscale_bg(img: Image.Image, width: int, height: int) -> Image.Image:
 
 
 GEAR_ICON_SIZE = 32  # 32x32 inventory icons
+SKILL_ICON_SIZE = 48  # 48x48 ability icons (slightly larger for detail)
+LOGO_WIDTH = 480      # Game logo: 480x160
+LOGO_HEIGHT = 160
 
 
 # ── Generation Functions ────────────────────────────────────────────────────
@@ -757,6 +903,59 @@ def gen_npc(npc_key: str, desc: str, seed: int = -1) -> "Path | None":
     return out_path
 
 
+def gen_skill_icon(skill_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate a skill/ultimate ability icon (single 48x48 icon)."""
+    out_path = OUTPUT_DIR / "skills" / f"{skill_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(skill_key)
+
+    print(f"  Generating skill icon: {skill_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_SKILL}, {desc}"
+    img = generate_image(prompt, seed=seed)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = downscale_nearest(img, SKILL_ICON_SIZE)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
+def gen_logo(logo_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate the game logo (480x160 wide banner)."""
+    out_path = OUTPUT_DIR / "ui" / f"{logo_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(logo_key)
+
+    print(f"  Generating logo: {logo_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_LOGO}, {desc}"
+    # Generate at 1024x384 (~2.67:1 aspect ratio close to 3:1 logo)
+    img = generate_image(prompt, seed=seed, width=1024, height=384)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = img.resize((LOGO_WIDTH, LOGO_HEIGHT), Image.NEAREST)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
 # ── Batch Generation ────────────────────────────────────────────────────────
 
 def generate_heroes():
@@ -837,6 +1036,33 @@ def generate_npcs():
     return done
 
 
+def generate_skill_icons():
+    """Generate all skill and ultimate ability icons."""
+    print("\n=== SKILL ICONS (48x48) ===")
+    all_skills = {**SKILL_ICON_SPRITES, **ULT_ICON_SPRITES}
+    total = len(all_skills)
+    done = 0
+    for skill_key, desc in all_skills.items():
+        result = gen_skill_icon(skill_key, desc)
+        if result:
+            done += 1
+    print(f"\nSkill icons: {done}/{total} completed")
+    return done
+
+
+def generate_logo():
+    """Generate the game logo."""
+    print("\n=== GAME LOGO (480x160) ===")
+    total = len(LOGO_SPRITES)
+    done = 0
+    for logo_key, desc in LOGO_SPRITES.items():
+        result = gen_logo(logo_key, desc)
+        if result:
+            done += 1
+    print(f"\nLogos: {done}/{total} completed")
+    return done
+
+
 def generate_prototype():
     """Generate a small test set to validate quality."""
     print("\n=== PROTOTYPE: Barbarian + 2 monsters + 1 follower + 1 background ===")
@@ -883,6 +1109,15 @@ def generate_single(name: str):
     if name in NPC_SPRITES:
         gen_npc(name, NPC_SPRITES[name])
         return
+    if name in SKILL_ICON_SPRITES:
+        gen_skill_icon(name, SKILL_ICON_SPRITES[name])
+        return
+    if name in ULT_ICON_SPRITES:
+        gen_skill_icon(name, ULT_ICON_SPRITES[name])
+        return
+    if name in LOGO_SPRITES:
+        gen_logo(name, LOGO_SPRITES[name])
+        return
 
     print(f"Unknown sprite name: {name}")
     print("Valid names:")
@@ -892,6 +1127,9 @@ def generate_single(name: str):
     print(f"  Backgrounds: {', '.join(BATTLE_BACKGROUNDS.keys())}")
     print(f"  Gear: {', '.join(GEAR_ICONS.keys())}")
     print(f"  NPCs: {', '.join(NPC_SPRITES.keys())}")
+    print(f"  Skills: {', '.join(SKILL_ICON_SPRITES.keys())}")
+    print(f"  Ultimates: {', '.join(ULT_ICON_SPRITES.keys())}")
+    print(f"  Logo: {', '.join(LOGO_SPRITES.keys())}")
 
 
 # ── Model Download ──────────────────────────────────────────────────────────
@@ -1008,13 +1246,21 @@ def show_status():
     npc_total = len(NPC_SPRITES)
     print(f"NPCs (128x128):      {npc_count}/{npc_total}")
 
+    skill_count = count_files(OUTPUT_DIR / "skills")
+    skill_total = len(SKILL_ICON_SPRITES) + len(ULT_ICON_SPRITES)
+    print(f"Skills (48x48):      {skill_count}/{skill_total}")
+
+    logo_count = count_files(OUTPUT_DIR / "ui")
+    logo_total = len(LOGO_SPRITES)
+    print(f"Logo (480x160):      {logo_count}/{logo_total}")
+
     bg_dir = OUTPUT_DIR.parent.parent / "tilesets" / "battle_backgrounds"
     bg_count = count_files(bg_dir)
     bg_total = len(BATTLE_BACKGROUNDS)
     print(f"Backgrounds (640x360): {bg_count}/{bg_total}")
 
-    total = hero_total + monster_total + follower_total + gear_total + npc_total + bg_total
-    done = hero_count + monster_count + follower_count + gear_count + npc_count + bg_count
+    total = hero_total + monster_total + follower_total + gear_total + npc_total + skill_total + logo_total + bg_total
+    done = hero_count + monster_count + follower_count + gear_count + npc_count + skill_count + logo_count + bg_count
     print(f"\nTotal:               {done}/{total} assets")
 
     # Check model files
@@ -1044,7 +1290,7 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Show sprite + model status")
     parser.add_argument("--category",
-                        choices=["heroes", "monsters", "followers", "gear", "npcs", "backgrounds", "all"],
+                        choices=["heroes", "monsters", "followers", "gear", "npcs", "skills", "logo", "backgrounds", "all"],
                         help="Generate assets by category")
     parser.add_argument("--single", type=str,
                         help="Generate a single sprite by name")
@@ -1112,6 +1358,10 @@ def main():
             generate_gear_icons()
         if args.category in ("npcs", "all"):
             generate_npcs()
+        if args.category in ("skills", "all"):
+            generate_skill_icons()
+        if args.category in ("logo", "all"):
+            generate_logo()
         if args.category in ("backgrounds", "all"):
             generate_backgrounds()
         elapsed = time.time() - start

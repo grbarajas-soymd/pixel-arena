@@ -3,6 +3,7 @@ extends RefCounted
 class_name IconMap
 
 const ICON_BASE := "res://assets/sprites/generated/gear/"
+const ICON_BASE_SKILLS := "res://assets/sprites/generated/skills/"
 const ICON_BASE_LEGACY := "res://assets/sprites/gear/rpg_icons/"
 
 ## Item base_key → icon filename (generated sprites).
@@ -123,6 +124,11 @@ static func get_item_icon(base_key: String) -> Texture2D:
 
 
 static func get_skill_icon(skill_id: String) -> Texture2D:
+	# Try generated AI skill icon first
+	var gen_path := ICON_BASE_SKILLS + skill_id + ".png"
+	if ResourceLoader.exists(gen_path):
+		return load(gen_path)
+	# Fall back to legacy rpg_icons
 	var filename: String = SKILL_ICONS.get(skill_id, "")
 	if filename.is_empty():
 		filename = ULT_ICONS.get(skill_id, "")

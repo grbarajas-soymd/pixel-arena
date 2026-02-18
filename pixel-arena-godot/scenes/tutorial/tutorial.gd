@@ -354,10 +354,21 @@ func _show_skill_explain() -> void:
 func _make_skill_row(skill: Dictionary, is_ult: bool) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
-	var icon_lbl := Label.new()
-	icon_lbl.text = skill.get("icon", "?")
-	icon_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["icon"])
-	row.add_child(icon_lbl)
+	var skill_id: String = skill.get("id", "")
+	var icon_tex: Texture2D = IconMap.get_skill_icon(skill_id)
+	if icon_tex:
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = icon_tex
+		icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon_rect.custom_minimum_size = Vector2(20, 20)
+		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		row.add_child(icon_rect)
+	else:
+		var icon_lbl := Label.new()
+		icon_lbl.text = skill.get("icon", "?")
+		icon_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["icon"])
+		row.add_child(icon_lbl)
 	var name_lbl := Label.new()
 	name_lbl.text = skill.get("name", "Unknown")
 	name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])

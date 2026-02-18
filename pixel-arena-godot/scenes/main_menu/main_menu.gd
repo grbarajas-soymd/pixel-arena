@@ -61,10 +61,31 @@ func _setup_background() -> void:
 
 
 func _style_title() -> void:
+	# Try to load a generated logo; fall back to styled text
+	var logo_path := "res://assets/sprites/generated/ui/game_logo.png"
+	var logo_tex: Texture2D = load(logo_path) if ResourceLoader.exists(logo_path) else null
+
 	var title_label = $VBox/Title
-	if title_label:
+	var subtitle = $VBox/Subtitle
+
+	if logo_tex and title_label:
+		# Replace text title with logo image
+		title_label.visible = false
+		if subtitle:
+			subtitle.visible = false
+		var logo := TextureRect.new()
+		logo.texture = logo_tex
+		logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		logo.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		logo.custom_minimum_size = Vector2(240, 80)
+		logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		$VBox.add_child(logo)
+		$VBox.move_child(logo, 0)
+	elif title_label:
+		# Text fallback — gold with dark blood-red shadow
 		title_label.text = "Some of you\nmay die.."
-		title_label.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
+		title_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		title_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
 		if ThemeManager.decorative_font:
 			title_label.add_theme_font_override("font", ThemeManager.decorative_font)
@@ -76,17 +97,14 @@ func _style_title() -> void:
 		shadow.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
 		if ThemeManager.decorative_font:
 			shadow.add_theme_font_override("font", ThemeManager.decorative_font)
-		shadow.add_theme_color_override("font_color", ThemeManager.COLOR_BORDER_DIM)
+		shadow.add_theme_color_override("font_color", Color(0.6, 0.1, 0.1))
 		shadow.position = title_label.position + Vector2(1, 1)
 		shadow.size = title_label.size
 		title_label.get_parent().add_child(shadow)
 		title_label.get_parent().move_child(shadow, title_label.get_index())
 
-	var subtitle = $VBox/Subtitle
-	if subtitle:
-		subtitle.text = "A Dungeon Crawler"
-		subtitle.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-		subtitle.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		if subtitle:
+			subtitle.visible = false
 
 
 func _on_new_game() -> void:
