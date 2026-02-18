@@ -193,6 +193,28 @@ func _base_combat_fields(side: String) -> Dictionary:
 	}
 
 
+# ============ Shared Skill/Ult Attachment ============
+
+func _attach_skills(h: Dictionary, skill_indices: Array) -> void:
+	## Attach up to 2 custom skills to a hero dict from skill index array.
+	h["spells"] = h.get("spells", {})
+	h["custom_skill_ids"] = []
+	for i in range(mini(2, skill_indices.size())):
+		var skill_idx = skill_indices[i]
+		if skill_idx != null and int(skill_idx) >= 0 and int(skill_idx) < _skills_data.size():
+			var sk = _skills_data[int(skill_idx)]
+			h["spells"]["skill" + str(i)] = {"cd": 0, "bcd": int(sk.get("bcd", 3000)), "n": sk.get("name", "")}
+			h["custom_skill_ids"].append({"idx": int(skill_idx), "key": "skill" + str(i)})
+
+
+func _attach_ultimate(h: Dictionary, ult_idx) -> void:
+	## Attach an ultimate to a hero dict from ultimate index.
+	if ult_idx != null and int(ult_idx) >= 0 and int(ult_idx) < _ults_data.size():
+		var ult = _ults_data[int(ult_idx)]
+		h["spells"]["ultimate"] = {"cd": 0, "bcd": 999999, "used": false, "n": ult.get("name", "")}
+		h["custom_ult_id"] = int(ult_idx)
+
+
 # ============ mkHero — NPC class hero (port of hero.js:41-88) ============
 
 func mk_hero(class_key: String, side: String, ladder_scale: float = 1.0) -> Dictionary:
@@ -339,23 +361,9 @@ func mk_custom_hero(side: String) -> Dictionary:
 	for ek in _gs.equipment:
 		h["equipment"][ek] = _gs.equipment[ek]
 
-	# Attach skills
-	h["spells"] = {}
-	h["custom_skill_ids"] = []
-	var char_skills: Array = _gs.custom_char.get("skills", [])
-	for i in range(mini(2, char_skills.size())):
-		var skill_idx = char_skills[i]
-		if skill_idx != null and skill_idx >= 0 and skill_idx < _skills_data.size():
-			var sk = _skills_data[skill_idx]
-			h["spells"]["skill" + str(i)] = {"cd": 0, "bcd": int(sk.get("bcd", 3000)), "n": sk.get("name", "")}
-			h["custom_skill_ids"].append({"idx": skill_idx, "key": "skill" + str(i)})
-
-	# Attach ultimate
-	var char_ult = _gs.custom_char.get("ultimate", null)
-	if char_ult != null and char_ult >= 0 and char_ult < _ults_data.size():
-		var ult = _ults_data[char_ult]
-		h["spells"]["ultimate"] = {"cd": 0, "bcd": 999999, "used": false, "n": ult.get("name", "")}
-		h["custom_ult_id"] = char_ult
+	# Attach skills + ultimate
+	_attach_skills(h, _gs.custom_char.get("skills", []))
+	_attach_ultimate(h, _gs.custom_char.get("ultimate", null))
 
 	return h
 
@@ -402,22 +410,9 @@ func mk_ladder_hero(cfg: Dictionary, side: String) -> Dictionary:
 		for ek in cfg.equip:
 			h["equipment"][ek] = cfg.equip[ek]
 
-	# Attach skills
-	h["spells"] = {}
-	h["custom_skill_ids"] = []
-	var cfg_skills: Array = cfg.get("skills", [])
-	for i in range(mini(2, cfg_skills.size())):
-		var skill_idx = cfg_skills[i]
-		if skill_idx != null and skill_idx >= 0 and skill_idx < _skills_data.size():
-			var sk = _skills_data[skill_idx]
-			h["spells"]["skill" + str(i)] = {"cd": 0, "bcd": int(sk.get("bcd", 3000)), "n": sk.get("name", "")}
-			h["custom_skill_ids"].append({"idx": skill_idx, "key": "skill" + str(i)})
-
-	# Attach ultimate
-	var cfg_ult = cfg.get("ultimate", null)
-	if cfg_ult != null and cfg_ult >= 0 and cfg_ult < _ults_data.size():
-		h["custom_ult_id"] = cfg_ult
-		h["spells"]["ultimate"] = {"cd": 0, "used": false}
+	# Attach skills + ultimate
+	_attach_skills(h, cfg.get("skills", []))
+	_attach_ultimate(h, cfg.get("ultimate", null))
 
 	return h
 
@@ -516,23 +511,9 @@ func mk_dungeon_hero(run: Dictionary, side: String) -> Dictionary:
 	for ek in _gs.equipment:
 		h["equipment"][ek] = _gs.equipment[ek]
 
-	# Attach skills from customChar
-	h["spells"] = {}
-	h["custom_skill_ids"] = []
-	var char_skills: Array = _gs.custom_char.get("skills", [])
-	for i in range(mini(2, char_skills.size())):
-		var skill_idx = char_skills[i]
-		if skill_idx != null and skill_idx >= 0 and skill_idx < _skills_data.size():
-			var sk = _skills_data[skill_idx]
-			h["spells"]["skill" + str(i)] = {"cd": 0, "bcd": int(sk.get("bcd", 3000)), "n": sk.get("name", "")}
-			h["custom_skill_ids"].append({"idx": skill_idx, "key": "skill" + str(i)})
-
-	# Attach ultimate
-	var char_ult = _gs.custom_char.get("ultimate", null)
-	if char_ult != null and char_ult >= 0 and char_ult < _ults_data.size():
-		var ult = _ults_data[char_ult]
-		h["spells"]["ultimate"] = {"cd": 0, "bcd": 999999, "used": false, "n": ult.get("name", "")}
-		h["custom_ult_id"] = char_ult
+	# Attach skills + ultimate
+	_attach_skills(h, _gs.custom_char.get("skills", []))
+	_attach_ultimate(h, _gs.custom_char.get("ultimate", null))
 
 	return h
 
@@ -758,22 +739,8 @@ func mk_arena_hero(build: Dictionary, side: String) -> Dictionary:
 	if build.has("equipment"):
 		h["equipment"] = build.get("equipment", {})
 
-	# Attach skills
-	h["spells"] = {}
-	h["custom_skill_ids"] = []
-	var build_skills: Array = build.get("skills", [])
-	for i in range(mini(2, build_skills.size())):
-		var skill_idx = build_skills[i]
-		if skill_idx != null and skill_idx >= 0 and skill_idx < _skills_data.size():
-			var sk = _skills_data[skill_idx]
-			h["spells"]["skill" + str(i)] = {"cd": 0, "bcd": int(sk.get("bcd", 3000)), "n": sk.get("name", "")}
-			h["custom_skill_ids"].append({"idx": skill_idx, "key": "skill" + str(i)})
-
-	# Attach ultimate
-	var build_ult = build.get("ultimate", null)
-	if build_ult != null and build_ult >= 0 and build_ult < _ults_data.size():
-		var ult = _ults_data[build_ult]
-		h["spells"]["ultimate"] = {"cd": 0, "bcd": 999999, "used": false, "n": ult.get("name", "")}
-		h["custom_ult_id"] = build_ult
+	# Attach skills + ultimate
+	_attach_skills(h, build.get("skills", []))
+	_attach_ultimate(h, build.get("ultimate", null))
 
 	return h

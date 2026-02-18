@@ -49,8 +49,8 @@ static func _en(h: Dictionary, eng: Node) -> Dictionary:
 static func _dst(a: Dictionary, b: Dictionary) -> float:
 	return CombatMath.dst(a, b)
 
-static func _eff_ev(e: Dictionary) -> float:
-	return CombatMath.eff_ev(e, 0)
+static func _eff_ev(e: Dictionary, t: int = 0) -> float:
+	return CombatMath.eff_ev(e, t)
 
 static func _bleed_count(h: Dictionary) -> int:
 	return CombatMath.bleed_count(h)
@@ -94,7 +94,7 @@ static func _chain_lightning(h: Dictionary, t: int, eng: Node) -> bool:
 	h["resource"] = float(h.get("resource", 0)) - 35
 	_set_skill_cd(h, 0, 5000)
 	h["cast_anim"] = 1.0
-	if randf() < _eff_ev(e) * 0.6:
+	if randf() < _eff_ev(e, t) * 0.6:
 		eng._add_log(t, "Chain DODGED!", "miss")
 		return true
 	var dm: float = (180.0 + float(h.get("max_hp", 1500)) * 0.05) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
@@ -121,7 +121,7 @@ static func _lightning_bolt(h: Dictionary, t: int, eng: Node) -> bool:
 	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 1, 2500)
 	h["cast_anim"] = 1.0
-	if randf() < _eff_ev(e) * 0.6:
+	if randf() < _eff_ev(e, t) * 0.6:
 		eng._add_log(t, "Bolt DODGED!", "miss")
 		return true
 	var dm: float = (90.0 + float(h.get("max_hp", 1500)) * 0.03) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
@@ -333,7 +333,7 @@ static func _frost_nova(h: Dictionary, t: int, eng: Node) -> bool:
 	h["resource"] = float(h.get("resource", 0)) - 30
 	_set_skill_cd(h, 11, 7000)
 	h["cast_anim"] = 1.0
-	if randf() < _eff_ev(e) * 0.4:
+	if randf() < _eff_ev(e, t) * 0.4:
 		eng._add_log(t, "Nova DODGED!", "miss")
 		return true
 	var dm: float = (80.0 + float(h.get("def", 0)) * 3.0) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
@@ -363,7 +363,7 @@ static func _arcane_drain(h: Dictionary, t: int, eng: Node) -> bool:
 	h["resource"] = float(h.get("resource", 0)) - 25
 	_set_skill_cd(h, 12, 8000)
 	h["cast_anim"] = 1.0
-	if randf() < _eff_ev(e) * 0.5:
+	if randf() < _eff_ev(e, t) * 0.5:
 		eng._add_log(t, "Drain DODGED!", "miss")
 		return true
 	var dm: float = (60.0 + float(h.get("max_hp", 1500)) * 0.03) * (1.0 + float(h.get("spell_dmg_bonus", 0.0))) * _def_reduction(float(e.get("def", 0)))
@@ -433,7 +433,7 @@ static func _lacerate(h: Dictionary, t: int, eng: Node) -> bool:
 	h["resource"] = float(h.get("resource", 0)) - 30
 	_set_skill_cd(h, 15, 8000)
 	h["cast_anim"] = 1.0
-	if randf() < _eff_ev(e) * 0.3:
+	if randf() < _eff_ev(e, t) * 0.3:
 		eng._add_log(t, "Lacerate DODGED!", "miss")
 		return true
 	var missing_pct: float = 1.0 - float(e.get("hp", 0)) / maxf(1.0, float(e.get("max_hp", 1)))

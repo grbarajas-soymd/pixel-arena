@@ -38,20 +38,7 @@ func _ready() -> void:
 
 
 func _setup_background() -> void:
-	var bg_path = "res://assets/tilesets/battle_backgrounds/dark_forest.png"
-	var tex = load(bg_path)
-	if tex:
-		var bg = TextureRect.new()
-		bg.texture = tex
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		bg.modulate = Color(0.15, 0.15, 0.30, 1.0)
-		var old_bg = $Background
-		if old_bg:
-			old_bg.queue_free()
-		add_child(bg)
-		move_child(bg, 0)
+	ThemeManager.setup_scene_background(self, "res://assets/tilesets/battle_backgrounds/dark_forest.png")
 
 	var vignette = ColorRect.new()
 	vignette.color = Color(0.0, 0.0, 0.0, 0.4)

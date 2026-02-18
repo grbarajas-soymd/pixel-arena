@@ -2,6 +2,19 @@ class_name CombatMath
 ## Pure combat math functions — 1:1 port of src/combat/engine.js utility functions.
 ## All functions are static. No side effects, no signals, no state mutation.
 
+# ── Balance Constants ──
+const STEALTH_DMG_MULT := 3.0
+const CRIT_DMG_MULT := 1.75
+const MAX_DEF_REDUCTION := 0.8
+const DEF_DIVISOR := 300.0
+const MAX_EVASION := 0.95
+const SHOCKED_DMG_MULT := 1.1
+const ASSASSIN_MELEE_MULT := 1.30
+const CUSTOM_ULT_DMG_MULT := 1.2
+const MAX_GEAR_DMG_REDUCTION := 0.25
+const SMOKE_BOMB_EV_BONUS := 0.45
+const STEALTH_EV_BONUS := 0.5
+
 # Cached class data (loaded once)
 static var _classes: Dictionary = {}
 
@@ -23,9 +36,9 @@ static func class_data(key: String) -> Dictionary:
 # ============ DISTANCE ============
 
 static func dst(a: Dictionary, b: Dictionary) -> float:
-	var ay := float(a.get("y", CombatConstants.GY))
-	var by := float(b.get("y", CombatConstants.GY))
-	return sqrt(pow(float(a.get("x", 0)) - float(b.get("x", 0)), 2) + pow(ay - by, 2))
+	var dx := float(a.get("x", 0)) - float(b.get("x", 0))
+	var dy := float(a.get("y", CombatConstants.GY)) - float(b.get("y", CombatConstants.GY))
+	return sqrt(dx * dx + dy * dy)
 
 
 # ============ BLEED / BURN ============
@@ -169,11 +182,10 @@ static func eff_ev(h: Dictionary, bt: int) -> float:
 		return 1.0
 	var ev: float = float(h.get("evasion", 0.0))
 	if h.get("stealthed", false):
-		ev += 0.5
+		ev += STEALTH_EV_BONUS
 	if h.get("smoke_bomb_active", false):
-		# Smoke bomb evasion boost is always applied to the hero who cast it
-		ev += 0.45
-	return minf(ev, 0.95)
+		ev += SMOKE_BOMB_EV_BONUS
+	return minf(ev, MAX_EVASION)
 
 
 # ============ SPELL DAMAGE MULTIPLIER ============
@@ -196,11 +208,11 @@ static func add_charge(w: Dictionary, n: int) -> void:
 ## Port of JS calcDmg() (engine.js:36-48)
 ## CRITICAL: baseDmg * (1 - min(def/300, 0.8)) — NO attack speed multiplier!
 static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float, bt: int) -> float:
-	var dm: float = float(a.get("base_dmg", 50)) * (1.0 - minf(float(d.get("def", 0)) / 300.0, 0.8))
+	var dm: float = float(a.get("base_dmg", 50)) * (1.0 - minf(float(d.get("def", 0)) / DEF_DIVISOR, MAX_DEF_REDUCTION))
 
 	# Shocked: +10% damage taken
 	if d.get("shocked", false) and bt < int(d.get("shocked_end", 0)):
-		dm *= 1.1
+		dm *= SHOCKED_DMG_MULT
 
 	# Vulnerable: amplified damage
 	if d.get("vulnerable", false) and bt < int(d.get("vulnerable_end", 0)):
@@ -210,13 +222,13 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 	if is_ranged and dist < CombatConstants.MELEE:
 		dm *= CombatConstants.RANGED_PEN
 
-	# Stealth: 3x damage
+	# Stealth bonus
 	if a.get("stealthed", false):
-		dm *= 3.0
+		dm *= STEALTH_DMG_MULT
 
 	# Assassin melee bonus
 	if a.get("type", "") == "assassin" and dist <= float(a.get("melee_range", CombatConstants.MELEE)):
-		dm *= 1.30
+		dm *= ASSASSIN_MELEE_MULT
 
 	# Wizard charge bonus
 	if a.get("type", "") == "wizard" and int(a.get("charge", 0)) > 0:
@@ -233,15 +245,15 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 
 	# Custom ult bonus
 	if a.get("type", "") == "custom" and a.get("ult_active", false):
-		dm *= 1.2
+		dm *= CUSTOM_ULT_DMG_MULT
 
 	# Stash crit (dungeon items)
 	if float(a.get("_stash_crit", 0.0)) > 0.0 and randf() < float(a.get("_stash_crit", 0.0)):
-		dm *= 1.75
+		dm *= CRIT_DMG_MULT
 
 	# Gear affix crit
 	if float(a.get("_crit_chance", 0.0)) > 0.0 and randf() < float(a.get("_crit_chance", 0.0)):
-		dm *= 1.75
+		dm *= CRIT_DMG_MULT
 
 	# Elemental damage bonus (highest element applies)
 	var elem: float = maxf(maxf(float(a.get("_fire_dmg", 0.0)), float(a.get("_ice_dmg", 0.0))), float(a.get("_lightning_dmg", 0.0)))
@@ -250,6 +262,6 @@ static func calc_dmg(a: Dictionary, d: Dictionary, is_ranged: bool, dist: float,
 
 	# Gear affix damage reduction on defender
 	if float(d.get("_dmg_reduction", 0.0)) > 0.0:
-		dm *= (1.0 - minf(float(d.get("_dmg_reduction", 0.0)), 0.25))
+		dm *= (1.0 - minf(float(d.get("_dmg_reduction", 0.0)), MAX_GEAR_DMG_REDUCTION))
 
 	return dm

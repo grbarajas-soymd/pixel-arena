@@ -209,6 +209,12 @@ func init_combat(run_data: Dictionary, monster_data: Dictionary, companion_data:
 		var comp_speed := clampi(roundi(comp_as * 100.0), 60, 200)
 		combatants.append({"id": "companion", "ap": 0, "speed": comp_speed, "alive": true})
 
+	# Apply passive dmg_aura affix as permanent buff
+	for affix in hero.get("_special_affixes", []):
+		if str(affix.get("id", "")) == "dmg_aura":
+			player_dmg_buff = maxf(player_dmg_buff, float(affix.get("value", 0)))
+			player_dmg_buff_rounds = 9999
+
 	# Init skill cooldowns from tcd
 	skill_cooldowns = [0, 0]
 	_skill_max_cooldowns = [0, 0]
@@ -434,8 +440,24 @@ func _apply_player_hit(result: Dictionary) -> void:
 					monster_frost_rounds = maxi(monster_frost_rounds, 1)
 					log_added.emit("Chilling hit! Monster slowed.", "debuff")
 			"dmg_aura":
-				# Passive % damage boost already applied via player_dmg_buff or raw calc
+				# Passive % damage boost — applied once at combat start
 				pass
+			"as_on_hit":
+				if randf() < affix_val:
+					# Temporarily boost AP by granting bonus speed for 1 turn
+					for c in combatants:
+						if c["id"] == "hero":
+							c["ap"] = int(c["ap"]) + 25
+							break
+					log_added.emit("Frenzy! Attack speed boosted.", "buff")
+			"extra_skill_proc":
+				if randf() < affix_val:
+					# Reduce a random skill cooldown by 1
+					for i in range(skill_cooldowns.size()):
+						if skill_cooldowns[i] > 0:
+							skill_cooldowns[i] = maxi(0, skill_cooldowns[i] - 1)
+							log_added.emit("Spellweaver! Cooldown reduced.", "buff")
+							break
 
 	# Check monster death
 	if float(monster["hp"]) <= 0:
@@ -1505,6 +1527,9 @@ func _end_combat(result: String) -> void:
 					var heal_val := float(hero["max_hp"]) * affix_val
 					hero["hp"] = minf(float(hero["max_hp"]), float(hero["hp"]) + heal_val)
 					log_added.emit("Executioner heals " + str(roundi(heal_val)) + " HP!", "heal")
+				"stealth_on_kill":
+					stealth_active = true
+					log_added.emit("Shadow Reaper! Gained stealth.", "buff")
 
 	# Write back to run
 	run["hp"] = maxi(0, roundi(float(hero["hp"])))

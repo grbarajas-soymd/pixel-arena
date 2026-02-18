@@ -87,6 +87,15 @@ func _sp_float(x: float, y: float, text: String, color: String) -> void:
 	float_spawned.emit(x, y, text, color)
 
 
+func _expire_bloodlust(h: Dictionary, t: int) -> void:
+	h["bl_active"] = false
+	var hl: float = float(h.get("bl_dmg", 0)) * 0.35
+	h["hp"] = minf(float(h.get("max_hp", 1)), float(h.get("hp", 0)) + hl)
+	h["tot_heal"] = float(h.get("tot_heal", 0)) + hl
+	_sp_float(float(h.get("x", 0)), float(h.get("y", CombatConstants.GY)) - 60.0, "+" + str(roundi(hl)), "#44aa66")
+	_add_log(t, "Bloodlust heal " + str(roundi(hl)), "heal")
+
+
 func _cls(key: String) -> Dictionary:
 	return _classes.get(key, {})
 
@@ -181,12 +190,7 @@ func _proc_expiry(h: Dictionary, t: int) -> void:
 
 	if hero_type == "ranger":
 		if h.get("bl_active", false) and t >= int(h.get("bl_end", 0)):
-			h["bl_active"] = false
-			var hl: float = float(h.get("bl_dmg", 0)) * 0.35
-			h["hp"] = minf(float(h.get("max_hp", 1)), float(h.get("hp", 0)) + hl)
-			h["tot_heal"] = float(h.get("tot_heal", 0)) + hl
-			_sp_float(float(h.get("x", 0)), float(h.get("y", CombatConstants.GY)) - 60.0, "+" + str(roundi(hl)), "#44aa66")
-			_add_log(t, "Bloodlust heal " + str(roundi(hl)), "heal")
+			_expire_bloodlust(h, t)
 		if h.get("ult_active", false) and t >= int(h.get("ult_end", 0)):
 			h["ult_active"] = false
 
@@ -212,11 +216,7 @@ func _proc_expiry(h: Dictionary, t: int) -> void:
 
 	elif hero_type == "custom":
 		if h.get("bl_active", false) and t >= int(h.get("bl_end", 0)):
-			h["bl_active"] = false
-			var hl2: float = float(h.get("bl_dmg", 0)) * 0.35
-			h["hp"] = minf(float(h.get("max_hp", 1)), float(h.get("hp", 0)) + hl2)
-			h["tot_heal"] = float(h.get("tot_heal", 0)) + hl2
-			_sp_float(float(h.get("x", 0)), float(h.get("y", CombatConstants.GY)) - 60.0, "+" + str(roundi(hl2)), "#44aa66")
+			_expire_bloodlust(h, t)
 		if h.get("shield_active", false) and t >= int(h.get("shield_end", 0)):
 			h["shield_active"] = false
 		if h.get("ult_active", false) and t >= int(h.get("ult_end", 0)):
@@ -277,26 +277,11 @@ func _proc_expiry(h: Dictionary, t: int) -> void:
 func _proc_wiz_ult(w: Dictionary, t: int, dt: int) -> void:
 	if not w.get("ult_active", false) or int(w.get("ult_strikes", 0)) <= 0:
 		return
-	w["ult_strike_timer"] = int(w.get("ult_strike_timer", 0)) + dt
-	if int(w.get("ult_strike_timer", 0)) >= 450:
-		w["ult_strike_timer"] = 0
-		w["ult_strikes"] = int(w.get("ult_strikes", 0)) - 1
-		var e: Dictionary = en(w)
-		var c: Dictionary = _cls("wizard")
-		var dm: float = float(c.get("ult_dmg", 200)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
-		e["hp"] = float(e.get("hp", 0)) - dm
-		w["tot_dmg"] = float(w.get("tot_dmg", 0)) + dm
-		e["hurt_anim"] = 1.0
-		var hl: float = dm * float(c.get("ult_heal", 0.42))
-		w["hp"] = minf(float(w.get("max_hp", 1)), float(w.get("hp", 0)) + hl)
-		w["tot_heal"] = float(w.get("tot_heal", 0)) + hl
-		e["shocked"] = true
-		e["shocked_end"] = t + 3000
-		if not e.get("stealthed", false):
-			e["stun_end"] = t + 250
-		_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 65.0, "ZAP" + str(roundi(dm)), "#44ddbb")
-		_sp_float(float(w.get("x", 0)), float(w.get("y", CombatConstants.GY)) - 55.0, "+" + str(roundi(hl)), "#44aa66")
-		_add_log(t, "Storm " + str(roundi(dm)) + " heal " + str(roundi(hl)), "ult")
+	var c: Dictionary = _cls("wizard")
+	var e: Dictionary = en(w)
+	var base_dm: float = float(c.get("ult_dmg", 200)) * CombatMath.get_sdm(w)
+	var heal_pct: float = float(c.get("ult_heal", 0.42))
+	_proc_storm_strike(w, e, t, dt, base_dm, heal_pct, true)
 
 
 # ============ CUSTOM ULTIMATE PROC ============
@@ -307,24 +292,30 @@ func _proc_custom_ult(h: Dictionary, t: int, dt: int) -> void:
 		return
 	# Only Thunderstorm (idx 0) has a proc function
 	if int(ult_idx) == 0:
-		_proc_custom_thunderstorm(h, t, dt)
+		if not h.get("ult_active", false) or int(h.get("ult_strikes", 0)) <= 0:
+			return
+		var e: Dictionary = en(h)
+		var base_dm: float = (120.0 + float(h.get("max_hp", 1500)) * 0.05) * (1.0 + float(h.get("spell_dmg_bonus", 0)))
+		_proc_storm_strike(h, e, t, dt, base_dm, 0.42, false)
 
 
-func _proc_custom_thunderstorm(h: Dictionary, t: int, dt: int) -> void:
-	if not h.get("ult_active", false) or int(h.get("ult_strikes", 0)) <= 0:
-		return
+func _proc_storm_strike(h: Dictionary, e: Dictionary, t: int, dt: int, base_dm: float, heal_pct: float, apply_shock: bool) -> void:
 	h["ult_strike_timer"] = int(h.get("ult_strike_timer", 0)) + dt
 	if int(h.get("ult_strike_timer", 0)) >= 450:
 		h["ult_strike_timer"] = 0
 		h["ult_strikes"] = int(h.get("ult_strikes", 0)) - 1
-		var e: Dictionary = en(h)
-		var dm: float = (120.0 + float(h.get("max_hp", 1500)) * 0.05) * (1.0 + float(h.get("spell_dmg_bonus", 0))) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
+		var dm: float = base_dm * (1.0 - minf(float(e.get("def", 0)) / CombatMath.DEF_DIVISOR, CombatMath.MAX_DEF_REDUCTION))
 		e["hp"] = float(e.get("hp", 0)) - dm
 		h["tot_dmg"] = float(h.get("tot_dmg", 0)) + dm
 		e["hurt_anim"] = 1.0
-		var hl: float = dm * 0.42
+		var hl: float = dm * heal_pct
 		h["hp"] = minf(float(h.get("max_hp", 1)), float(h.get("hp", 0)) + hl)
 		h["tot_heal"] = float(h.get("tot_heal", 0)) + hl
+		if apply_shock:
+			e["shocked"] = true
+			e["shocked_end"] = t + 3000
+			if not e.get("stealthed", false):
+				e["stun_end"] = t + 250
 		_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 65.0, "ZAP" + str(roundi(dm)), "#44ddbb")
 		_sp_float(float(h.get("x", 0)), float(h.get("y", CombatConstants.GY)) - 55.0, "+" + str(roundi(hl)), "#44aa66")
 		_add_log(t, "Storm " + str(roundi(dm)) + " heal " + str(roundi(hl)), "ult")
@@ -609,7 +600,7 @@ func _resolve_hit(atk: Dictionary, tg: Dictionary, t: int, d: float, is_ranged: 
 		match affix_id:
 			"chain_lightning_proc":
 				if randf() < affix_val:
-					var cl_dmg := (60.0 + float(atk.get("max_hp", 1500)) * 0.02) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
+					var cl_dmg := (60.0 + float(atk.get("max_hp", 1500)) * 0.02) * (1.0 - minf(float(e.get("def", 0)) / CombatMath.DEF_DIVISOR, CombatMath.MAX_DEF_REDUCTION))
 					e["hp"] = float(e.get("hp", 0)) - cl_dmg
 					atk["tot_dmg"] = float(atk.get("tot_dmg", 0)) + cl_dmg
 					e["hurt_anim"] = 1.0
@@ -619,6 +610,20 @@ func _resolve_hit(atk: Dictionary, tg: Dictionary, t: int, d: float, is_ranged: 
 				if randf() < affix_val:
 					e["slow"] = maxf(float(e.get("slow", 0.0)), 0.1)
 					e["slow_end"] = maxi(int(e.get("slow_end", 0)), t + 1000)
+			"as_on_hit":
+				if randf() < affix_val:
+					atk["base_as"] = float(atk.get("base_as", 0.8)) * 1.15
+					atk["_as_on_hit_end"] = t + 2000
+			"extra_skill_proc":
+				if randf() < affix_val:
+					var spells: Dictionary = atk.get("spells", {})
+					for sk in spells:
+						if float(spells[sk].get("cd", 0)) > 0:
+							spells[sk]["cd"] = maxf(0.0, float(spells[sk]["cd"]) * 0.5)
+							break
+			"dmg_aura":
+				# Passive — handled via calc_dmg multiplier
+				pass
 
 
 func _kill_follower(owner: Dictionary, t: int) -> void:
@@ -643,6 +648,17 @@ func _check_death(h: Dictionary, t: int) -> bool:
 		h["hp"] = 0.0
 		over = true
 		var winner: Dictionary = en(h)
+		# On-kill affix procs for the winner
+		var kill_affixes: Array = winner.get("_special_affixes", [])
+		for affix in kill_affixes:
+			var aid: String = str(affix.get("id", ""))
+			var aval: float = float(affix.get("value", 0))
+			if aid == "life_on_kill":
+				var heal_val := float(winner.get("max_hp", 1)) * aval
+				winner["hp"] = minf(float(winner.get("max_hp", 1)), float(winner.get("hp", 0)) + heal_val)
+				winner["tot_heal"] = float(winner.get("tot_heal", 0)) + heal_val
+			elif aid == "stealth_on_kill":
+				winner["stealthed"] = true
 		_add_log(t, str(h.get("name", "")) + " slain! " + str(winner.get("name", "")) + " WINS!", "death")
 		combat_ended.emit(winner)
 		set_process(false)
@@ -819,7 +835,7 @@ func _wiz_ai(w: Dictionary, t: int) -> void:
 			CombatMath.add_charge(w, 1)
 			_add_log(t, "Chain Zap DODGED!", "miss")
 			return
-		var dm: float = float(c.get("chain_dmg", 260)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
+		var dm: float = float(c.get("chain_dmg", 260)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / CombatMath.DEF_DIVISOR, CombatMath.MAX_DEF_REDUCTION))
 		if e.get("type", "") == "barbarian" and float(_cls("barbarian").get("spell_dodge", 0)) > 0 and randf() < float(_cls("barbarian").get("spell_dodge", 0)):
 			dm *= 0.5
 			_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 40.0, "RESIST", "#ff8888")
@@ -856,7 +872,7 @@ func _wiz_ai(w: Dictionary, t: int) -> void:
 		if randf() < CombatMath.eff_ev(e, t) * 0.6:
 			_add_log(t, "Bolt DODGED!", "miss")
 			return
-		var dm2: float = float(c.get("bolt_dmg", 140)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8))
+		var dm2: float = float(c.get("bolt_dmg", 140)) * CombatMath.get_sdm(w) * (1.0 - minf(float(e.get("def", 0)) / CombatMath.DEF_DIVISOR, CombatMath.MAX_DEF_REDUCTION))
 		if e.get("type", "") == "barbarian" and float(_cls("barbarian").get("spell_dodge", 0)) > 0 and randf() < float(_cls("barbarian").get("spell_dodge", 0)):
 			dm2 *= 0.5
 			_sp_float(float(e.get("x", 0)), float(e.get("y", CombatConstants.GY)) - 40.0, "RESIST", "#ff8888")
@@ -1045,7 +1061,7 @@ func _barb_ai(b: Dictionary, t: int) -> void:
 		var dir3: float = 1.0 if float(e.get("x", 0)) > float(b.get("x", 0)) else -1.0
 		b["x"] = clampf(float(e.get("x", 0)) - dir3 * 45.0, float(CombatConstants.AX + 25), float(CombatConstants.AX + CombatConstants.AW - 25))
 		b["y"] = float(e.get("y", float(b.get("y", CombatConstants.GY))))
-		var dm3: float = float(c.get("charge_dmg", 200)) * (1.0 - minf(float(e.get("def", 0)) / 300.0, 0.8)) * CombatMath.get_rage(b).d
+		var dm3: float = float(c.get("charge_dmg", 200)) * (1.0 - minf(float(e.get("def", 0)) / CombatMath.DEF_DIVISOR, CombatMath.MAX_DEF_REDUCTION)) * CombatMath.get_rage(b).d
 		if b.get("ult_active", false):
 			dm3 *= (1.0 + float(c.get("ult_dmg", 0)))
 		e["hp"] = float(e.get("hp", 0)) - dm3

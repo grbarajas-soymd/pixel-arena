@@ -195,10 +195,16 @@ func _build_ui(gear: Dictionary, tmpl: Dictionary, show_buttons: bool) -> void:
 			)
 			btn_row.add_child(salv_btn)
 
-	# Slam animation
-	_card.pivot_offset = _card.size / 2.0
+	# Slam animation — defer pivot so card has its laid-out size
 	_card.scale = Vector2(2.5, 2.5)
 	_card.modulate.a = 0.0
+	_start_slam_anim.call_deferred()
+
+
+func _start_slam_anim() -> void:
+	if not is_instance_valid(_card):
+		return
+	_card.pivot_offset = _card.size / 2.0
 	var tw := create_tween()
 	tw.set_ease(Tween.EASE_OUT)
 	tw.set_trans(Tween.TRANS_BACK)

@@ -170,7 +170,12 @@ func _deserialize_slots(slots_data: Array) -> void:
 
 
 func _migrate(data: Dictionary, from_version: int) -> Dictionary:
-	# Future migration logic here
+	# v4 → v5: Additive only — no breaking changes.
+	# - Gear instances may now have optional "affixes" array (defaults to []).
+	# - New stat keys (crit_chance, lifesteal, etc.) use .get() with defaults.
+	# - "potions" field added to slots (defaults to 3).
+	# - "gear_bag" field added to slots (defaults to []).
+	# No data transformation needed; all new fields have safe defaults.
 	data["version"] = SAVE_VERSION
 	return data
 

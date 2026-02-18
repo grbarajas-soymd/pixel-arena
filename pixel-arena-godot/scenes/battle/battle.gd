@@ -380,6 +380,11 @@ func _create_entity_node(h: Dictionary) -> Node2D:
 	if h.get("side", "left") == "right":
 		ls.set_flipped(true)
 
+	# Load weapon overlay from equipment (FFT WEP style)
+	var equip: Dictionary = h.get("equipment", {})
+	if not equip.is_empty():
+		ls.set_weapon_from_equipment(equip)
+
 	ls.start_idle_bob(1.0, 1.5 + randf() * 0.5)
 	node.set_meta("base_sprite_scale", Vector2.ONE)
 	node.add_child(ls)
@@ -794,9 +799,21 @@ const SPELL_TEXTURES: Dictionary = {
 }
 
 
-func _on_damage_dealt(_attacker: Dictionary, target: Dictionary, amount: float) -> void:
+func _on_damage_dealt(attacker: Dictionary, target: Dictionary, amount: float) -> void:
 	if amount < 1.0:
 		return
+	# Trigger attack frame animation on attacker sprite
+	var atk_node: Node2D = _h1_node if attacker == engine.h1 else _h2_node
+	if atk_node:
+		var atk_ls: LayeredSprite = atk_node.get_node_or_null("LayeredSprite")
+		if atk_ls:
+			atk_ls.play_anim("attack")
+	# Trigger hurt frame animation on target sprite
+	var tgt_node: Node2D = _h1_node if target == engine.h1 else _h2_node
+	if tgt_node:
+		var tgt_ls: LayeredSprite = tgt_node.get_node_or_null("LayeredSprite")
+		if tgt_ls:
+			tgt_ls.play_anim("hurt", true)
 	var tx: float = float(target.get("x", 0))
 	var ty: float = float(target.get("y", CombatConstants.GY)) - 20
 	var screen_pos := _logical_to_screen(tx, ty)
@@ -808,6 +825,12 @@ func _on_damage_dealt(_attacker: Dictionary, target: Dictionary, amount: float) 
 
 
 func _on_spell_cast(caster: Dictionary, spell_name: String) -> void:
+	# Trigger cast frame animation on caster sprite
+	var caster_node: Node2D = _h1_node if caster == engine.h1 else _h2_node
+	if caster_node:
+		var cast_ls: LayeredSprite = caster_node.get_node_or_null("LayeredSprite")
+		if cast_ls:
+			cast_ls.play_cast()
 	var cx: float = float(caster.get("x", 0))
 	var cy: float = float(caster.get("y", CombatConstants.GY)) - 25
 	var screen_pos := _logical_to_screen(cx, cy)

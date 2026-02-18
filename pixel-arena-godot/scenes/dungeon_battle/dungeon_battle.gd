@@ -280,19 +280,7 @@ func _process(delta: float) -> void:
 
 
 func _setup_background() -> void:
-	var bg_tex = load("res://assets/tilesets/battle_backgrounds/dungeon_depths.png")
-	if bg_tex:
-		var bg := TextureRect.new()
-		bg.texture = bg_tex
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		bg.modulate = Color(0.15, 0.15, 0.30, 1.0)
-		var old_bg := $Background
-		if old_bg:
-			old_bg.queue_free()
-		add_child(bg)
-		move_child(bg, 0)
+	ThemeManager.setup_scene_background(self, "res://assets/tilesets/battle_backgrounds/dungeon_depths.png")
 
 
 func _setup_sprites() -> void:
@@ -306,6 +294,10 @@ func _setup_sprites() -> void:
 
 	var class_key: String = _engine.hero.get("class_key", "barbarian")
 	hero_sprite.set_class(class_key)
+	# Load weapon overlay from equipment (FFT WEP style)
+	var equip: Dictionary = _engine.hero.get("equipment", {})
+	if not equip.is_empty():
+		hero_sprite.set_weapon_from_equipment(equip)
 	hero_sprite.start_idle_bob(1.0, 1.5)
 
 	# Create monster LayeredSprite
@@ -558,6 +550,9 @@ func _on_action_resolved(action: String, result: Dictionary) -> void:
 					_animate_lunge(hero_sprite, HERO_BASE_X, MONSTER_BASE_X, duration)
 					_spawn_spell_flash(monster_sprite.position + Vector2(0, float(vfx.get("offset_y", 0))), str(vfx["tex"]))
 				else:
+					# Self-targeting skill: play cast frame animation
+					if hero_sprite is LayeredSprite:
+						hero_sprite.play_cast(duration)
 					_animate_flash(hero_sprite, Color(0.4, 0.8, 1.0), duration)
 					_spawn_spell_flash(hero_sprite.position + Vector2(0, float(vfx.get("offset_y", 0))), str(vfx["tex"]))
 				var tint: Color = vfx.get("tint", Color.TRANSPARENT)
@@ -589,6 +584,8 @@ func _on_action_resolved(action: String, result: Dictionary) -> void:
 				if shake > 0:
 					_screen_shake(shake, 0.3)
 		"potion":
+			if hero_sprite is LayeredSprite:
+				hero_sprite.play_cast(duration)
 			_animate_flash(hero_sprite, Color(0.3, 0.8, 0.3), duration)
 			_spawn_spell_flash(hero_sprite.position, "res://assets/vfx/spells/Light Bolt.png")
 
@@ -621,13 +618,17 @@ func _on_damage_dealt(source_id: String, target_id: String, amount: int, info: D
 		return
 	_spawn_float_text(text, _get_sprite_pos(target_id), color)
 
-	# Hit sparks + hurt flash
+	# Hit sparks + hurt flash + hurt frame animation
 	if amount > 0:
 		_spawn_hit_sparks(_get_sprite_pos(target_id), amount)
 		if target_id == "monster":
 			_animate_flash(monster_sprite, Color(1.0, 0.4, 0.4), 0.15)
+			if monster_sprite is LayeredSprite:
+				monster_sprite.play_hurt(0.15)
 		elif target_id == "hero":
 			_animate_flash(hero_sprite, Color(1.0, 0.4, 0.4), 0.15)
+			if hero_sprite is LayeredSprite:
+				hero_sprite.play_hurt(0.15)
 		if info.get("crit", false):
 			_screen_shake(2.0, 0.15)
 
@@ -1244,12 +1245,14 @@ func _animate_lunge(sprite: Node2D, from_x: float, toward_x: float, duration: fl
 func _animate_flash(sprite: Node2D, color: Color, duration: float) -> void:
 	if not sprite:
 		return
-	if sprite is LayeredSprite:
-		sprite.play_hurt(duration)
-	else:
-		var original := sprite.modulate
-		sprite.modulate = color
-		get_tree().create_timer(duration).timeout.connect(func(): sprite.modulate = original)
+	# Simple modulate flash — does NOT change frame animation.
+	# Use play_hurt() / play_cast() separately where needed.
+	var original := sprite.modulate
+	sprite.modulate = color
+	get_tree().create_timer(duration).timeout.connect(func():
+		if is_instance_valid(sprite):
+			sprite.modulate = original
+	)
 
 
 func _spawn_float_text(text: String, pos: Vector2, color: Color) -> void:
@@ -1269,11 +1272,11 @@ func _spawn_float_text(text: String, pos: Vector2, color: Color) -> void:
 
 
 func _get_sprite_pos(target_id: String) -> Vector2:
-	if target_id == "hero":
+	if target_id == "hero" and is_instance_valid(hero_sprite):
 		return hero_sprite.position
-	elif target_id == "monster":
+	elif target_id == "monster" and is_instance_valid(monster_sprite):
 		return monster_sprite.position
-	elif target_id == "companion" and companion_sprite:
+	elif target_id == "companion" and is_instance_valid(companion_sprite):
 		return companion_sprite.position
 	return Vector2(192, 80)
 

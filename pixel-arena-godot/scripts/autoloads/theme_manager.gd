@@ -313,3 +313,21 @@ static func get_rarity_hex(rarity: String) -> String:
 ## Helper to get class color by key string.
 static func get_class_color(class_key: String) -> Color:
 	return CLASS_COLORS.get(class_key, Color(0.7, 0.7, 0.6))
+
+
+## Replace $Background with a tinted TextureRect covering the full viewport.
+static func setup_scene_background(parent: Node, texture_path: String, tint: Color = Color(0.15, 0.15, 0.30, 1.0)) -> void:
+	var tex = load(texture_path)
+	if not tex:
+		return
+	var bg = TextureRect.new()
+	bg.texture = tex
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.modulate = tint
+	var old_bg = parent.get_node_or_null("Background")
+	if old_bg:
+		old_bg.queue_free()
+	parent.add_child(bg)
+	parent.move_child(bg, 0)
