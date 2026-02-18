@@ -180,3 +180,193 @@ Combat scripts mirror the JS structure: `combat_engine.gd` ↔ `engine.js`, `her
 Scenes: `main_menu`, `character_forge`, `class_select`, `arena`, `battle`, `ladder`, `dungeon`, `dungeon_battle`, `tutorial`.
 
 Assets include `PixelOperator8.ttf` font, tileset sprites (puny_dungeon, buch_dungeon, kenney_roguelike), battle backgrounds, and VFX sprite sheets. Unlike the web version, the Godot port uses image assets for sprites and effects.
+
+### Icon System (`scripts/data/icon_map.gd`)
+
+`IconMap` is a static class that resolves item/skill/slot IDs to `Texture2D`. It checks for AI-generated sprites first, then falls back to legacy RPG icon sheets.
+
+| Constant | Path | Purpose |
+|---|---|---|
+| `ICON_BASE` | `res://assets/sprites/generated/gear/` | AI-generated gear icons (32×32) |
+| `ICON_BASE_SKILLS` | `res://assets/sprites/generated/skills/` | AI-generated skill icons (48×48) |
+| `ICON_BASE_LEGACY` | `res://assets/sprites/gear/rpg_icons/` | Legacy RPG icon sheet fallbacks |
+
+Lookup order for skills: generated `{skill_id}.png` → legacy `SKILL_ICONS[skill_id]` → legacy `ULT_ICONS[skill_id]` → `null`.
+
+### Font Rendering
+
+Both fonts (`PixelOperator8.ttf`, `alagard.ttf`) must have these `.import` settings for crisp pixel text:
+- `antialiasing=0`
+- `hinting=0`
+- `subpixel_positioning=0`
+
+These match `project.godot`'s global font rendering settings. If a new font is added, ensure its `.import` file matches.
+
+## Sprite Generation (pixel-arena-godot/tools/generate_sprites.py)
+
+AI sprite generation pipeline using **FLUX.1 Dev** via **SD WebUI Forge** API + **rembg** for neural background removal.
+
+### Prerequisites
+
+- **SD WebUI Forge** installed at `D:/stable-diffusion-webui-forge/`
+- FLUX.1 Dev model files in Forge's `models/` directory
+- Python packages: `requests`, `Pillow`, `rembg[gpu]`
+
+### Starting Forge
+
+Forge must be running with the `--api` flag before any generation:
+
+```bash
+# From the Forge directory
+cd D:/stable-diffusion-webui-forge
+./webui-user.bat    # Starts Forge with UI + API
+```
+
+Wait for Forge to fully load (shows "Running on local URL: http://127.0.0.1:7860"), then:
+1. Select **flux1-dev-Q8_0.gguf** as the checkpoint in the Forge UI
+2. Set VAE to **ae.safetensors**
+3. Verify with: `python generate_sprites.py --test`
+
+### Model Files
+
+Run `python generate_sprites.py --download-models` to auto-download (~18GB total):
+
+| Model | File | Size | Dest |
+|---|---|---|---|
+| Checkpoint | `flux1-dev-Q8_0.gguf` | 12.2 GB | `models/Stable-diffusion/` |
+| VAE | `ae.safetensors` | 0.3 GB | `models/VAE/` |
+| CLIP-L | `clip_l.safetensors` | 0.25 GB | `models/text_encoder/` |
+| T5-XXL | `t5-v1_1-xxl-encoder-Q8_0.gguf` | 4.9 GB | `models/text_encoder/` |
+
+### Generation Commands
+
+```bash
+cd pixel-arena-godot/tools
+
+# Check what exists vs what's missing
+python generate_sprites.py --status
+
+# Generate by category
+python generate_sprites.py --category heroes         # 4 hero bases (128×128)
+python generate_sprites.py --category monsters        # 19 monsters (128×128)
+python generate_sprites.py --category followers       # 19 followers (64×64)
+python generate_sprites.py --category gear            # 48 gear icons (32×32)
+python generate_sprites.py --category npcs            # 12 Dio NPC variants (128×128)
+python generate_sprites.py --category skills          # 27 skill/ult icons (48×48)
+python generate_sprites.py --category logo            # Game logo (480×160)
+python generate_sprites.py --category backgrounds     # 12 battle backgrounds (640×360)
+python generate_sprites.py --category all             # Everything
+
+# Generate a single sprite (force-regenerates)
+python generate_sprites.py --single chain_lightning
+python generate_sprites.py --single game_logo
+python generate_sprites.py --single barbarian
+
+# Test run (barbarian + skeleton + dragon + wolf + bg)
+python generate_sprites.py --prototype
+
+# Regenerate existing sprites
+python generate_sprites.py --category skills --force
+```
+
+### Generation Settings
+
+Default FLUX.1 Dev settings (tuned for pixel art):
+
+| Setting | Value | Notes |
+|---|---|---|
+| Resolution | 1024×1024 | Standard for sprites; 1024×576 for backgrounds; 1024×384 for logo |
+| Steps | 25 | FLUX.1 Dev sweet spot |
+| CFG Scale | 1.0 | FLUX doesn't use traditional CFG |
+| Guidance | 3.5 | FLUX-specific guidance scale |
+| Sampler | Euler | Required for FLUX |
+| Scheduler | Simple | Required for FLUX |
+
+Override via CLI: `--steps 30 --guidance 4.0 --url http://other-host:7860`
+
+### Output Directories
+
+| Category | Output Path | Size |
+|---|---|---|
+| Heroes | `assets/sprites/generated/heroes/` | 128×128 |
+| Monsters | `assets/sprites/generated/monsters/` | 128×128 |
+| Followers | `assets/sprites/generated/followers/` | 64×64 |
+| Gear icons | `assets/sprites/generated/gear/` | 32×32 |
+| Skill icons | `assets/sprites/generated/skills/` | 48×48 |
+| NPCs (Dio) | `assets/sprites/generated/npcs/` | 128×128 |
+| Logo | `assets/sprites/generated/ui/` | 480×160 |
+| Backgrounds | `assets/tilesets/battle_backgrounds/` | 640×360 |
+
+### Style Prompts
+
+Each category has a base style prompt that gets prepended to per-sprite descriptions:
+
+| Style Constant | Used For |
+|---|---|
+| `STYLE_SPRITE` | Heroes, side-view full body, transparent bg, 16-bit SNES |
+| `STYLE_BG` | Backgrounds, atmospheric environments, no characters/text |
+| `STYLE_ICON` | Gear items, single item centered, dark bg |
+| `STYLE_SKILL` | Skill abilities, spell effects, glowing magical, dark bg |
+| `STYLE_LOGO` | Game logo, golden text with blood drip, transparent bg |
+| `STYLE_NPC` | NPC portraits, character portrait, transparent bg |
+
+### Pipeline
+
+1. **txt2img** → Forge API generates at 1024×1024 (or wider for bg/logo)
+2. **rembg** → Neural network background removal (u2net model, loads once)
+3. **downscale** → `Image.NEAREST` resize to target pixel-art size
+4. **save** → PNG with transparency to output directory
+
+Seeds are deterministic from sprite name (`md5(name)[:8]` → int) for reproducibility. Use `--force` to regenerate.
+
+### Adding New Sprites
+
+1. Add entry to the appropriate dict (`HERO_BASES`, `MONSTERS`, `SKILL_ICON_SPRITES`, etc.) in `generate_sprites.py`
+2. Write a descriptive prompt (the style prefix is auto-prepended)
+3. If it's a new category, add a `gen_*()` function, batch function, and wire into CLI
+4. For skill/gear icons, also add the mapping in `icon_map.gd` so Godot can find them
+5. Generate: `python generate_sprites.py --single new_sprite_name`
+
+### Current Sprite Inventory
+
+- **Heroes**: 4 (barbarian, wizard, ranger, assassin)
+- **Monsters**: 19 (4 tiers: goblin→dragon, demon_lord, ancient_wyrm, abyssal_kraken)
+- **Followers**: 19 (common→legendary: fire_imp→death_knight)
+- **Gear icons**: 48 (weapons, helmets, chest, boots, accessories)
+- **Skill icons**: 27 (19 skills + 8 ultimates)
+- **NPCs**: 12 (Dio variants: idle, pointing, laughing, disappointed, etc.)
+- **Logo**: 1 (game title)
+- **Backgrounds**: 12 (dark_forest, dungeon_depths, lava_cavern, etc.)
+
+## Deployment
+
+### Railway (Production Server)
+
+- **URL**: someofyoumaydie.com
+- **Game**: someofyoumaydie.com/game/ (Godot web export)
+- **Admin**: someofyoumaydie.com/admin
+- **Builder**: Nixpacks (configured in `nixpacks.toml` + `railway.json` at repo root)
+- **Branch**: `master` — pushes auto-deploy
+- **Build**: `cd pixel-arena && npm ci && npm run build` → `node server/index.js`
+- **DB**: SQLite on Railway filesystem (ephemeral — data lost on redeploy)
+
+### GitHub Pages
+
+- Workflow at `.github/workflows/deploy.yml` deploys `pixel-arena/dist/` on push to `master`
+
+### Godot Web Export
+
+The Godot build lives at `pixel-arena/public/game/`. To update:
+
+```bash
+# From the Godot project directory (requires Godot in PATH)
+cd pixel-arena-godot
+godot --headless --export-release "Web" ../pixel-arena/public/game/index.html
+```
+
+Then commit the updated files in `pixel-arena/public/game/` and push to `master`.
+
+### Branch Strategy
+
+- **`master`** — Production branch. Railway + GitHub Pages deploy from here.
+- **`feature/*`** — Feature branches for isolated development (e.g., `feature/sprite-engine`)
