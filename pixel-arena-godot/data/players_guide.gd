@@ -61,11 +61,11 @@ Pick [color=#44ff88]2 skills[/color] + [color=#44ff88]1 ultimate[/color] at crea
   Bloodlust — 25, 4T cd — Extra attack + 15% lifesteal
   Summon Pet — 30, 5T cd — Companion strike (50% DMG)
   Rupture — 20, 2T cd — Detonate all bleed stacks
-  Marked for Death — 20, 3T cd — +8-16% vuln for 2T
+  Marked for Death — 20, 2-3T cd — +12-20% vuln for 2T (dungeon), +8-16% (arena)
 
 [color=#88ccff][b]Rogue Skills[/b][/color]
   Shadow Step — 25 energy, 1T cd — Enter stealth (3x dmg)
-  Envenom — 25 energy, 3T cd — Poison DoT (30% DMG/turn)
+  Envenom — 25 energy, 3T cd — 50% DMG + 2 poison stacks (3T)
   Smoke Bomb — 35 energy, 4T cd — +35%+ evasion 1T
   Lacerate — 30 energy, 3T cd — Scales w/ missing HP + bleed
   Riposte — 25 energy, 3T cd — Counter-attack when hit
@@ -83,7 +83,7 @@ Pick [color=#44ff88]2 skills[/color] + [color=#44ff88]1 ultimate[/color] at crea
 One use per combat. In dungeon: manual activation. In arena/ladder: auto-triggers at low HP.
 
 [color=#44ddbb][b]Mage[/b][/color]
-  [color=#ffd700]Thunderstorm[/color] — 4 lightning strikes + heals 35% of dmg dealt
+  [color=#ffd700]Thunderstorm[/color] — 5 lightning strikes + heals 42% of dmg dealt
   [color=#ffd700]Arcane Overload[/color] — Big burst + all skills free 2+ turns + burn
 
 [color=#ff8844][b]Ranger[/b][/color]
@@ -95,7 +95,7 @@ One use per combat. In dungeon: manual activation. In arena/ladder: auto-trigger
   [color=#ffd700]Shadow Dance[/color] — Persistent stealth (3x dmg) 3+ rounds
 
 [color=#ff4444][b]Warrior[/b][/color]
-  [color=#ffd700]Berserker Rage[/color] — +25%+ dmg buff 2+ rounds
+  [color=#ffd700]Berserker Rage[/color] — +25%+ dmg, +40% AS buff 2+ rounds
   [color=#ffd700]Last Stand[/color] — Cannot die 2+ rounds, heals 20% when expires"""
 	},
 	{
@@ -125,7 +125,19 @@ One use per combat. In dungeon: manual activation. In arena/ladder: auto-trigger
   Stash — Save for later
   Salvage — Convert to dust
 
-Drop rarity scales with floor number and dungeon clears."""
+Drop rarity scales with floor number and dungeon clears.
+
+[color=#ffd700][b]Gear Affixes[/b][/color]
+Rare+ gear rolls special bonus properties (affixes).
+  [color=#b0b098]Starter-Uncommon:[/color] 1-2 basic affixes
+  [color=#4488ff]Rare:[/color] 2 basic+mid affixes
+  [color=#aa44ff]Epic-Legendary:[/color] 3 basic+mid+high affixes
+  [color=#ff4444]Mythic:[/color] 4 affixes from all tiers
+
+[color=#aaaaaa]Basic:[/color] Crit chance, Lifesteal, Thorns, HP regen, Mana regen, Bonus HP, Bonus DEF
+[color=#44ff88]Mid:[/color] Fire/Ice/Lightning dmg, Damage reduction, Frenzy (AS on hit), Chilling (slow on hit)
+[color=#ffd700]High:[/color] Thunderstrike (chain lightning proc), Thorn Aura, Executioner (heal on kill)
+[color=#ff4444]Mythic:[/color] Spellweaver (extra skill cast), Shadow Reaper (stealth on kill), Twin Strike, Aura of Might"""
 	},
 	{
 		"title": "Followers",
@@ -180,7 +192,7 @@ Enter at [color=#44ff88]85% max HP[/color] with 3 potions.
 [color=#ffd700][b]Monsters[/b][/color]
   Tier 1: Goblin, Bat, Slime, Skeleton
   Tier 2: Orc, Dark Mage, Troll, Ghost (20% eva!), Mimic
-  Tier 3: Minotaur, Lich, Stone Golem (50 DEF!), Wyvern, Yeti
+  Tier 3: Minotaur, Lich, Stone Golem (50 DEF!), Wyvern, Fungal Horror, Yeti
   Tier 4: Dragon, Demon Lord, Ancient Wyrm (3200 HP!), Kraken"""
 	},
 	{
@@ -209,7 +221,7 @@ Mana regenerates each monster turn (mana_regen x 2).
 
 [color=#ffd700][b]Damage Formula[/b][/color]
   dmg = base_dmg x (1 - min(DEF/300, 0.8)) x rand(0.85-1.15)
-  Crit: 5% chance, 1.75x damage
+  Crit: 5% base chance in dungeon, 1.75x damage (gear affixes add crit in all modes)
   Stealth: 3x damage
   Vulnerability: +bonus % from Marked for Death
 
