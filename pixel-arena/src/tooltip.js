@@ -4,7 +4,6 @@
 import { state } from './gameState.js';
 import { ITEMS, GEAR_RARITY_COLORS, resolveGear, gearTemplate } from './data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from './data/skills.js';
-import { RARITY_COLORS } from './data/followers.js';
 
 // ---- Tooltip DOM ----
 var tip = document.createElement('div');
@@ -201,7 +200,7 @@ export function buildSkillTooltipHtml(skillIdx, isUlt) {
 // ---- Follower Tooltip ----
 export function buildFollowerTooltipHtml(f) {
   if (!f) return '';
-  var col = RARITY_COLORS[f.rarity] || '#aaa';
+  var col = GEAR_RARITY_COLORS[f.rarity] || '#aaa';
 
   var h = '<div class="tt-header" style="color:' + col + '">' + f.icon + ' ' + f.name + '</div>';
   h += '<div class="tt-rarity" style="color:' + col + '">' + f.rarity + '</div>';

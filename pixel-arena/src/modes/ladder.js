@@ -1,10 +1,10 @@
 // =============== LADDER SYSTEM ===============
 import { state } from '../gameState.js';
-import { TK } from '../constants.js';
+import { TK, LADDER_SEQUENCE, LADDER_NAMES } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
 import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
-import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower } from '../data/followers.js';
+import { FOLLOWER_TEMPLATES, rollFollower } from '../data/followers.js';
 import { SFX } from '../sfx.js';
 import { addLog } from '../combat/engine.js';
 import { tick } from '../combat/engine.js';
@@ -14,9 +14,6 @@ import { startBattle, showWin, resetBattle } from './arena.js';
 import { uploadStats } from '../network.js';
 import { drawSpritePreview } from '../render/sprites.js';
 import { buildCharSheet } from '../render/charSheet.js';
-
-var LADDER_SEQUENCE=['wizard','ranger','assassin','barbarian'];
-var LADDER_NAMES=['Draven','Zara','Krix','Moku','Thane','Vex','Nira','Bolt','Crag','Syla','Fenn','Hex','Jolt','Pyra','Onyx','Dusk','Blaze','Storm','Frost','Ash','Rune','Shade','Grim','Talon','Echo','Ember','Flux','Nova','Spike','Wisp'];
 
 export function buildLadderPicker(){
   buildCharSheet('ladderCharSheet');
@@ -283,7 +280,7 @@ function ladderLaunchBattle(oppClass){
       ladderShowIntermission(true,earnedFollower,stakeMsg);
     } else {
       state.ladderBest=Math.max(state.ladderBest,state.ladderRun.wins);
-      if(state.playerId)uploadStats(state.playerId,state.ladderBest,state.dungeonClears);
+      if(state.playerId)uploadStats(state.ladderBest,state.dungeonClears);
       ladderShowIntermission(false,null,stakeMsg);
     }
   };
@@ -371,7 +368,7 @@ function ladderShowIntermission(won,earnedFollower,stakeMsg){
 
   var rewardHtml='';
   if(earnedFollower){
-    rewardHtml='<div class="ld-reward">\u{1F381} Earned: <b style="color:'+RARITY_COLORS[earnedFollower.rarity]+'">'+earnedFollower.icon+' '+earnedFollower.name+'</b> ('+earnedFollower.rarity+')</div>';
+    rewardHtml='<div class="ld-reward">\u{1F381} Earned: <b style="color:'+GEAR_RARITY_COLORS[earnedFollower.rarity]+'">'+earnedFollower.icon+' '+earnedFollower.name+'</b> ('+earnedFollower.rarity+')</div>';
   } else if(won){
     var untilNext=3-(state.ladderRun.wins%3);
     rewardHtml='<div style="font-size:.48rem;color:var(--parch-dk);margin:4px 0">Next follower in '+untilNext+' win'+(untilNext>1?'s':'')+'</div>';

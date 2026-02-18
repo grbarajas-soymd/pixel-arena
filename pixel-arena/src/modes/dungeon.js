@@ -2,7 +2,7 @@
 import { state } from '../gameState.js';
 import { CLASSES } from '../data/classes.js';
 import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, rollGearDrop, rollShopGear, rollVictoryGearDrop, gearTemplate, resolveGear, gearSalvageValue } from '../data/items.js';
-import { FOLLOWER_TEMPLATES, RARITY_COLORS, rollFollower, rollCageFollower, CRAFT_COSTS, UPGRADE_COST, MAX_UPGRADES, craftFollower, upgradeFollower } from '../data/followers.js';
+import { FOLLOWER_TEMPLATES, rollFollower, rollCageFollower, CRAFT_COSTS, UPGRADE_COST, MAX_UPGRADES, craftFollower, upgradeFollower } from '../data/followers.js';
 import { SFX } from '../sfx.js';
 import { getCustomTotalStats } from '../combat/hero.js';
 import { initDgCombat } from './dgCombat.js';
@@ -95,7 +95,7 @@ function _renderDgCompanionPicker(){
     if(state.p1Collection.length>0){
       var sel=state._dgCompanionIdx!==null?state.p1Collection[state._dgCompanionIdx]:null;
       helper.innerHTML=sel
-        ?'<span style="color:'+RARITY_COLORS[sel.rarity]+'">'+sel.icon+' '+sel.name+'</span> will join as companion'
+        ?'<span style="color:'+GEAR_RARITY_COLORS[sel.rarity]+'">'+sel.icon+' '+sel.name+'</span> will join as companion'
         :'Tap a follower to bring them as your starting companion';
     }else helper.innerHTML='';
   }
@@ -110,7 +110,7 @@ function _renderFollowerForge(){
   var rarities=['common','uncommon','rare','epic','legendary'];
   rarities.forEach(function(r){
     var cost=CRAFT_COSTS[r];
-    var col=RARITY_COLORS[r];
+    var col=GEAR_RARITY_COLORS[r];
     var canAfford=(state.dust||0)>=cost;
     html+='<button class="forge-craft-btn" data-rarity="'+r+'" style="border-color:'+col+';color:'+col+'"'+(canAfford?'':' disabled')+'>'+r.charAt(0).toUpperCase()+r.slice(1)+' ('+cost+'\u2728)</button>';
   });
@@ -122,7 +122,7 @@ function _renderFollowerForge(){
     state.p1Collection.forEach(function(f,i){
       var ups=f.upgrades||0;
       var canUp=(state.dust||0)>=UPGRADE_COST&&ups<MAX_UPGRADES;
-      var col2=RARITY_COLORS[f.rarity]||'#aaa';
+      var col2=GEAR_RARITY_COLORS[f.rarity]||'#aaa';
       var stars='';for(var s=0;s<ups;s++)stars+='\u2B50';
       html+='<button class="forge-upgrade-btn" data-idx="'+i+'" style="border-color:'+col2+';color:'+col2+'"'+(canUp?'':' disabled')+'>'+f.icon+' '+f.name+(stars?' '+stars:'')+' ('+(ups>=MAX_UPGRADES?'MAX':UPGRADE_COST+'\u2728')+')</button>';
     });
@@ -446,7 +446,7 @@ function dgShowFollowerCapture(f,afterFn){
   if(f.wagerDebuffName)wagerLine='<div class="fim-wager loot-reveal-stats">\u{1F3B2} Wager: '+f.wagerDebuffName+' ('+f.wagerDebuffDesc+')</div>';
   else if(tmpl&&tmpl.wagerDebuff)wagerLine='<div class="fim-wager loot-reveal-stats">\u{1F3B2} Wager: '+tmpl.wagerDebuff.name+' ('+tmpl.wagerDebuff.desc+')</div>';
   var sellPrice=({common:15,uncommon:30,rare:60,epic:120,legendary:250})[f.rarity]||20;
-  var rcol=RARITY_COLORS[f.rarity];
+  var rcol=GEAR_RARITY_COLORS[f.rarity];
   var col=state.p1Collection;
   var runFollowers=state.dgRun.followers||[];
   var allOwned=col.concat(runFollowers);
@@ -643,7 +643,7 @@ export function dgCombatVictory(){
       dgShowGearDrop(gRef,afterG);
     };
     if(droppedFollower){
-      body+='<br><span style="color:'+RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
+      body+='<br><span style="color:'+GEAR_RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
     }
     var gTmpl=gearTemplate(gearDrop);
     if(gTmpl){
@@ -657,7 +657,7 @@ export function dgCombatVictory(){
     var nextFn=function(){
       dgShowFollowerCapture(fRef2,afterAllDrops);
     };
-    body+='<br><span style="color:'+RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
+    body+='<br><span style="color:'+GEAR_RARITY_COLORS[droppedFollower.rarity]+';font-size:.55rem">A creature stirs... \u{1F47E}</span>';
     dgShowIntermission(isBoss?'\u2B50 BOSS DEFEATED! \u2B50':'\u2694 VICTORY!',isBoss?'#ffcc22':'#6a9a6a',body,
       '\u2728 See what you found','dgProceedToLoot()','victory-slam');
     r._pendingVictoryLoot=nextFn;
@@ -962,7 +962,7 @@ export function dgDeath(){
   // Gear already in bag is kept (no stash saving needed)
   var rc=document.getElementById('dgRoomContent');
   var followerList='';
-  kept.forEach(function(f){followerList+='<span style="color:'+RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
+  kept.forEach(function(f){followerList+='<span style="color:'+GEAR_RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
   // Build defeat sheet for the monster that killed you
   var slainByHtml='';
   var lastStats=r._lastCombatStats;
@@ -998,7 +998,7 @@ export function dgDeath(){
 export function dgVictory(){
   var r=state.dgRun;
   state.dungeonClears++;
-  if(state.playerId)uploadStats(state.playerId,state.ladderBest,state.dungeonClears);
+  if(state.playerId)uploadStats(state.ladderBest,state.dungeonClears);
   dgLog('\u{1F3C6} Dungeon cleared! (Clear #'+state.dungeonClears+')','loot');
   r.followers.forEach(function(f){if(!f._brought)state.p1Collection.push(f)});
   // Victory drop — mythic or legendary based on clear count
@@ -1009,7 +1009,7 @@ export function dgVictory(){
   state.p1Collection.push(bonus);
   var rc=document.getElementById('dgRoomContent');
   var followerList='';
-  r.followers.forEach(function(f){followerList+='<span style="color:'+RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
+  r.followers.forEach(function(f){followerList+='<span style="color:'+GEAR_RARITY_COLORS[f.rarity]+'">'+f.icon+f.name+'</span> '});
   var bonusGearCol=bonusItem?GEAR_RARITY_COLORS[bonusItem.rarity]||'#aaa':'#aaa';
   var bonusGearHtml=bonusItem?'<br>Victory Reward: <span style="color:'+bonusGearCol+';font-weight:bold">'+bonusItem.icon+' '+bonusItem.name+' ('+bonusItem.rarity+')</span>':'';
   var nextDiffPct=Math.round(state.dungeonClears*15);
@@ -1023,7 +1023,7 @@ export function dgVictory(){
       '<span class="dg-im-stat" style="color:#88aacc">Dmg Dealt: '+r.totalDmgDealt+'</span>'+
       '<br><br>All <b>'+r.followers.length+'</b> followers kept!'+
       (followerList?'<br>'+followerList:'')+
-      '<br><br>Bonus: <span style="color:'+RARITY_COLORS[bonus.rarity]+';font-size:.55rem">'+bonus.icon+' '+bonus.name+' ('+bonus.rarity+')</span>!'+
+      '<br><br>Bonus: <span style="color:'+GEAR_RARITY_COLORS[bonus.rarity]+';font-size:.55rem">'+bonus.icon+' '+bonus.name+' ('+bonus.rarity+')</span>!'+
       bonusGearHtml+
       '<br><br><span style="font-size:.48rem;color:#cc6666">Next descent: +'+nextDiffPct+'% difficulty</span>'+
     '</div>'+

@@ -52,9 +52,38 @@ CREATE TABLE IF NOT EXISTS battles (
   fought_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Bug reports
+CREATE TABLE IF NOT EXISTS bug_reports (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id       TEXT REFERENCES players(id) ON DELETE SET NULL,
+  player_name     TEXT NOT NULL DEFAULT 'Anonymous',
+  category        TEXT NOT NULL DEFAULT 'other',
+  description     TEXT NOT NULL,
+  diagnostic_data TEXT,
+  screenshot_data TEXT,
+  browser_info    TEXT,
+  game_version    TEXT,
+  status          TEXT NOT NULL DEFAULT 'open',
+  admin_notes     TEXT NOT NULL DEFAULT '',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pending battles (battle token system)
+CREATE TABLE IF NOT EXISTS pending_battles (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  challenger_id   TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  defender_id     TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  token           TEXT UNIQUE NOT NULL,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_records_wins ON records(wins DESC);
 CREATE INDEX IF NOT EXISTS idx_stats_ladder ON stats(ladder_best DESC);
 CREATE INDEX IF NOT EXISTS idx_stats_dungeon ON stats(dungeon_clears DESC);
 CREATE INDEX IF NOT EXISTS idx_stats_rating ON stats(arena_rating);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON bug_reports(status);
+CREATE INDEX IF NOT EXISTS idx_bug_reports_created ON bug_reports(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pending_battles_token ON pending_battles(token);
+CREATE INDEX IF NOT EXISTS idx_pending_battles_challenger ON pending_battles(challenger_id);

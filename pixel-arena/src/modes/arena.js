@@ -4,12 +4,12 @@ import { TK } from '../constants.js';
 import { CLASSES } from '../data/classes.js';
 import { ITEMS, EQ_SLOTS, GEAR_RARITY_COLORS, gearTemplate } from '../data/items.js';
 import { ALL_SKILLS, ALL_ULTS } from '../data/skills.js';
-import { FOLLOWER_TEMPLATES, RARITY_COLORS } from '../data/followers.js';
+import { FOLLOWER_TEMPLATES } from '../data/followers.js';
 import { SFX } from '../sfx.js';
 import { nextBiome, randomBiome, getBiome } from '../biomes.js';
 import { addLog } from '../combat/engine.js';
 import { tick } from '../combat/engine.js';
-import { mkHero, mkArenaFollower, applyFollowerBuff, getCustomTotalStats, serializeBuild } from '../combat/hero.js';
+import { mkHero, mkArenaFollower, applyFollowerBuff, getCustomTotalStats, serializeBuild, resolveOpponentBuild } from '../combat/hero.js';
 import { buildHUD, updateUI, buildCharTooltip, buildCustomTooltip, buildDefeatSheet, renderFollowerCards, updateFollowerDisplays, updateStakeUI } from '../render/ui.js';
 import { initGround } from '../render/arena.js';
 import { openCustomEditor } from '../custom.js';
@@ -43,7 +43,10 @@ export function buildSelector(){
   // Online controls (register / upload)
   var ctrl=document.getElementById('onlineControls');
   if(ctrl){
-    if(!state.playerId){
+    if(!network.isLoggedIn()){
+      ctrl.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:4px">Log in to join the arena and fight other players!</div>'+
+        '<button class="btn btn-spd" onclick="showAuthOverlay()" style="font-size:.42rem">Log In / Sign Up</button>';
+    } else if(!state.playerId){
       ctrl.innerHTML='<div style="font-size:.48rem;color:var(--parch-dk);margin-bottom:4px">Join the arena to fight other players!</div>'+
         '<input id="regNameInput" class="cs-name-input" placeholder="Your display name" maxlength="20" style="width:140px;display:inline-block;margin-right:4px">'+
         '<button class="btn btn-spd" onclick="registerPlayer()" style="font-size:.42rem">Join Arena</button>';
@@ -118,6 +121,7 @@ function buildOnlineOpponents(){
 }
 
 export function registerPlayer(){
+  if(!network.isLoggedIn()){alert('You must log in first!');return}
   var input=document.getElementById('regNameInput');
   var name=input?input.value.trim():'';
   if(!name){alert('Enter a display name!');return}
@@ -136,9 +140,9 @@ export function registerPlayer(){
         refreshOpponents();
       });
     }
-  }).catch(function(){
+  }).catch(function(err){
     var statusEl=document.getElementById('onlineStatus');
-    if(statusEl)statusEl.textContent='Online PvP requires a server \u2014 play Dungeon or Ladder!';
+    if(statusEl)statusEl.textContent=err.message||'Online PvP requires a server \u2014 play Dungeon or Ladder!';
   });
 }
 
@@ -152,9 +156,15 @@ export function uploadBuild(){
       saveGame();
       setTimeout(refreshOpponents,500);
     }
-  }).catch(function(){
+  }).catch(function(err){
+    // If server says no player linked (DB wiped on redeploy), clear stale registration
+    if(err.message&&err.message.indexOf('No arena player')>=0){
+      state.playerId=null;state.playerName=null;
+      saveGame();buildSelector();
+      return;
+    }
     var statusEl=document.getElementById('onlineStatus');
-    if(statusEl)statusEl.textContent='Online PvP requires a server \u2014 play Dungeon or Ladder!';
+    if(statusEl)statusEl.textContent=err.message||'Online PvP requires a server \u2014 play Dungeon or Ladder!';
   });
 }
 
@@ -187,21 +197,28 @@ export function launchBattle(){
     alert('You must wager a follower!');return;
   }
   if(state.selectedOpponent){
-    // Online battle — fetch opponent build and launch
+    // Online battle — get battle token first, then fetch opponent build and launch
     var opp=state.onlineOpponents.find(function(o){return o.playerId===state.selectedOpponent});
     if(!opp){alert('Select an opponent!');return}
-    var ch=opp.character;
-    state._ladderGenConfig={
-      name:ch.name,sprite:ch.sprite,
-      hp:ch.stats.hp,baseDmg:ch.stats.baseDmg,baseAS:ch.stats.baseAS,
-      def:ch.stats.def,evasion:ch.stats.evasion,moveSpeed:ch.stats.moveSpeed,
-      skills:ch.skills,ultimate:ch.ultimate,
-      rangeType:ch.rangeType,equip:ch.equipment,
-    };
-    state.p2Class='custom';
-    document.getElementById('selectorScreen').style.display='none';
-    document.getElementById('battleScreen').style.display='block';
-    startBattle();
+    // Request battle token from server
+    network.startBattle(opp.playerId).then(function(res){
+      state._battleToken=res.battleToken;
+      var ch=resolveOpponentBuild(opp.character);
+      state._ladderGenConfig={
+        name:ch.name,sprite:ch.sprite,
+        hp:ch.stats.hp,baseDmg:ch.stats.baseDmg,baseAS:ch.stats.baseAS,
+        def:ch.stats.def,evasion:ch.stats.evasion,moveSpeed:ch.stats.moveSpeed,
+        skills:ch.skills,ultimate:ch.ultimate,
+        rangeType:ch.rangeType,equip:ch.equipment,
+      };
+      state.p2Class='custom';
+      document.getElementById('selectorScreen').style.display='none';
+      document.getElementById('battleScreen').style.display='block';
+      startBattle();
+    }).catch(function(err){
+      var statusEl=document.getElementById('onlineStatus');
+      if(statusEl)statusEl.textContent=err.message||'Failed to start battle';
+    });
   } else {
     alert('Select an opponent!');
   }
@@ -211,6 +228,7 @@ export function backToSelect(){
   resetBattle();
   state._ladderGenConfig=null;
   state.selectedOpponent=null;
+  state._battleToken=null;
   state.p1ArenaFighters=[];
   document.getElementById('battleScreen').style.display='none';
   document.getElementById('selectorScreen').style.display='flex';
@@ -298,9 +316,9 @@ export function showWin(w){
   b.style.background='linear-gradient(180deg,rgba(10,10,30,0.95),rgba(5,5,20,0.95))';
   b.className='win-banner show';document.getElementById('btnGo').disabled=true;updateUI();
 
-  // Report online battle result
-  if(state.selectedOpponent&&state.playerId){
-    network.reportBattle(state.playerId,state.selectedOpponent,winnerIsP1).then(function(){
+  // Report online battle result using battle token
+  if(state._battleToken&&state.playerId){
+    network.reportBattle(state._battleToken,winnerIsP1).then(function(){
       refreshOpponents();
     }).catch(function(){});
   }
@@ -308,6 +326,7 @@ export function showWin(w){
   // Clear online state and save
   state._ladderGenConfig=null;
   state.selectedOpponent=null;
+  state._battleToken=null;
   saveGame();
 }
 

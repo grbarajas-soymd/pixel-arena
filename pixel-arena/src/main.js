@@ -47,6 +47,17 @@ import { drawSpritePreview } from './render/sprites.js';
 // Tooltip system
 import './tooltip.js';
 
+// =============== ERROR CAPTURE ===============
+window._recentErrors = [];
+window.onerror = function(msg, src, line, col, err) {
+  window._recentErrors.push({ msg: String(msg), src: src, line: line, col: col, stack: err && err.stack, at: Date.now() });
+  if (window._recentErrors.length > 10) window._recentErrors.shift();
+};
+window.onunhandledrejection = function(e) {
+  window._recentErrors.push({ msg: String(e.reason), stack: e.reason && e.reason.stack, at: Date.now() });
+  if (window._recentErrors.length > 10) window._recentErrors.shift();
+};
+
 // =============== DEVICE DETECTION ===============
 function detectLayout() {
   var w = window.innerWidth, h = window.innerHeight;
@@ -498,6 +509,11 @@ function accountLogout() {
 }
 window.accountLogout = accountLogout;
 
+function showAuthOverlay() {
+  showCharacterSelect();
+}
+window.showAuthOverlay = showAuthOverlay;
+
 function cloudUpload() {
   saveGame();
   setCloudStatus('Uploading...');
@@ -556,12 +572,6 @@ function showArchetypePicker() {
 }
 window.showArchetypePicker = showArchetypePicker;
 
-// Keep resetGame for backwards compat (used nowhere in HTML now, but just in case)
-function resetGame() {
-  resetAllCharacters();
-}
-window.resetGame = resetGame;
-
 // Start render loop
 render();
 
@@ -618,3 +628,95 @@ window.uploadBuild = uploadBuild;
 window.refreshOpponents = refreshOpponents;
 window.openLeaderboard = openLeaderboard;
 window.closeLB = closeLB;
+
+// =============== BUG REPORT ===============
+function openBugReport() {
+  var overlay = document.getElementById('bugReportOverlay');
+  if (!overlay) {
+    // Create the bug report modal
+    overlay = document.createElement('div');
+    overlay.id = 'bugReportOverlay';
+    overlay.className = 'dropdown-overlay show';
+    overlay.innerHTML =
+      '<div class="dropdown-panel" style="max-width:400px">' +
+        '<div class="dd-title">Report a Bug</div>' +
+        '<div style="margin-bottom:8px">' +
+          '<label style="font-size:.52rem;color:var(--text-dim);display:block;margin-bottom:2px">Category</label>' +
+          '<select id="bugCategory" style="width:100%;font-family:Cinzel,serif;font-size:.52rem;background:rgba(0,0,0,0.5);border:1px solid var(--panel-border);color:var(--gold-bright);padding:6px 8px">' +
+            '<option value="gameplay">Gameplay</option>' +
+            '<option value="ui">UI</option>' +
+            '<option value="crash">Crash</option>' +
+            '<option value="balance">Balance</option>' +
+            '<option value="network">Network</option>' +
+            '<option value="other">Other</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="margin-bottom:8px">' +
+          '<label style="font-size:.52rem;color:var(--text-dim);display:block;margin-bottom:2px">Description (min 10 chars)</label>' +
+          '<textarea id="bugDescription" rows="4" style="width:100%;font-family:Cinzel,serif;font-size:.52rem;background:rgba(0,0,0,0.5);border:1px solid var(--panel-border);color:var(--text);padding:6px 8px;resize:vertical" placeholder="Describe what happened..."></textarea>' +
+        '</div>' +
+        '<div style="margin-bottom:10px">' +
+          '<label style="font-size:.52rem;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:4px">' +
+            '<input type="checkbox" id="bugScreenshot"> Include screenshot' +
+          '</label>' +
+        '</div>' +
+        '<div id="bugStatus" style="font-size:.52rem;margin-bottom:6px;min-height:16px"></div>' +
+        '<div style="display:flex;gap:8px;justify-content:center">' +
+          '<button class="dd-close" onclick="submitBug()" style="background:linear-gradient(180deg,#1e1408,#120c04);border-color:var(--gold);color:var(--gold-bright)">Submit</button>' +
+          '<button class="dd-close" onclick="closeBugReport()">Cancel</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  } else {
+    overlay.classList.add('show');
+    overlay.style.display = 'flex';
+  }
+  document.getElementById('bugDescription').value = '';
+  document.getElementById('bugStatus').textContent = '';
+  document.getElementById('bugScreenshot').checked = false;
+}
+window.openBugReport = openBugReport;
+
+function closeBugReport() {
+  var overlay = document.getElementById('bugReportOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.style.display = 'none';
+  }
+}
+window.closeBugReport = closeBugReport;
+
+function submitBug() {
+  var cat = document.getElementById('bugCategory').value;
+  var desc = document.getElementById('bugDescription').value;
+  var statusEl = document.getElementById('bugStatus');
+
+  if (!desc || desc.trim().length < 10) {
+    statusEl.style.color = '#aa5a5a';
+    statusEl.textContent = 'Description must be at least 10 characters.';
+    return;
+  }
+
+  statusEl.style.color = 'var(--gold)';
+  statusEl.textContent = 'Submitting...';
+
+  var screenshotData = null;
+  if (document.getElementById('bugScreenshot').checked && state.canvas) {
+    try { screenshotData = state.canvas.toDataURL('image/png'); } catch(e) {}
+  }
+
+  network.submitBugReport(cat, desc.trim(), screenshotData).then(function(r) {
+    if (r.ok) {
+      statusEl.style.color = '#5a9a5a';
+      statusEl.textContent = 'Bug report submitted! (#' + r.id + ')';
+      setTimeout(closeBugReport, 1500);
+    } else {
+      statusEl.style.color = '#aa5a5a';
+      statusEl.textContent = r.error || 'Failed to submit.';
+    }
+  }).catch(function() {
+    statusEl.style.color = '#aa5a5a';
+    statusEl.textContent = 'Network error. Try again.';
+  });
+}
+window.submitBug = submitBug;

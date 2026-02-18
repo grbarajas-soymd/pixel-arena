@@ -28,7 +28,7 @@ app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Player-Id', 'X-Admin-Key']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key']
 }));
 
 // Body parsing with size limit

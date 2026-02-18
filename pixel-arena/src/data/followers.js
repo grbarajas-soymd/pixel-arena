@@ -112,23 +112,27 @@ export const FOLLOWER_TEMPLATES = [
     wagerDebuff:{name:'Death Curse',desc:'-400 HP, -25 DMG, -15 DEF',apply:function(e){e.maxHp-=400;e.hp=Math.min(e.hp,e.maxHp);e.baseDmg=Math.max(10,e.baseDmg-25);e.def=Math.max(0,e.def-15)}}},
 ];
 
-export const RARITY_COLORS={common:'#8a8a7a',uncommon:'#4a8a4a',rare:'#4a6a9a',epic:'#8a4a9a',legendary:'#c8a848',mythic:'#cc3333'};
-
 // ---- Follower Crafting ----
 export var CRAFT_COSTS={common:5,uncommon:15,rare:40,epic:100,legendary:250};
 export var UPGRADE_COST=30;
 export var MAX_UPGRADES=3;
 
-export function craftFollower(rarity){
-  var pool=FOLLOWER_TEMPLATES.filter(function(f){return f.rarity===rarity});
-  if(pool.length===0)return null;
-  var tmpl=pool[Math.floor(Math.random()*pool.length)];
-  return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
+function mkFollowerInstance(tmpl){
+  return {
+    id:Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
     combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
     abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
     abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
     wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
-    upgrades:0,assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
+    upgrades:0,assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false
+  };
+}
+
+export function craftFollower(rarity){
+  var pool=FOLLOWER_TEMPLATES.filter(function(f){return f.rarity===rarity});
+  if(pool.length===0)return null;
+  return mkFollowerInstance(pool[Math.floor(Math.random()*pool.length)]);
 }
 
 export function upgradeFollower(follower){
@@ -157,24 +161,12 @@ function _floorWeights(floor){
 export function rollFollower(floor){
   var pickedRarity=_pickRarity(_floorWeights(floor));
   var pool=FOLLOWER_TEMPLATES.filter(f=>f.rarity===pickedRarity);
-  var tmpl=pool[Math.floor(Math.random()*pool.length)];
-  return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
-    combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
-    abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
-    abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
-    wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
-    assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
+  return mkFollowerInstance(pool[Math.floor(Math.random()*pool.length)]);
 }
 
 export function rollCageFollower(floor){
   var pickedRarity=_pickRarity(_floorWeights(floor));
   if(pickedRarity==='legendary')pickedRarity='epic';
   var pool=FOLLOWER_TEMPLATES.filter(f=>f.rarity===pickedRarity);
-  var tmpl=pool[Math.floor(Math.random()*pool.length)];
-  return {id:Date.now()+'_'+Math.random().toString(36).slice(2,6),name:tmpl.name,icon:tmpl.icon,rarity:tmpl.rarity,buff:{...tmpl.buff},buffDesc:tmpl.buffDesc,
-    combatHp:tmpl.combatHp,combatDmg:tmpl.combatDmg,combatAS:tmpl.combatAS,combatDef:tmpl.combatDef,combatRange:tmpl.combatRange||60,
-    abilityName:tmpl.abilityName||'',abilityDesc:tmpl.abilityDesc||'',
-    abilityFn:tmpl.abilityFn||null,onDeath:tmpl.onDeath||null,wagerDebuff:tmpl.wagerDebuff||null,
-    wagerDebuffName:tmpl.wagerDebuff?tmpl.wagerDebuff.name:'',wagerDebuffDesc:tmpl.wagerDebuff?tmpl.wagerDebuff.desc:'',
-    assignedP1:false,assignedP2:false,stakedP1:false,stakedP2:false};
+  return mkFollowerInstance(pool[Math.floor(Math.random()*pool.length)]);
 }
