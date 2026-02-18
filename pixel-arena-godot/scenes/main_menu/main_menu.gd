@@ -90,12 +90,78 @@ func _style_title() -> void:
 
 
 func _on_new_game() -> void:
+	var persistence = get_node("/root/Persistence")
+	if _gs.slots.size() >= persistence.MAX_SLOTS:
+		_show_slots_full_dialog()
+		return
 	TransitionManager.fade_to_scene("res://scenes/class_select/class_select.tscn")
 
 
 func _on_continue() -> void:
-	if not _gs.slots.is_empty():
-		TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
+	if _gs.slots.is_empty():
+		return
+	if _gs.slots.size() == 1:
+		var persistence = get_node("/root/Persistence")
+		persistence.switch_to_slot(0)
+		_route_to_destination()
+	else:
+		TransitionManager.fade_to_scene("res://scenes/character_select/character_select.tscn")
+
+
+func _route_to_destination() -> void:
+	if _gs._tutorial_return or not _gs.tutorial_completed:
+		TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn")
+		return
+	if _gs.has_active_run():
+		TransitionManager.fade_to_scene("res://scenes/dungeon/dungeon.tscn")
+		return
+	TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
+
+
+func _show_slots_full_dialog() -> void:
+	var overlay := ColorRect.new()
+	overlay.color = ThemeManager.COLOR_OVERLAY_DIM
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", ThemeManager.make_panel_style())
+	panel.position = Vector2(170, 120)
+	panel.custom_minimum_size = Vector2(300, 100)
+	overlay.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	panel.add_child(vbox)
+
+	var msg := Label.new()
+	msg.text = "All character slots are full."
+	msg.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	msg.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(msg)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 8)
+	vbox.add_child(btn_row)
+
+	var manage_btn := Button.new()
+	manage_btn.text = "Manage Characters"
+	manage_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_button(manage_btn)
+	manage_btn.pressed.connect(func():
+		overlay.queue_free()
+		TransitionManager.fade_to_scene("res://scenes/character_select/character_select.tscn")
+	)
+	btn_row.add_child(manage_btn)
+
+	var close := Button.new()
+	close.text = "Cancel"
+	close.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_button(close)
+	close.pressed.connect(func(): overlay.queue_free())
+	btn_row.add_child(close)
 
 
 # ============ SETTINGS POPUP ============

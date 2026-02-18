@@ -1,10 +1,12 @@
 extends Node
-## Save/load system — JSON file-based persistence.
-## Save format version 4 (matches JS migration).
+## Save/load system — JSON file-based persistence with HMAC integrity.
+## Save format version 6: per-slot timestamps + HMAC-SHA256 signature.
 
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const SAVE_PATH: String = "user://save_data.json"
-const MAX_SLOTS: int = 3
+const SIG_PATH: String = "user://save_data.sig"
+const MAX_SLOTS: int = 4
+const HMAC_KEY: String = "pxl-arena-save-integ-v6-9f3a7c2d"
 
 var _gs: Node  # GameState ref (set in _ready to avoid circular compile dep)
 var _idb: Node  # ItemDatabase ref
@@ -16,11 +18,14 @@ func _ready() -> void:
 	load_all()
 
 
+# ============ SAVE / LOAD ============
+
 func save_game() -> void:
+	_sync_active_slot_to_array()
 	var data: Dictionary = {
 		"version": SAVE_VERSION,
 		"active_slot": _gs.active_slot,
-		"slots": _serialize_slots(),
+		"slots": _gs.slots.duplicate(true),
 		"settings": {
 			"sfx_enabled": _gs.sfx_enabled,
 			"music_enabled": _gs.music_enabled,
@@ -29,11 +34,18 @@ func save_game() -> void:
 			"music_volume": _gs.music_volume,
 		}
 	}
-	var json_str = JSON.stringify(data, "\t")
+	var json_str := JSON.stringify(data, "\t")
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file:
 		file.store_string(json_str)
 		file.close()
+	# Write HMAC signature of the exact bytes to a separate file
+	var sig := _compute_signature(json_str)
+	if not sig.is_empty():
+		var sig_file = FileAccess.open(SIG_PATH, FileAccess.WRITE)
+		if sig_file:
+			sig_file.store_string(sig)
+			sig_file.close()
 	_upload_to_cloud_if_logged_in()
 
 
@@ -47,7 +59,24 @@ func load_all() -> void:
 	file.close()
 	var parsed = JSON.parse_string(json_str)
 	if not parsed is Dictionary:
+		push_warning("Save file corrupted: not a Dictionary")
+		_gs.save_tampered = true
 		return
+
+	# Verify HMAC signature against raw file bytes
+	if FileAccess.file_exists(SIG_PATH):
+		var sig_file = FileAccess.open(SIG_PATH, FileAccess.READ)
+		if sig_file:
+			var stored_sig: String = sig_file.get_as_text().strip_edges()
+			sig_file.close()
+			if not stored_sig.is_empty() and _compute_signature(json_str) != stored_sig:
+				push_warning("Save integrity check failed — possible tampering")
+				_gs.save_tampered = true
+
+	# Validate structure
+	if not _validate_save_structure(parsed):
+		push_warning("Save structure validation failed")
+		_gs.save_tampered = true
 
 	var version = parsed.get("version", 1)
 	if version < SAVE_VERSION:
@@ -68,6 +97,8 @@ func load_all() -> void:
 		_load_slot_into_state(_gs.active_slot)
 
 
+# ============ SLOT MANAGEMENT ============
+
 func create_character_slot(slot_index: int, class_key: String, char_name: String) -> void:
 	var class_data = _load_json("res://data/classes.json")
 	if not class_data or not class_data.has(class_key):
@@ -86,10 +117,13 @@ func create_character_slot(slot_index: int, class_key: String, char_name: String
 
 	var default_skills: Array = _get_default_skills(class_key)
 	var default_ult: int = _get_default_ultimate(class_key)
+	var now := Time.get_unix_time_from_system()
 
 	var slot_data: Dictionary = {
 		"class_key": class_key,
 		"char_name": char_name,
+		"created_at": now,
+		"saved_at": now,
 		"custom_char": {
 			"name": char_name,
 			"class_key": class_key,
@@ -125,6 +159,88 @@ func create_character_slot(slot_index: int, class_key: String, char_name: String
 	save_game()
 
 
+func switch_to_slot(index: int) -> void:
+	## Save current slot, then load a different one.
+	if index < 0 or index >= _gs.slots.size():
+		return
+	_sync_active_slot_to_array()
+	_gs.active_slot = index
+	_load_slot_into_state(index)
+	# Clear transient run state when switching characters
+	_gs.dg_run = {}
+	_gs.ladder_run = {}
+	_gs._ladder_mode = false
+	_gs._tutorial_return = false
+	_gs._tutorial_step = 0
+	save_game()
+
+
+func delete_slot(index: int) -> void:
+	## Remove a character slot and adjust indices.
+	if index < 0 or index >= _gs.slots.size():
+		return
+	_gs.slots.remove_at(index)
+	if _gs.slots.is_empty():
+		_gs.active_slot = 0
+		_reset_live_state()
+	elif _gs.active_slot == index:
+		# Deleted the active slot — load the nearest remaining
+		_gs.active_slot = mini(_gs.active_slot, _gs.slots.size() - 1)
+		_load_slot_into_state(_gs.active_slot)
+	elif _gs.active_slot > index:
+		_gs.active_slot -= 1
+	save_game()
+
+
+func next_free_slot_index() -> int:
+	## Returns the append position (slots are contiguous, no gaps).
+	return _gs.slots.size()
+
+
+# ============ INTERNAL STATE SYNC ============
+
+func _sync_active_slot_to_array() -> void:
+	## Write live GameState fields back into _gs.slots[active_slot].
+	if _gs.active_slot < 0 or _gs.active_slot >= _gs.slots.size():
+		return
+	var slot: Dictionary = _gs.slots[_gs.active_slot]
+	if slot.is_empty():
+		return
+	slot["custom_char"] = _gs.custom_char
+	slot["equipment"] = _gs.equipment
+	slot["gear_bag"] = _gs.gear_bag
+	slot["followers"] = _gs.followers
+	slot["active_follower"] = _gs.active_follower
+	slot["gold"] = _gs.gold
+	slot["dust"] = _gs.dust
+	slot["dungeon_clears"] = _gs.dungeon_clears
+	slot["ladder_wins"] = _gs.ladder_wins
+	slot["arena_rating"] = _gs.arena_rating
+	slot["potions"] = _gs.potions
+	slot["tutorial_completed"] = _gs.tutorial_completed
+	slot["arena_tutorial_completed"] = _gs.arena_tutorial_completed
+	slot["saved_at"] = Time.get_unix_time_from_system()
+
+
+func _reset_live_state() -> void:
+	## Clear all GameState fields when no slots remain.
+	_gs.custom_char = {}
+	_gs.equipment = {}
+	_gs.gear_bag.clear()
+	_gs.followers.clear()
+	_gs.active_follower = -1
+	_gs.gold = 0
+	_gs.dust = 0
+	_gs.dungeon_clears = 0
+	_gs.ladder_wins = 0
+	_gs.arena_rating = 1000
+	_gs.potions = 3
+	_gs.tutorial_completed = false
+	_gs.arena_tutorial_completed = false
+	_gs.dg_run = {}
+	_gs.ladder_run = {}
+
+
 func _load_slot_into_state(index: int) -> void:
 	if index >= _gs.slots.size():
 		return
@@ -146,28 +262,6 @@ func _load_slot_into_state(index: int) -> void:
 	_gs.arena_tutorial_completed = slot.get("arena_tutorial_completed", false)
 
 
-func _serialize_slots() -> Array:
-	var result: Array = []
-	for slot in _gs.slots:
-		# Update active slot from live state
-		if result.size() == _gs.active_slot:
-			slot["custom_char"] = _gs.custom_char
-			slot["equipment"] = _gs.equipment
-			slot["gear_bag"] = _gs.gear_bag
-			slot["followers"] = _gs.followers
-			slot["active_follower"] = _gs.active_follower
-			slot["gold"] = _gs.gold
-			slot["dust"] = _gs.dust
-			slot["dungeon_clears"] = _gs.dungeon_clears
-			slot["ladder_wins"] = _gs.ladder_wins
-			slot["arena_rating"] = _gs.arena_rating
-			slot["potions"] = _gs.potions
-			slot["tutorial_completed"] = _gs.tutorial_completed
-			slot["arena_tutorial_completed"] = _gs.arena_tutorial_completed
-		result.append(slot)
-	return result
-
-
 func _deserialize_slots(slots_data: Array) -> void:
 	_gs.slots.clear()
 	for slot in slots_data:
@@ -175,11 +269,52 @@ func _deserialize_slots(slots_data: Array) -> void:
 			_gs.slots.append(slot)
 
 
+# ============ HMAC INTEGRITY ============
+
+func _compute_signature(json_str: String) -> String:
+	var hmac := HMACContext.new()
+	if hmac.start(HashingContext.HASH_SHA256, HMAC_KEY.to_utf8_buffer()) != OK:
+		return ""
+	if hmac.update(json_str.to_utf8_buffer()) != OK:
+		return ""
+	var digest: PackedByteArray = hmac.finish()
+	return digest.hex_encode()
+
+
+# ============ VALIDATION ============
+
+func _validate_save_structure(data: Dictionary) -> bool:
+	if not data.has("slots") or not data.get("slots") is Array:
+		return false
+	var slots: Array = data["slots"]
+	for slot in slots:
+		if not slot is Dictionary:
+			return false
+		if not slot.has("class_key") or not slot.has("char_name"):
+			return false
+		if not slot.has("custom_char") or not slot.get("custom_char") is Dictionary:
+			return false
+	return true
+
+
+# ============ MIGRATION ============
+
 func _migrate(data: Dictionary, from_version: int) -> Dictionary:
-	# Future migration logic here
+	if from_version < 6:
+		# v5 → v6: Add timestamps to existing slots
+		var now := Time.get_unix_time_from_system()
+		var slots: Array = data.get("slots", [])
+		for slot in slots:
+			if slot is Dictionary:
+				if not slot.has("created_at"):
+					slot["created_at"] = now
+				if not slot.has("saved_at"):
+					slot["saved_at"] = now
 	data["version"] = SAVE_VERSION
 	return data
 
+
+# ============ CLASS DEFAULTS ============
 
 func _get_starter_loadout(class_key: String) -> Dictionary:
 	match class_key:

@@ -147,7 +147,8 @@ func _on_start() -> void:
 		char_name = CLASS_NAMES.get(_selected_class, "Hero")
 
 	var persistence = get_node("/root/Persistence")
-	persistence.create_character_slot(0, _selected_class, char_name)
+	var slot_index: int = persistence.next_free_slot_index()
+	persistence.create_character_slot(slot_index, _selected_class, char_name)
 	TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn")
 
 

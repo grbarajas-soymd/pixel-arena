@@ -29,6 +29,7 @@ var potions: int = 3
 var max_potions: int = 3
 var tutorial_completed: bool = false
 var arena_tutorial_completed: bool = false
+var save_tampered: bool = false  # Set true if HMAC signature verification fails on load
 var _tutorial_return: bool = false  # Transient — battle/dungeon scenes return to tutorial when true
 var _tutorial_step: int = 0         # Transient — current tutorial step (survives scene transitions)
 
