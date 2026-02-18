@@ -320,6 +320,72 @@ BATTLE_BACKGROUNDS = {
     ),
 }
 
+STYLE_NPC = (
+    "pixel art game character portrait, single figure, centered, "
+    "transparent background, clean pixel edges, dark fantasy style, "
+    "16-bit retro SNES style, crisp pixel art, no anti-aliasing"
+)
+
+DIO_BASE = (
+    "ethereal male egregore god figure, molten orange-gold glowing skin, "
+    "burning ember eyes, flowing dark robes with fire licking edges, "
+    "otherworldly divine presence, smirking expression, "
+    "dark horns wreathed in orange flame, muscular otherworldly physique"
+)
+
+NPC_SPRITES = {
+    "dio_idle": (
+        f"{DIO_BASE}, standing neutral pose, arms crossed, "
+        "confident smirk, looking directly at viewer"
+    ),
+    "dio_pointing": (
+        f"{DIO_BASE}, pointing finger directly at viewer, "
+        "accusatory stance, raised eyebrow, challenging expression"
+    ),
+    "dio_laughing": (
+        f"{DIO_BASE}, head thrown back laughing, open mouth, "
+        "hand on chest, genuinely amused, shaking with laughter"
+    ),
+    "dio_disappointed": (
+        f"{DIO_BASE}, palm on face facepalm, exasperated expression, "
+        "slumped shoulders, visibly unimpressed, shaking head"
+    ),
+    "dio_impressed": (
+        f"{DIO_BASE}, eyebrows raised in surprise, clapping hands, "
+        "genuinely impressed expression, nodding approval, wide eyes"
+    ),
+    "dio_peeking": (
+        f"{DIO_BASE}, peeking around corner, half body visible, "
+        "one eye showing, sly grin, sneaky voyeuristic pose"
+    ),
+    "dio_lounging": (
+        f"{DIO_BASE}, reclining on floating throne of fire, "
+        "relaxed pose, one leg crossed, chin resting on hand, bored expression"
+    ),
+    "dio_dramatic": (
+        f"{DIO_BASE}, dramatic cape flourish, arms wide open, "
+        "presenting something grand, theatrical pose, intense gaze"
+    ),
+    "dio_suggestive_lean": (
+        f"{DIO_BASE}, leaning against invisible wall, "
+        "bedroom eyes half-lidded, hand on hip, confident flirtatious smirk, "
+        "one arm raised against wall, sultry pose"
+    ),
+    "dio_blowing_kiss": (
+        f"{DIO_BASE}, blowing a kiss with one hand, winking one eye, "
+        "playful teasing expression, lips puckered, "
+        "small flame heart floating from hand"
+    ),
+    "dio_facepalm": (
+        f"{DIO_BASE}, both hands covering face, "
+        "embarrassed for someone else, deep sigh, hunched forward"
+    ),
+    "dio_slow_clap": (
+        f"{DIO_BASE}, slow sarcastic clapping, deadpan expression, "
+        "unimpressed stare, golf clap pose, minimal effort"
+    ),
+}
+
 GEAR_ICONS = {
     # Weapons
     "rusty_blade": "old rusty iron short sword, chipped blade, brown leather grip",
@@ -425,7 +491,7 @@ def generate_image(prompt: str, seed: int = -1,
     try:
         r = requests.post(
             f"{CONFIG['sd_url']}/sdapi/v1/txt2img",
-            json=payload, timeout=300
+            json=payload, timeout=900
         )
         if r.status_code != 200:
             print(f"  ERROR: Forge API returned {r.status_code}: {r.text[:200]}")
@@ -665,6 +731,32 @@ def gen_gear_icon(item_key: str, desc: str, seed: int = -1) -> "Path | None":
     return out_path
 
 
+def gen_npc(npc_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate an NPC sprite (single 128x128 frame)."""
+    out_path = OUTPUT_DIR / "npcs" / f"{npc_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(npc_key)
+
+    print(f"  Generating NPC: {npc_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_NPC}, {desc}"
+    img = generate_image(prompt, seed=seed)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = downscale_nearest(img, HERO_SIZE)  # 128x128
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
 # ── Batch Generation ────────────────────────────────────────────────────────
 
 def generate_heroes():
@@ -732,6 +824,19 @@ def generate_gear_icons():
     return done
 
 
+def generate_npcs():
+    """Generate all NPC sprites (Dio variants)."""
+    print("\n=== NPC SPRITES (128x128) ===")
+    total = len(NPC_SPRITES)
+    done = 0
+    for npc_key, desc in NPC_SPRITES.items():
+        result = gen_npc(npc_key, desc)
+        if result:
+            done += 1
+    print(f"\nNPCs: {done}/{total} completed")
+    return done
+
+
 def generate_prototype():
     """Generate a small test set to validate quality."""
     print("\n=== PROTOTYPE: Barbarian + 2 monsters + 1 follower + 1 background ===")
@@ -775,6 +880,9 @@ def generate_single(name: str):
     if name in GEAR_ICONS:
         gen_gear_icon(name, GEAR_ICONS[name])
         return
+    if name in NPC_SPRITES:
+        gen_npc(name, NPC_SPRITES[name])
+        return
 
     print(f"Unknown sprite name: {name}")
     print("Valid names:")
@@ -783,6 +891,7 @@ def generate_single(name: str):
     print(f"  Followers: {', '.join(FOLLOWERS.keys())}")
     print(f"  Backgrounds: {', '.join(BATTLE_BACKGROUNDS.keys())}")
     print(f"  Gear: {', '.join(GEAR_ICONS.keys())}")
+    print(f"  NPCs: {', '.join(NPC_SPRITES.keys())}")
 
 
 # ── Model Download ──────────────────────────────────────────────────────────
@@ -895,13 +1004,17 @@ def show_status():
     gear_total = len(GEAR_ICONS)
     print(f"Gear icons (32x32):  {gear_count}/{gear_total}")
 
+    npc_count = count_files(OUTPUT_DIR / "npcs")
+    npc_total = len(NPC_SPRITES)
+    print(f"NPCs (128x128):      {npc_count}/{npc_total}")
+
     bg_dir = OUTPUT_DIR.parent.parent / "tilesets" / "battle_backgrounds"
     bg_count = count_files(bg_dir)
     bg_total = len(BATTLE_BACKGROUNDS)
     print(f"Backgrounds (640x360): {bg_count}/{bg_total}")
 
-    total = hero_total + monster_total + follower_total + gear_total + bg_total
-    done = hero_count + monster_count + follower_count + gear_count + bg_count
+    total = hero_total + monster_total + follower_total + gear_total + npc_total + bg_total
+    done = hero_count + monster_count + follower_count + gear_count + npc_count + bg_count
     print(f"\nTotal:               {done}/{total} assets")
 
     # Check model files
@@ -931,7 +1044,7 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Show sprite + model status")
     parser.add_argument("--category",
-                        choices=["heroes", "monsters", "followers", "gear", "backgrounds", "all"],
+                        choices=["heroes", "monsters", "followers", "gear", "npcs", "backgrounds", "all"],
                         help="Generate assets by category")
     parser.add_argument("--single", type=str,
                         help="Generate a single sprite by name")
@@ -997,6 +1110,8 @@ def main():
             generate_followers()
         if args.category in ("gear", "all"):
             generate_gear_icons()
+        if args.category in ("npcs", "all"):
+            generate_npcs()
         if args.category in ("backgrounds", "all"):
             generate_backgrounds()
         elapsed = time.time() - start

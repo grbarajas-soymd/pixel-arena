@@ -205,6 +205,14 @@ func _build_ui(gear: Dictionary, tmpl: Dictionary, show_buttons: bool) -> void:
 	tw.tween_property(_card, "scale", Vector2.ONE, 0.4)
 	tw.parallel().tween_property(_card, "modulate:a", 1.0, 0.2)
 
+	# Dio popup for extreme quality rolls
+	var q: int = int(gear.get("quality", 50))
+	if q >= 95 or q <= 10:
+		get_tree().create_timer(0.8).timeout.connect(func():
+			var ctx := "perfect_gear" if q >= 95 else "trash_gear"
+			DioPopup.spawn(get_tree().root, ctx, q)
+		)
+
 
 func _build_stat_row(stat_key: String, val, range_info: Dictionary) -> HBoxContainer:
 	var row := HBoxContainer.new()
