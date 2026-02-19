@@ -12,11 +12,12 @@ enum Step {
 	EQUIP_GEAR,          # 2
 	SKILL_EXPLAIN,       # 3
 	FOLLOWER_REWARD,     # 4
-	DUNGEON_INTRO,       # 5 — explain, then launch real dungeon_battle
-	DUNGEON_RESULT,      # 6 — returning from dungeon_battle
-	LADDER_INTRO,        # 7 — explain, then launch real battle
-	LADDER_RESULT,       # 8 — returning from battle
-	COMPLETE,            # 9
+	FOLLOWER_RISK,       # 5 — warn about follower economics
+	DUNGEON_INTRO,       # 6 — explain, then launch real dungeon_battle
+	DUNGEON_RESULT,      # 7 — returning from dungeon_battle
+	LADDER_INTRO,        # 8 — explain, then launch real battle
+	LADDER_RESULT,       # 9 — returning from battle
+	COMPLETE,            # 10
 }
 
 # ── Refs ──────────────────────────────────────────────────────────────
@@ -110,6 +111,7 @@ func _enter_step() -> void:
 		Step.EQUIP_GEAR: _show_equip_gear()
 		Step.SKILL_EXPLAIN: _show_skill_explain()
 		Step.FOLLOWER_REWARD: _show_follower_reward()
+		Step.FOLLOWER_RISK: _show_follower_risk()
 		Step.DUNGEON_INTRO: _show_dungeon_intro()
 		Step.DUNGEON_RESULT: _show_dungeon_result()
 		Step.LADDER_INTRO: _show_ladder_intro()
@@ -370,10 +372,12 @@ func _show_skill_explain() -> void:
 		vbox.add_child(_make_skill_row(all_ults[int(ult_idx)], true))
 
 	_show_dialog(
-		"These are your [color=#ffda66]abilities[/color]. They fire automatically " +
-		"because I don't trust you to press buttons under pressure. " +
-		"The [color=#ff8844]ultimate[/color] triggers when you're almost dead. " +
-		"Think of it as a farewell gift."
+		"Your abilities run on [color=#44aaff]Power[/color]. You get 200 of it, " +
+		"it regenerates, and you'll waste most of it. Mix skills from any class " +
+		"— fire, shadow, arrows — all cost Power. Warrior skills are free " +
+		"because swinging sharp metal doesn't require intellect. " +
+		"The [color=#ff8844]ultimate[/color] triggers when you're almost dead — " +
+		"think of it as a farewell gift."
 	)
 
 
@@ -526,7 +530,22 @@ func _show_follower_reward() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# DUNGEON INTRO (Step 5) — explain then launch real dungeon_battle
+# FOLLOWER RISK (Step 5) — warn about follower economics
+# ══════════════════════════════════════════════════════════════════════
+
+func _show_follower_risk() -> void:
+	_clear_content()
+	_show_dialog(
+		"One more thing about followers. They're not immortal. " +
+		"Die in a dungeon and you'll lose [color=#ff4444]half[/color] the followers " +
+		"you captured down there. Stake one in an arena wager and lose? Gone. " +
+		"Abandon a dungeon run? You keep what you found, but don't make it " +
+		"a habit — I'm keeping score."
+	)
+
+
+# ══════════════════════════════════════════════════════════════════════
+# DUNGEON INTRO (Step 6) — explain then launch real dungeon_battle
 # ══════════════════════════════════════════════════════════════════════
 
 func _show_dungeon_intro() -> void:
@@ -554,9 +573,10 @@ func _show_dungeon_intro() -> void:
 		_content.add_child(goblin_label)
 
 	_show_dialog(
-		"Time for your first [color=#44ff88]Dungeon[/color] fight. It's turn-based — " +
-		"Attack, Skills, Potions, or Flee like the coward I suspect you are. " +
-		"Try not to embarrass me.",
+		"Time for your first [color=#44ff88]Dungeon[/color] fight. Unlike the Ladder, " +
+		"this is [color=#ffaa44]turn-based[/color] — you choose Attack, Skills, Potions, " +
+		"or Flee. Yes, I'm trusting you with buttons. Each clear makes the dungeon " +
+		"harder, so try not to embarrass me.",
 		["Enter Dungeon Battle"]
 	)
 
@@ -591,7 +611,7 @@ func _launch_dungeon_fight() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# DUNGEON RESULT (Step 6) — returning from dungeon_battle
+# DUNGEON RESULT (Step 7) — returning from dungeon_battle
 # ══════════════════════════════════════════════════════════════════════
 
 func _show_dungeon_result() -> void:
@@ -605,15 +625,15 @@ func _show_dungeon_result() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# LADDER INTRO (Step 7) — explain then launch real battle
+# LADDER INTRO (Step 8) — explain then launch real battle
 # ══════════════════════════════════════════════════════════════════════
 
 func _show_ladder_intro() -> void:
 	_clear_content()
 	_show_dialog(
-		"The [color=#ffaa44]Ladder[/color] is real-time. Your champion fights automatically. " +
-		"You just watch and hope. Like a sports parent, " +
-		"but with more bloodshed.",
+		"The [color=#ffaa44]Ladder[/color] is real-time. Your champion fights automatically " +
+		"— skills fire on their own because I don't trust you under pressure. " +
+		"You just watch, hope, and pretend you contributed.",
 		["Enter Ladder Battle"]
 	)
 
@@ -638,7 +658,7 @@ func _launch_ladder_fight() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# LADDER RESULT (Step 8) — returning from battle
+# LADDER RESULT (Step 9) — returning from battle
 # ══════════════════════════════════════════════════════════════════════
 
 func _show_ladder_result() -> void:
@@ -654,7 +674,7 @@ func _show_ladder_result() -> void:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# COMPLETE (Step 9)
+# COMPLETE (Step 10)
 # ══════════════════════════════════════════════════════════════════════
 
 func _show_complete() -> void:
@@ -921,6 +941,6 @@ func _stat_display_name(key: String) -> String:
 		"hp": return "HP"
 		"evasion": return "Eva"
 		"move_speed": return "Spd"
-		"mana": return "Mana"
+		"power": return "Power"
 		"spell_dmg_bonus": return "Spell%"
 		_: return key.capitalize()

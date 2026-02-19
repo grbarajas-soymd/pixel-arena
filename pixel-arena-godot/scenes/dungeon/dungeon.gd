@@ -392,8 +392,8 @@ func _update_run_ui() -> void:
 
 	var base_as := snappedf(float(r.get("base_as", 1.0)), 0.01)
 	var crit_pct := roundi(float(r.get("crit", 0.05)) * 100.0)
-	var cur_mana := int(r.get("mana", 0))
-	var max_mana := int(r.get("max_mana", 100))
+	var cur_power := int(r.get("power", 0))
+	var max_power := int(r.get("max_power", 200))
 
 	hero_info.clear()
 	hero_info.add_text("")
@@ -406,7 +406,7 @@ func _update_run_ui() -> void:
 	hero_info.append_text("  EVA:" + str(eva_pct) + "%")
 	if crit_pct > 5:
 		hero_info.append_text("  CRT:" + str(crit_pct) + "%")
-	hero_info.append_text("  [color=#4488cc]MP:" + str(cur_mana) + "/" + str(max_mana) + "[/color]")
+	hero_info.append_text("  [color=#44aaff]PWR:" + str(cur_power) + "/" + str(max_power) + "[/color]")
 	hero_info.append_text("  [color=#ffcc44]Gold:" + str(int(r.get("gold", 0))) + "[/color]")
 	hero_info.append_text("  [color=#44aa66]Pot:" + str(int(r.get("potions", 0))) + "[/color]")
 	# Show deployed companion
@@ -2116,7 +2116,7 @@ func _roll_run_item() -> Dictionary:
 		{"name": "Health Potion", "desc": "+1 Potion", "key": "potion", "value": 1},
 		{"name": "Life Crystal", "desc": "+400 Max HP", "key": "hp_bonus", "value": 400},
 		{"name": "Crit Stone", "desc": "+8% Crit Chance", "key": "crit", "value": 0.08},
-		{"name": "Mana Gem", "desc": "+15 Mana", "key": "mana", "value": 15},
+		{"name": "Power Gem", "desc": "+15 Power", "key": "power", "value": 15},
 	]
 	return run_items[randi() % run_items.size()]
 
@@ -2140,9 +2140,10 @@ func _apply_run_item(item: Dictionary) -> void:
 			r["bonus_hp"] = int(r.get("bonus_hp", 0)) + int(val)
 		"crit":
 			r["crit"] = float(r.get("crit", 0.0)) + float(val)
-		"mana":
-			r["max_mana"] = int(r.get("max_mana", 0)) + int(val)
-			r["mana"] = int(r.get("mana", 0)) + int(val)
+		"power":
+			r["max_power"] = int(r.get("max_power", 0)) + int(val)
+			r["power"] = int(r.get("power", 0)) + int(val)
+			r["bonus_power"] = int(r.get("bonus_power", 0)) + int(val)
 
 
 # ==================== LEFT PANEL — EQUIPMENT & GEAR BAG ====================

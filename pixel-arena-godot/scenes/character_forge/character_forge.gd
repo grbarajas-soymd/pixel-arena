@@ -469,7 +469,7 @@ func _build_right_panel() -> void:
 		if s1_icon:
 			s1_btn.icon = s1_icon
 			s1_btn.expand_icon = true
-			s1_btn.add_theme_constant_override("icon_max_width", 24)
+			s1_btn.add_theme_constant_override("icon_max_width", 28)
 	else:
 		s1_btn.text = "Skill: [pick]"
 	s1_btn.pressed.connect(_open_skill_picker.bind("skill1"))
@@ -490,7 +490,7 @@ func _build_right_panel() -> void:
 		if s2_icon:
 			s2_btn.icon = s2_icon
 			s2_btn.expand_icon = true
-			s2_btn.add_theme_constant_override("icon_max_width", 24)
+			s2_btn.add_theme_constant_override("icon_max_width", 28)
 	else:
 		s2_btn.text = "Skill: [pick]"
 	s2_btn.pressed.connect(_open_skill_picker.bind("skill2"))
@@ -511,7 +511,7 @@ func _build_right_panel() -> void:
 		if ult_icon:
 			ult_btn.icon = ult_icon
 			ult_btn.expand_icon = true
-			ult_btn.add_theme_constant_override("icon_max_width", 24)
+			ult_btn.add_theme_constant_override("icon_max_width", 28)
 	else:
 		ult_btn.text = "Ultimate: [pick]"
 	ult_btn.pressed.connect(_open_skill_picker.bind("ultimate"))

@@ -85,13 +85,13 @@ static func _def_reduction(def_val: float) -> float:
 
 # ============ SKILLS (0-18) ============
 
-# 0: Chain Lightning — 35 mana, 5s CD, dmg=(180+maxHP*0.05)*sdm, stun+slow+shock
+# 0: Chain Lightning — 25 power, 5s CD, dmg=(180+maxHP*0.05)*sdm, stun+slow+shock
 static func _chain_lightning(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 35 or d > float(h.get("spell_range", 400)):
+	if float(h.get("resource", 0)) < 25 or d > float(h.get("spell_range", 400)):
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 35
+	h["resource"] = float(h.get("resource", 0)) - 25
 	_set_skill_cd(h, 0, 5000)
 	h["cast_anim"] = 1.0
 	if randf() < _eff_ev(e) * 0.6:
@@ -112,13 +112,13 @@ static func _chain_lightning(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 1: Lightning Bolt — 20 mana, 2.5s CD, dmg=(90+maxHP*0.03)*sdm, shock
+# 1: Lightning Bolt — 15 power, 2.5s CD, dmg=(90+maxHP*0.03)*sdm, shock
 static func _lightning_bolt(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 20 or d > float(h.get("spell_range", 400)):
+	if float(h.get("resource", 0)) < 15 or d > float(h.get("spell_range", 400)):
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 20
+	h["resource"] = float(h.get("resource", 0)) - 15
 	_set_skill_cd(h, 1, 2500)
 	h["cast_anim"] = 1.0
 	if randf() < _eff_ev(e) * 0.6:
@@ -135,15 +135,15 @@ static func _lightning_bolt(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 2: Static Shield — 45 mana, 10s CD, absorb 380+def*5, when HP<70%
+# 2: Static Shield — 35 power, 10s CD, absorb 380+def*5, when HP<70%
 static func _static_shield(h: Dictionary, t: int, eng: Node) -> bool:
-	if float(h.get("resource", 0)) < 45:
+	if float(h.get("resource", 0)) < 35:
 		return false
 	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.70:
 		return false
 	if h.get("shield_active", false):
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 45
+	h["resource"] = float(h.get("resource", 0)) - 35
 	_set_skill_cd(h, 2, 10000)
 	h["shield_active"] = true
 	h["shield_hp"] = 380.0 + float(h.get("def", 0)) * 5.0
@@ -153,13 +153,12 @@ static func _static_shield(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 3: Hunter's Mark — 15 focus, 8s CD, flat slow + mark_next (no bleed required)
+# 3: Hunter's Mark — 10 power, 8s CD, flat slow + mark_next (no bleed required)
 static func _hunters_mark(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
-	if h.has("resource") and float(h.get("resource", 0)) < 15:
+	if float(h.get("resource", 0)) < 10:
 		return false
-	if h.has("resource"):
-		h["resource"] = float(h.get("resource", 0)) - 15
+	h["resource"] = float(h.get("resource", 0)) - 10
 	var as_val: float = float(h.get("base_as", 0.5))
 	e["slow"] = 0.08 + as_val * 0.06
 	e["slow_end"] = t + 1500 + roundi(as_val * 1200.0)
@@ -171,15 +170,14 @@ static func _hunters_mark(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 4: Bloodlust — 25 focus, 12s CD, immediate bonus hit + 15% lifesteal (requires 2+ bleeds)
+# 4: Bloodlust — 20 power, 12s CD, immediate bonus hit + 15% lifesteal (requires 2+ bleeds)
 static func _bloodlust(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	if _bleed_count(e) < 2:
 		return false
-	if h.has("resource") and float(h.get("resource", 0)) < 25:
+	if float(h.get("resource", 0)) < 20:
 		return false
-	if h.has("resource"):
-		h["resource"] = float(h.get("resource", 0)) - 25
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 4, 12000)
 	h["cast_anim"] = 1.0
 	# Immediate bonus hit
@@ -198,14 +196,13 @@ static func _bloodlust(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 5: Summon Pet — 30 focus, 15s CD, spawns follower with HP bonus from baseDmg
+# 5: Summon Pet — 25 power, 15s CD, spawns follower with HP bonus from baseDmg
 static func _summon_pet(h: Dictionary, t: int, eng: Node) -> bool:
 	if h.get("follower_alive", false):
 		return false
-	if h.has("resource") and float(h.get("resource", 0)) < 30:
+	if float(h.get("resource", 0)) < 25:
 		return false
-	if h.has("resource"):
-		h["resource"] = float(h.get("resource", 0)) - 30
+	h["resource"] = float(h.get("resource", 0)) - 25
 	# Create follower via factory-style inline
 	var max_hp := int(h.get("follower_max_hp", 450))
 	var bonus := roundi(float(h.get("base_dmg", 0)))
@@ -229,13 +226,13 @@ static func _summon_pet(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 6: Shadow Step — 25 energy, 3.5s CD, stealth + combo (teleport only if far)
+# 6: Shadow Step — 20 power, 3.5s CD, stealth + combo (teleport only if far)
 static func _shadow_step(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 25 or h.get("stealthed", false):
+	if float(h.get("resource", 0)) < 20 or h.get("stealthed", false):
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 25
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 6, 3500)
 	h["cast_anim"] = 1.0
 	# Teleport behind only if far enough away
@@ -250,13 +247,13 @@ static func _shadow_step(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 7: Envenom — 25 energy, 8s CD, poison on attacks for duration
+# 7: Envenom — 20 power, 8s CD, poison on attacks for duration
 static func _envenom(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 25 or d > float(h.get("melee_range", CombatConstants.MELEE)) + 60.0:
+	if float(h.get("resource", 0)) < 20 or d > float(h.get("melee_range", CombatConstants.MELEE)) + 60.0:
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 25
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 7, 8000)
 	h["cast_anim"] = 1.0
 	h["envenomed"] = true
@@ -265,15 +262,15 @@ static func _envenom(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 8: Smoke Bomb — 35 energy, 12s CD, +45% evasion AoE, when HP<65%
+# 8: Smoke Bomb — 30 power, 12s CD, +45% evasion AoE, when HP<65%
 static func _smoke_bomb(h: Dictionary, t: int, eng: Node) -> bool:
-	if float(h.get("resource", 0)) < 35:
+	if float(h.get("resource", 0)) < 30:
 		return false
 	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.65:
 		return false
 	if h.get("smoke_bomb_active", false):
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 35
+	h["resource"] = float(h.get("resource", 0)) - 30
 	_set_skill_cd(h, 8, 12000)
 	h["cast_anim"] = 1.0
 	h["smoke_bomb_active"] = true
@@ -324,13 +321,13 @@ static func _war_cry(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 11: Frost Nova — 30 mana, 7s CD, dmg+slow, freezes shocked targets
+# 11: Frost Nova — 20 power, 7s CD, dmg+slow, freezes shocked targets
 static func _frost_nova(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 30 or d > 180:
+	if float(h.get("resource", 0)) < 20 or d > 180:
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 30
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 11, 7000)
 	h["cast_anim"] = 1.0
 	if randf() < _eff_ev(e) * 0.4:
@@ -352,15 +349,15 @@ static func _frost_nova(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 12: Arcane Drain — 25 mana, 8s CD, dmg + self heal, when HP<75%
+# 12: Arcane Drain — 20 power, 8s CD, dmg + self heal, when HP<75%
 static func _arcane_drain(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 25 or d > float(h.get("spell_range", 400)):
+	if float(h.get("resource", 0)) < 20 or d > float(h.get("spell_range", 400)):
 		return false
 	if float(h.get("hp", 0)) / maxf(1.0, float(h.get("max_hp", 1))) > 0.75:
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 25
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 12, 8000)
 	h["cast_anim"] = 1.0
 	if randf() < _eff_ev(e) * 0.5:
@@ -379,15 +376,14 @@ static func _arcane_drain(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 13: Rupture — 20 focus, 6s CD, detonates all bleeds, requires 2+ stacks
+# 13: Rupture — 15 power, 6s CD, detonates all bleeds, requires 2+ stacks
 static func _rupture(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	if _bleed_count(e) < 2:
 		return false
-	if h.has("resource") and float(h.get("resource", 0)) < 20:
+	if float(h.get("resource", 0)) < 15:
 		return false
-	if h.has("resource"):
-		h["resource"] = float(h.get("resource", 0)) - 20
+	h["resource"] = float(h.get("resource", 0)) - 15
 	var stacks := _bleed_count(e)
 	var per_stack: float = 30.0 + float(h.get("base_as", 0.5)) * 80.0
 	var dm: float = float(stacks) * per_stack * _def_reduction(float(e.get("def", 0)))
@@ -402,15 +398,14 @@ static func _rupture(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 14: Marked for Death — 20 focus, 10s CD, vulnerable debuff
+# 14: Marked for Death — 15 power, 10s CD, vulnerable debuff
 static func _marked_for_death(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	if e.get("vulnerable", false):
 		return false
-	if h.has("resource") and float(h.get("resource", 0)) < 20:
+	if float(h.get("resource", 0)) < 15:
 		return false
-	if h.has("resource"):
-		h["resource"] = float(h.get("resource", 0)) - 20
+	h["resource"] = float(h.get("resource", 0)) - 15
 	var amp: float = 0.08 + float(h.get("base_as", 0.5)) * 0.08
 	e["vulnerable"] = true
 	e["vulnerable_end"] = t + 3000
@@ -422,15 +417,15 @@ static func _marked_for_death(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 15: Lacerate — 30 energy, 8s CD, execute dmg scaling on missing HP, when target HP<70%
+# 15: Lacerate — 25 power, 8s CD, execute dmg scaling on missing HP, when target HP<70%
 static func _lacerate(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 30 or d > float(h.get("melee_range", CombatConstants.MELEE)) + 80.0:
+	if float(h.get("resource", 0)) < 25 or d > float(h.get("melee_range", CombatConstants.MELEE)) + 80.0:
 		return false
 	if float(e.get("hp", 0)) / maxf(1.0, float(e.get("max_hp", 1))) > 0.7:
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 30
+	h["resource"] = float(h.get("resource", 0)) - 25
 	_set_skill_cd(h, 15, 8000)
 	h["cast_anim"] = 1.0
 	if randf() < _eff_ev(e) * 0.3:
@@ -447,13 +442,13 @@ static func _lacerate(h: Dictionary, t: int, eng: Node) -> bool:
 	return true
 
 
-# 16: Riposte — 25 energy, 10s CD, counter-attack stance
+# 16: Riposte — 20 power, 10s CD, counter-attack stance
 static func _riposte(h: Dictionary, t: int, eng: Node) -> bool:
 	var e := _en(h, eng)
 	var d := _dst(h, e)
-	if float(h.get("resource", 0)) < 25 or h.get("riposte_active", false) or d > 200:
+	if float(h.get("resource", 0)) < 20 or h.get("riposte_active", false) or d > 200:
 		return false
-	h["resource"] = float(h.get("resource", 0)) - 25
+	h["resource"] = float(h.get("resource", 0)) - 20
 	_set_skill_cd(h, 16, 10000)
 	h["cast_anim"] = 1.0
 	h["riposte_active"] = true

@@ -1,6 +1,8 @@
 extends Node
 ## Steam SDK integration via GodotSteam GDExtension.
 ## Handles initialization, callbacks, achievements, and cloud saves.
+## All Steam API calls go through _s (late-bound) to avoid parse errors
+## when GodotSteam isn't available.
 
 # Set to your real App ID once you have one. 480 = Spacewar (Valve test app).
 const APP_ID := 480
@@ -8,32 +10,39 @@ const APP_ID := 480
 var is_online := false
 var steam_id := 0
 var steam_name := ""
+var _s: Object = null  # Late-bound Steam singleton — avoids compile-time "Steam" references
 
 # ---- Lifecycle ----
 
 func _ready() -> void:
-	if not Engine.has_singleton("Steam") and not ClassDB.class_exists("Steam"):
+	if Engine.has_singleton("Steam"):
+		_s = Engine.get_singleton("Steam")
+	elif ClassDB.class_exists("Steam"):
+		_s = ClassDB.instantiate("Steam")
+	else:
 		push_warning("[Steam] GodotSteam not available — running in offline mode")
 		return
 
-	var result = Steam.steamInitEx(false, APP_ID)
+	var result = _s.steamInitEx(false, APP_ID)
 	print("[Steam] Init result: ", result)
 
 	if result.status == 1:
 		push_warning("[Steam] Steam not running — offline mode")
+		_s = null
 		return
 
 	if result.status != 0:
 		push_warning("[Steam] Init failed (status ", result.status, ") — offline mode")
+		_s = null
 		return
 
 	is_online = true
-	steam_id = Steam.getSteamID()
-	steam_name = Steam.getPersonaName()
+	steam_id = _s.getSteamID()
+	steam_name = _s.getPersonaName()
 	print("[Steam] Logged in as: ", steam_name, " (", steam_id, ")")
 
 	# Request current stats/achievements from Steam servers
-	Steam.requestCurrentStats()
+	_s.requestCurrentStats()
 
 	# Connect to GameState signals for automatic achievement checks
 	var gs := get_node_or_null("/root/GameState")
@@ -44,8 +53,8 @@ func _on_dust_changed(amount: int) -> void:
 	check_dust(amount)
 
 func _process(_delta: float) -> void:
-	if is_online:
-		Steam.run_callbacks()
+	if is_online and _s:
+		_s.run_callbacks()
 
 # ---- Achievements ----
 
@@ -92,27 +101,27 @@ const ACH := {
 }
 
 func unlock(ach_key: String) -> void:
-	if not is_online:
+	if not is_online or not _s:
 		return
 	var ach_id = ACH.get(ach_key, "")
 	if ach_id == "":
 		push_warning("[Steam] Unknown achievement key: ", ach_key)
 		return
 	# Only set if not already achieved
-	var status = Steam.getAchievement(ach_id)
+	var status = _s.getAchievement(ach_id)
 	if status.achieved:
 		return
-	Steam.setAchievement(ach_id)
-	Steam.storeStats()
+	_s.setAchievement(ach_id)
+	_s.storeStats()
 	print("[Steam] Unlocked: ", ach_key)
 
 func is_achieved(ach_key: String) -> bool:
-	if not is_online:
+	if not is_online or not _s:
 		return false
 	var ach_id = ACH.get(ach_key, "")
 	if ach_id == "":
 		return false
-	return Steam.getAchievement(ach_id).achieved
+	return _s.getAchievement(ach_id).achieved
 
 # ---- Achievement Helpers ----
 
@@ -183,12 +192,12 @@ func check_arena_rating(rating: int) -> void:
 # ---- Rich Presence ----
 
 func set_presence(status_key: String, details: Dictionary = {}) -> void:
-	if not is_online:
+	if not is_online or not _s:
 		return
-	Steam.setRichPresence("steam_display", status_key)
+	_s.setRichPresence("steam_display", status_key)
 	for key in details:
-		Steam.setRichPresence(key, str(details[key]))
+		_s.setRichPresence(key, str(details[key]))
 
 func clear_presence() -> void:
-	if is_online:
-		Steam.clearRichPresence()
+	if is_online and _s:
+		_s.clearRichPresence()

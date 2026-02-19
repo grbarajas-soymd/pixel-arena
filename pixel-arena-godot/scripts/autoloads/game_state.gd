@@ -155,8 +155,8 @@ func start_dungeon_run() -> void:
 	var hero_as = float(stats.get("base_as", 0.8))
 	var hero_def = int(stats.get("def", 40))
 	var hero_eva = float(stats.get("evasion", 0.0))
-	var max_mana = maxi(100, int(stats.get("mana", 0)))
-	var mana_regen = maxi(4, int(stats.get("mana_regen", 0)))
+	var max_power = 200
+	var power_regen = 8
 	var hero_crit = float(stats.get("crit_chance", 0.0))
 	var hero_lifesteal = float(stats.get("lifesteal", 0.0))
 	var hero_thorns = float(stats.get("thorns_reflect", 0.0))
@@ -190,10 +190,10 @@ func start_dungeon_run() -> void:
 		"bonus_def": 0,
 		"bonus_hp": 0,
 		"bonus_as": 0.0,
-		"mana": max_mana,
-		"max_mana": max_mana,
-		"mana_regen": mana_regen,
-		"spell_cost": 35,
+		"power": max_power,
+		"max_power": max_power,
+		"power_regen": power_regen,
+		"spell_cost": 25,
 		"deployed_follower": {},
 		"room_history": [],
 		"total_kills": 0,

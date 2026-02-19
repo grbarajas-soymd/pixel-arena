@@ -69,7 +69,7 @@ export function buildCustomSheet(){
 export function updateTotalStats(){
   var s=getCustomTotalStats(),el=document.getElementById('customTotalStats');
   var rt=getWeaponRangeType();
-  el.innerHTML='<b style="color:#d8b858">Total Stats</b><br>HP:'+Math.round(s.hp)+' Dmg:'+Math.round(s.baseDmg)+'<br>AS:'+s.baseAS.toFixed(2)+' DEF:'+Math.round(s.def)+'<br>Eva:'+Math.round(s.evasion*100)+'% Spd:'+Math.round(s.moveSpeed)+'<br>Range: '+rt+(s.mana>0?'<br>Mana:'+Math.round(s.mana):'')+(s.energy>0?'<br>Eng:'+Math.round(s.energy):'');
+  el.innerHTML='<b style="color:#d8b858">Total Stats</b><br>HP:'+Math.round(s.hp)+' Dmg:'+Math.round(s.baseDmg)+'<br>AS:'+s.baseAS.toFixed(2)+' DEF:'+Math.round(s.def)+'<br>Eva:'+Math.round(s.evasion*100)+'% Spd:'+Math.round(s.moveSpeed)+'<br>Range: '+rt+'<br><span style="color:#44aaff">Power: 200</span>';
 }
 
 export function drawPreview(){

@@ -261,9 +261,9 @@ func _ready() -> void:
 	companion_hp_bar.add_child(comp_lbl)
 
 	# StatusRow labels
-	hero_res_label.text = "MP"
+	hero_res_label.text = "PWR"
 	hero_res_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
-	hero_res_label.add_theme_color_override("font_color", ThemeManager.COLOR_MANA_BLUE)
+	hero_res_label.add_theme_color_override("font_color", Color(0.27, 0.67, 1.0))
 
 	if _engine.has_companion:
 		companion_hp_bar.visible = true
@@ -958,8 +958,9 @@ func _setup_action_icons() -> void:
 		if tex:
 			atk_btn.icon = tex
 			atk_btn.expand_icon = true
-			atk_btn.add_theme_constant_override("icon_max_width", 36)
+			atk_btn.add_theme_constant_override("icon_max_width", 40)
 	atk_btn.text = "Attack"
+	atk_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	atk_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	_skill_info[atk_btn] = "Basic Attack"
 	ThemeManager.style_stone_button(atk_btn, class_color)
@@ -976,9 +977,10 @@ func _setup_action_icons() -> void:
 			if s0_tex:
 				skill0_btn.icon = s0_tex
 				skill0_btn.expand_icon = true
-				skill0_btn.add_theme_constant_override("icon_max_width", 36)
+				skill0_btn.add_theme_constant_override("icon_max_width", 40)
 	else:
 		skill0_btn.text = "Skill"
+	skill0_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	skill0_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	ThemeManager.style_stone_button(skill0_btn, class_color)
 
@@ -994,9 +996,10 @@ func _setup_action_icons() -> void:
 			if s1_tex:
 				skill1_btn.icon = s1_tex
 				skill1_btn.expand_icon = true
-				skill1_btn.add_theme_constant_override("icon_max_width", 36)
+				skill1_btn.add_theme_constant_override("icon_max_width", 40)
 	else:
 		skill1_btn.text = "Skill"
+	skill1_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	skill1_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	ThemeManager.style_stone_button(skill1_btn, class_color)
 
@@ -1012,9 +1015,10 @@ func _setup_action_icons() -> void:
 			if ult_tex:
 				ult_btn.icon = ult_tex
 				ult_btn.expand_icon = true
-				ult_btn.add_theme_constant_override("icon_max_width", 36)
+				ult_btn.add_theme_constant_override("icon_max_width", 40)
 	else:
 		ult_btn.text = "Ultimate"
+	ult_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	ult_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	ThemeManager.style_stone_button(ult_btn, class_color)
 
@@ -1024,6 +1028,9 @@ func _setup_action_icons() -> void:
 	var pot_tex = load("res://assets/sprites/generated/gear/event_potion.png")
 	if pot_tex:
 		pot_btn.icon = pot_tex
+		pot_btn.expand_icon = true
+		pot_btn.add_theme_constant_override("icon_max_width", 28)
+	pot_btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	pot_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	_skill_info[pot_btn] = "Use Health Potion"
 
@@ -1055,7 +1062,7 @@ func _setup_action_icons() -> void:
 func _update_hud() -> void:
 	hero_hp_bar.value = _engine.get_hero_hp_pct() * 100.0
 	monster_hp_bar.value = _engine.get_monster_hp_pct() * 100.0
-	hero_resource.value = _engine.get_mana_pct() * 100.0
+	hero_resource.value = _engine.get_power_pct() * 100.0
 
 	if _engine.has_companion and _engine.comp_alive:
 		companion_hp_bar.value = _engine.get_comp_hp_pct() * 100.0
@@ -1074,11 +1081,11 @@ func _update_hud() -> void:
 		m_hp_text.text = str(m_hp) + "/" + str(m_max)
 
 	# Resource bar number overlay
-	var mana: int = maxi(0, int(_engine.hero.get("mana", 0)))
-	var max_mana: int = maxi(1, int(_engine.hero.get("max_mana", 1)))
+	var cur_power: int = maxi(0, int(_engine.hero.get("power", 0)))
+	var max_power: int = maxi(1, int(_engine.hero.get("max_power", 1)))
 	var res_text: Label = hero_resource.get_node_or_null("ResText")
 	if res_text:
-		res_text.text = str(mana) + "/" + str(max_mana)
+		res_text.text = str(cur_power) + "/" + str(max_power)
 
 	# Companion HP overlay
 	if _engine.has_companion and _engine.comp_alive:
@@ -1113,7 +1120,7 @@ func _update_buttons() -> void:
 	flee_btn.modulate = Color(0.5, 0.5, 0.5) if flee_btn.disabled else Color.WHITE
 	comp_btn.modulate = Color(0.5, 0.5, 0.5)
 
-	# Show mana cost or cooldown on disabled skill buttons
+	# Show power cost or cooldown on disabled skill buttons
 	_update_cost_overlay(skill0_btn, 0)
 	_update_cost_overlay(skill1_btn, 1)
 	_update_skill_labels()
@@ -1235,7 +1242,7 @@ func _update_cost_overlay(btn: Button, skill_idx: int) -> void:
 	var cd: int = _engine.get_skill_cooldown(skill_idx)
 	var cost: int = int(info.get("cost", 0))
 
-	# Show cooldown "2T" in gold when on cooldown, else mana cost in blue
+	# Show cooldown "2T" in gold when on cooldown, else power cost in blue
 	if cd > 0:
 		var cd_lbl := Label.new()
 		cd_lbl.name = "CostLabel"
@@ -1696,7 +1703,7 @@ func _on_continue() -> void:
 	# Write back combat results to game state
 	var r: Dictionary = _gs.dg_run
 	r["hp"] = _engine.run.get("hp", 0)
-	r["mana"] = _engine.run.get("mana", 0)
+	r["power"] = _engine.run.get("power", 0)
 	r["potions"] = _engine.run.get("potions", 0)
 	r["last_combat_stats"] = _engine.run.get("last_combat_stats", {})
 

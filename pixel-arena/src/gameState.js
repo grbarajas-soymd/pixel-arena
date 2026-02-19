@@ -4,8 +4,7 @@
 
 export var FIXED_BASE_STATS = {
   hp: 3500, baseDmg: 60, baseAS: 0.5, def: 15, evasion: 0,
-  moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
-  energyRegen: 0, spellDmgBonus: 0
+  moveSpeed: 100, power: 200, powerRegen: 8, spellDmgBonus: 0
 };
 
 export const state = {
@@ -47,8 +46,7 @@ export const state = {
     ultimate: null,
     baseStats: {
       hp: 3500, baseDmg: 60, baseAS: 0.5, def: 15, evasion: 0,
-      moveSpeed: 100, mana: 0, manaRegen: 0, energy: 0,
-      energyRegen: 0, spellDmgBonus: 0
+      moveSpeed: 100, power: 200, powerRegen: 8, spellDmgBonus: 0
     },
     sprite: 'wizard',
     editingSide: null

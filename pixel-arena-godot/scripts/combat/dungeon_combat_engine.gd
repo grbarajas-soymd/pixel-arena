@@ -141,9 +141,9 @@ func init_combat(run_data: Dictionary, monster_data: Dictionary, companion_data:
 		"base_as": float(run.get("base_as", 0.8)) + float(run.get("bonus_as", 0.0)),
 		"def": float(run.get("def", 40)) + float(run.get("bonus_def", 0)),
 		"evasion": float(run.get("evasion", 0.0)),
-		"mana": float(run.get("mana", 0)),
-		"max_mana": float(run.get("max_mana", 100)),
-		"mana_regen": float(run.get("mana_regen", 4)),
+		"power": float(run.get("power", 0)),
+		"max_power": float(run.get("max_power", 200)),
+		"power_regen": float(run.get("power_regen", 8)),
 		"spell_dmg_bonus": float(run.get("spell_dmg_bonus", 0.0)),
 		"crit": 0.05 + float(run.get("crit_chance", 0.0)),
 		"lifesteal": float(run.get("lifesteal", 0.0)),
@@ -491,10 +491,10 @@ func _do_player_skill(slot_idx: int) -> void:
 
 	# Check resource
 	if cost > 0 and free_spells_rounds <= 0:
-		if float(hero.get("mana", 0)) < float(cost):
+		if float(hero.get("power", 0)) < float(cost):
 			log_added.emit("Not enough resource!", "bad")
 			return
-		hero["mana"] = float(hero["mana"]) - float(cost)
+		hero["power"] = float(hero["power"]) - float(cost)
 
 	# Set cooldown
 	if slot_idx < skill_cooldowns.size() and slot_idx < _skill_max_cooldowns.size():
@@ -673,7 +673,7 @@ func _apply_skill_effect(idx: int) -> void:
 				log_added.emit("Companion already active!", "bad")
 				# Refund resource
 				if free_spells_rounds <= 0:
-					hero["mana"] = minf(float(hero["max_mana"]), float(hero["mana"]) + 30.0)
+					hero["power"] = minf(float(hero["max_power"]), float(hero["power"]) + 25.0)
 				_after_player_action()
 			else:
 				comp_name = "Spirit Beast"
@@ -1198,8 +1198,8 @@ func _tick_round_durations() -> void:
 		if skill_cooldowns[i] > 0:
 			skill_cooldowns[i] -= 1
 
-	# Mana regen (2x per monster round)
-	hero["mana"] = minf(float(hero["max_mana"]), float(hero["mana"]) + float(hero["mana_regen"]) * 2.0)
+	# Power regen (2x per monster round)
+	hero["power"] = minf(float(hero["max_power"]), float(hero["power"]) + float(hero["power_regen"]) * 2.0)
 
 	# Gear affix HP regen
 	if int(hero.get("_hp_regen", 0)) > 0:
@@ -1382,7 +1382,7 @@ func _auto_pick_action() -> void:
 		return
 	var hp_pct := float(hero["hp"]) / maxf(1.0, float(hero["max_hp"]))
 	var m_hp_pct := float(monster["hp"]) / maxf(1.0, float(monster["max_hp"]))
-	var res := float(hero.get("mana", 0))
+	var res := float(hero.get("power", 0))
 
 	# P1: Emergency potion at 30% HP
 	if hp_pct < 0.30 and int(run.get("potions", 0)) > 0:
@@ -1508,7 +1508,7 @@ func _end_combat(result: String) -> void:
 
 	# Write back to run
 	run["hp"] = maxi(0, roundi(float(hero["hp"])))
-	run["mana"] = roundi(float(hero.get("mana", 0)))
+	run["power"] = roundi(float(hero.get("power", 0)))
 	run["last_combat_stats"] = {
 		"turns": turn_num,
 		"dmg_dealt": roundi(dmg_dealt),
@@ -1536,8 +1536,8 @@ func get_comp_hp_pct() -> float:
 		return 0.0
 	return comp_hp / maxf(1.0, comp_max_hp)
 
-func get_mana_pct() -> float:
-	return float(hero.get("mana", 0)) / maxf(1.0, float(hero.get("max_mana", 100)))
+func get_power_pct() -> float:
+	return float(hero.get("power", 0)) / maxf(1.0, float(hero.get("max_power", 200)))
 
 func get_skill_info(slot_idx: int) -> Dictionary:
 	var skills: Array = hero.get("skills", [])
@@ -1564,7 +1564,7 @@ func can_use_skill(slot_idx: int) -> bool:
 	var cost: int = int(info.get("cost", 0))
 	if free_spells_rounds > 0:
 		return true
-	return cost <= 0 or float(hero.get("mana", 0)) >= float(cost)
+	return cost <= 0 or float(hero.get("power", 0)) >= float(cost)
 
 
 func get_skill_cooldown(slot_idx: int) -> int:

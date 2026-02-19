@@ -68,7 +68,7 @@ export function serializeBuild() {
     skills: state.customChar.skills.slice(),
     ultimate: state.customChar.ultimate,
     rangeType: getWeaponRangeType(),
-    stats: { hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, mana: s.mana || 0, manaRegen: s.manaRegen || 0, energy: s.energy || 0, energyRegen: s.energyRegen || 0, spellDmgBonus: s.spellDmgBonus || 0 }
+    stats: { hp: s.hp, baseDmg: s.baseDmg, baseAS: s.baseAS, def: s.def, evasion: s.evasion, moveSpeed: s.moveSpeed, power: 200, powerRegen: 8, spellDmgBonus: s.spellDmgBonus || 0 }
   };
 }
 
@@ -146,11 +146,10 @@ export function mkCustomHero(side) {
     moveSpeed: s.moveSpeed, moveSpeedBonus: 0,
     attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300,
     followerMaxHp: 450,
-    mana: s.mana || 0, maxMana: s.mana || 0, manaRegen: s.manaRegen || 0,
+    mana: 0, maxMana: 0, manaRegen: 0,
     castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0, spellRange: isMelee ? 200 : 400,
-    energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0,
-    resource: Math.max(s.mana || 0, s.energy || 0, 100), maxResource: Math.max(s.mana || 0, s.energy || 0, 100),
-    resourceRegen: Math.max(s.manaRegen || 0, s.energyRegen || 0, 2),
+    energy: 0, maxEnergy: 0, energyRegen: 0,
+    resource: 200, maxResource: 200, resourceRegen: 8,
     spells: {}, customSkillIds: [], customUltId: null
   });
   // Copy equipment for gear-dependent sprite rendering
@@ -169,10 +168,10 @@ export function mkLadderHero(cfg, side) {
     moveSpeed: cfg.moveSpeed, moveSpeedBonus: 0,
     attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300,
     followerMaxHp: 450,
-    mana: 300, maxMana: 300, manaRegen: 4,
+    mana: 0, maxMana: 0, manaRegen: 0,
     castSpeedBonus: 0, spellDmgBonus: 0, spellRange: isMelee ? 200 : 400,
-    energy: 100, maxEnergy: 100, energyRegen: 12,
-    resource: 300, maxResource: 300, resourceRegen: 4,
+    energy: 0, maxEnergy: 0, energyRegen: 0,
+    resource: 200, maxResource: 200, resourceRegen: 8,
     spells: {}, customSkillIds: [], customUltId: null,
   });
   // Copy equipment for gear-dependent sprite rendering
@@ -231,13 +230,11 @@ export function mkDungeonHero(run, side) {
     moveSpeed: s.moveSpeed + (run.moveSpeed || 0), moveSpeedBonus: 0,
     attackRange: isMelee ? 70 : 350, preferredRange: isMelee ? 50 : 300,
     followerMaxHp: 450,
-    mana: run.mana, maxMana: run.maxMana, manaRegen: run.manaRegen,
+    mana: 0, maxMana: 0, manaRegen: 0,
     castSpeedBonus: 0, spellDmgBonus: s.spellDmgBonus || 0,
     spellRange: isMelee ? 200 : 400,
-    energy: s.energy || 0, maxEnergy: s.energy || 0, energyRegen: s.energyRegen || 0,
-    resource: Math.max(run.mana || 0, s.energy || 0, 100),
-    maxResource: Math.max(run.maxMana || 0, s.energy || 0, 100),
-    resourceRegen: Math.max(run.manaRegen || 0, s.energyRegen || 0, 2),
+    energy: 0, maxEnergy: 0, energyRegen: 0,
+    resource: 200 + (run.bonusPower || 0), maxResource: 200 + (run.bonusPower || 0), resourceRegen: 8,
     spells: {}, customSkillIds: [], customUltId: null,
     _stashCrit: run._crit || 0,
     _stashLifesteal: run._lifesteal || 0,

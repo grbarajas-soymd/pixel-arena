@@ -368,17 +368,17 @@ func mk_custom_hero(side: String) -> Dictionary:
 	h["move_speed"] = int(s.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
 	_apply_hybrid_ranges(h, range_type)
-	h["mana"] = int(s.get("mana", 0))
-	h["max_mana"] = h["mana"]
-	h["mana_regen"] = float(s.get("mana_regen", 0.0))
+	h["mana"] = 0
+	h["max_mana"] = 0
+	h["mana_regen"] = 0.0
 	h["spell_dmg_bonus"] = float(s.get("spell_dmg_bonus", 0.0))
 	h["spell_range"] = 200 if is_melee else 400
-	h["energy"] = int(s.get("energy", 0))
-	h["max_energy"] = h["energy"]
-	h["energy_regen"] = float(s.get("energy_regen", 0.0))
-	h["resource"] = maxi(maxi(h["mana"], h["energy"]), 100)
-	h["max_resource"] = h["resource"]
-	h["resource_regen"] = maxf(maxf(float(s.get("mana_regen", 0.0)), float(s.get("energy_regen", 0.0))), 2.0)
+	h["energy"] = 0
+	h["max_energy"] = 0
+	h["energy_regen"] = 0.0
+	h["resource"] = 200
+	h["max_resource"] = 200
+	h["resource_regen"] = 8.0
 
 	# Gear affix stats
 	h["_crit_chance"] = float(s.get("crit_chance", 0.0))
@@ -443,17 +443,17 @@ func mk_ladder_hero(cfg: Dictionary, side: String) -> Dictionary:
 	h["move_speed"] = int(cfg.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
 	_apply_hybrid_ranges(h, range_type)
-	h["mana"] = 300
-	h["max_mana"] = 300
-	h["mana_regen"] = 4.0
+	h["mana"] = 0
+	h["max_mana"] = 0
+	h["mana_regen"] = 0.0
 	h["spell_dmg_bonus"] = 0.0
 	h["spell_range"] = 200 if range_type == "melee" else 400
-	h["energy"] = 100
-	h["max_energy"] = 100
-	h["energy_regen"] = 12.0
-	h["resource"] = 300
-	h["max_resource"] = 300
-	h["resource_regen"] = 4.0
+	h["energy"] = 0
+	h["max_energy"] = 0
+	h["energy_regen"] = 0.0
+	h["resource"] = 200
+	h["max_resource"] = 200
+	h["resource_regen"] = 8.0
 
 	# Copy equipment for rendering
 	if cfg.has("equip"):
@@ -549,17 +549,17 @@ func mk_dungeon_hero(run: Dictionary, side: String) -> Dictionary:
 	h["move_speed"] = int(s.get("move_speed", 100)) + int(run.get("move_speed", 0))
 	h["move_speed_bonus"] = 0.0
 	_apply_hybrid_ranges(h, range_type)
-	h["mana"] = int(run.get("mana", 0))
-	h["max_mana"] = int(run.get("max_mana", 0))
-	h["mana_regen"] = float(run.get("mana_regen", 0.0))
+	h["mana"] = 0
+	h["max_mana"] = 0
+	h["mana_regen"] = 0.0
 	h["spell_dmg_bonus"] = float(s.get("spell_dmg_bonus", 0.0))
 	h["spell_range"] = 200 if is_melee else 400
-	h["energy"] = int(s.get("energy", 0))
-	h["max_energy"] = h["energy"]
-	h["energy_regen"] = float(s.get("energy_regen", 0.0))
-	h["resource"] = maxi(maxi(h["mana"], h["energy"]), 100)
-	h["max_resource"] = maxi(maxi(h["max_mana"], h["max_energy"]), 100)
-	h["resource_regen"] = maxf(maxf(h["mana_regen"], h["energy_regen"]), 2.0)
+	h["energy"] = 0
+	h["max_energy"] = 0
+	h["energy_regen"] = 0.0
+	h["resource"] = 200 + int(run.get("bonus_power", 0))
+	h["max_resource"] = 200 + int(run.get("bonus_power", 0))
+	h["resource_regen"] = 8.0
 	# Dungeon stash bonuses
 	h["_stash_crit"] = float(run.get("_crit", 0.0))
 	h["_stash_lifesteal"] = float(run.get("_lifesteal", 0.0))
@@ -775,10 +775,8 @@ func serialize_build() -> Dictionary:
 			"def": s.get("def", 40),
 			"evasion": s.get("evasion", 0.0),
 			"move_speed": s.get("move_speed", 100),
-			"mana": s.get("mana", 0),
-			"mana_regen": s.get("mana_regen", 0.0),
-			"energy": s.get("energy", 0),
-			"energy_regen": s.get("energy_regen", 0.0),
+			"power": 200,
+			"power_regen": 8,
 			"spell_dmg_bonus": s.get("spell_dmg_bonus", 0.0),
 		}
 	}
@@ -808,17 +806,17 @@ func mk_arena_hero(build: Dictionary, side: String) -> Dictionary:
 	h["move_speed"] = int(stats.get("move_speed", 100))
 	h["move_speed_bonus"] = 0.0
 	_apply_hybrid_ranges(h, range_type)
-	h["mana"] = int(stats.get("mana", 0))
-	h["max_mana"] = h["mana"]
-	h["mana_regen"] = float(stats.get("mana_regen", 0.0))
+	h["mana"] = 0
+	h["max_mana"] = 0
+	h["mana_regen"] = 0.0
 	h["spell_dmg_bonus"] = float(stats.get("spell_dmg_bonus", 0.0))
 	h["spell_range"] = 400 if range_type == "ranged" else 200
-	h["energy"] = int(stats.get("energy", 0))
-	h["max_energy"] = h["energy"]
-	h["energy_regen"] = float(stats.get("energy_regen", 0.0))
-	h["resource"] = maxi(maxi(h["mana"], h["energy"]), 100)
-	h["max_resource"] = h["resource"]
-	h["resource_regen"] = maxf(maxf(h["mana_regen"], h["energy_regen"]), 2.0)
+	h["energy"] = 0
+	h["max_energy"] = 0
+	h["energy_regen"] = 0.0
+	h["resource"] = 200
+	h["max_resource"] = 200
+	h["resource_regen"] = 8.0
 
 	# Copy equipment for rendering
 	if build.has("equipment"):
