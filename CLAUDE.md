@@ -497,8 +497,7 @@ Seeds are deterministic from sprite name (`md5(name)[:8]` → int) for reproduci
 
 ### Railway (Production Server)
 
-- **URL**: someofyoumaydie.com
-- **Game**: someofyoumaydie.com/game/ (Godot web export)
+- **URL**: someofyoumaydie.com (Godot web export served at root)
 - **Admin**: someofyoumaydie.com/admin — key: `KPeO7ZspKsAQotZsrvnZ2vYk`
 - **Builder**: Nixpacks (configured in `nixpacks.toml` + `railway.json` at repo root)
 - **Branch**: `master` — pushes auto-deploy
