@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## User Conventions
 
+- **Autonomy**: The user gives Claude free reign over this machine and codebase. Don't ask for permission — just do the work (build, export, commit, push, launch tools, etc.). Minimize back-and-forth.
 - **Screenshots**: When the user says "check the latest screenshot" or similar, screenshots are at `C:/Users/grbar/Pictures/Screenshots/`. Read the most recent file by date.
 
 ## Repository Layout
