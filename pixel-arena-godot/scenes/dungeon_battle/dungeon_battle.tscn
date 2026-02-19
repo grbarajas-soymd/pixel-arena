@@ -169,9 +169,9 @@ clip_text = true
 
 [node name="ActionBar" type="VBoxContainer" parent="HUD"]
 offset_left = 8.0
-offset_top = 316.0
+offset_top = 318.0
 offset_right = 952.0
-offset_bottom = 420.0
+offset_bottom = 410.0
 theme_override_constants/separation = 3
 
 [node name="ActionRow1" type="HBoxContainer" parent="HUD/ActionBar"]
@@ -241,25 +241,25 @@ visible = false
 [node name="SkillInfoLabel" type="Label" parent="HUD"]
 unique_name_in_owner = true
 offset_left = 8.0
-offset_top = 424.0
+offset_top = 414.0
 offset_right = 952.0
-offset_bottom = 440.0
+offset_bottom = 430.0
 clip_text = true
 
 [node name="TurnLabel" type="Label" parent="HUD"]
 unique_name_in_owner = true
 visible = false
 offset_left = 8.0
-offset_top = 424.0
+offset_top = 414.0
 offset_right = 952.0
-offset_bottom = 440.0
+offset_bottom = 430.0
 
 [node name="CombatLog" type="RichTextLabel" parent="HUD"]
 unique_name_in_owner = true
 offset_left = 8.0
-offset_top = 442.0
+offset_top = 434.0
 offset_right = 952.0
-offset_bottom = 538.0
+offset_bottom = 536.0
 bbcode_enabled = true
 scroll_following = true
 
