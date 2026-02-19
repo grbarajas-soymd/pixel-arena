@@ -10,6 +10,8 @@ import apiRoutes from './routes/api.js';
 import authRoutes from './routes/auth.js';
 import saveRoutes from './routes/saves.js';
 import adminRoutes, { adminPage } from './routes/admin.js';
+import dioRoutes, { startDioScheduler } from './routes/dio.js';
+import { initDioTransaction } from './db.js';
 
 var __dirname = path.dirname(fileURLToPath(import.meta.url));
 var PORT = process.env.PORT || 3001;
@@ -17,6 +19,7 @@ var PORT = process.env.PORT || 3001;
 // Initialize database
 initDB();
 initTransactions();
+initDioTransaction();
 
 var app = express();
 
@@ -34,25 +37,23 @@ app.use(cors({
 // Body parsing with size limit
 app.use(express.json({ limit: '1mb' }));
 
-// ---- COOP/COEP headers for Godot web export ----
+// ---- COOP/COEP headers for Godot web export (required for SharedArrayBuffer) ----
 var gamePath = path.join(__dirname, '..', 'public', 'game');
-if (fs.existsSync(gamePath)) {
-  app.use('/game', function (req, res, next) {
+app.use(function (req, res, next) {
+  if (!req.path.startsWith('/api/') && !req.path.startsWith('/admin')) {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-    next();
-  }, express.static(gamePath));
-}
+  }
+  next();
+});
 
-// ---- Static files (production dist or public) ----
-var distPath = path.join(__dirname, '..', 'dist');
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-}
+// Redirect /game to root for old links
+app.get('/game', function (req, res) { res.redirect(301, '/'); });
+app.get('/game/*', function (req, res) { res.redirect(301, req.path.replace('/game', '') || '/'); });
 
-var publicPath = path.join(__dirname, '..', 'public');
-if (fs.existsSync(publicPath)) {
-  app.use(express.static(publicPath));
+// ---- Godot export served at root ----
+if (fs.existsSync(gamePath)) {
+  app.use(express.static(gamePath));
 }
 
 // ---- API routes ----
@@ -60,13 +61,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/saves', saveRoutes);
 app.use('/api', apiRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/dio', dioRoutes);
+app.use('/api/admin/dio', dioRoutes);
 app.get('/admin', adminPage);
 
-// SPA fallback (serve index.html for non-API, non-file routes)
-if (fs.existsSync(distPath)) {
+// Start Dio line scheduler
+startDioScheduler();
+
+// Fallback — serve Godot index.html for unmatched non-API routes
+if (fs.existsSync(gamePath)) {
   app.get('*', function (req, res) {
-    if (req.path.startsWith('/api/') || req.path.startsWith('/admin') || req.path.startsWith('/game')) return;
-    res.sendFile(path.join(distPath, 'index.html'));
+    if (req.path.startsWith('/api/') || req.path.startsWith('/admin')) return;
+    res.sendFile(path.join(gamePath, 'index.html'));
   });
 }
 
