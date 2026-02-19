@@ -1067,6 +1067,13 @@ func _show_victory_overlay(player_won: bool) -> void:
 	var time_sec := snappedf(float(engine.bt) / 1000.0, 0.1)
 	var hp_pct := roundi(float(h1_hp) / float(h1_max) * 100.0)
 
+	# Steam achievements — clutch save and no damage
+	if player_won:
+		if hp_pct > 0 and hp_pct < 20:
+			SteamManager.unlock("CLUTCH_SAVE")
+		if h2_dmg == 0:
+			SteamManager.unlock("NO_DAMAGE")
+
 	var stat_lbl := Label.new()
 	stat_lbl.text = str(h1_dmg) + " dealt  /  " + str(h2_dmg) + " taken  /  " + str(hp_pct) + "% HP  /  " + str(time_sec) + "s"
 	stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

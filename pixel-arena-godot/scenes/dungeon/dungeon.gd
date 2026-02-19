@@ -1585,6 +1585,8 @@ func _on_equip_gear(after_fn: Callable) -> void:
 	if not old.is_empty():
 		_gs.gear_bag.append(old)
 	_gs.equipment[slot] = gear
+	SteamManager.check_gear(gear)
+	SteamManager.check_fully_equipped(_gs.equipment)
 	_gs.dg_log("Equipped " + str(tmpl.get("name", "")) + "!", "loot")
 	r["pending_gear_drop"] = {}
 	_update_run_ui()
@@ -1600,6 +1602,7 @@ func _on_stash_gear(after_fn: Callable) -> void:
 	if gear.is_empty():
 		return
 	_gs.gear_bag.append(gear)
+	SteamManager.check_gear(gear)
 	var tmpl = _item_db.get_template(gear.get("base_key", ""))
 	_gs.dg_log("Stashed " + str(tmpl.get("name", "item")) + " in gear bag.", "loot")
 	r["pending_gear_drop"] = {}
@@ -1921,22 +1924,26 @@ func _show_victory() -> void:
 	var r = _gs.dg_run
 	_gs.dungeon_clears += 1
 	_gs.dg_log("Dungeon cleared! (Clear #" + str(_gs.dungeon_clears) + ")", "loot")
+	SteamManager.check_dungeon_clears(_gs.dungeon_clears)
 
 	# Keep all followers
 	var run_followers: Array = r.get("followers", [])
 	for f in run_followers:
 		if not f.get("_brought", false):
 			_gs.followers.append(f)
+			SteamManager.check_follower(f, _gs.followers.size())
 
 	# Victory gear drop
 	var bonus_gear = _item_db.roll_gear_drop(int(r.get("floor", 1)) + 2, _gs.dungeon_clears)
 	if not bonus_gear.is_empty():
 		_gs.gear_bag.append(bonus_gear)
+		SteamManager.check_gear(bonus_gear)
 
 	# Bonus follower
 	var bonus_follower = _roll_cage_follower(int(r.get("floor", 1)) + 2)
 	if not bonus_follower.is_empty():
 		_gs.followers.append(bonus_follower)
+		SteamManager.check_follower(bonus_follower, _gs.followers.size())
 
 	_clear_room_actions()
 
@@ -2013,6 +2020,7 @@ func _show_death() -> void:
 	var keep_count = ceili(float(captured.size()) / 2.0)
 	for i in keep_count:
 		_gs.followers.append(captured[i])
+		SteamManager.check_follower(captured[i], _gs.followers.size())
 
 	_clear_room_actions()
 
@@ -2265,6 +2273,8 @@ func _on_equip_from_bag(bag_idx: int) -> void:
 	_gs.gear_bag.remove_at(bag_idx)
 	if not old.is_empty():
 		_gs.gear_bag.append(old)
+	SteamManager.check_gear(gear)
+	SteamManager.check_fully_equipped(_gs.equipment)
 	_gs.dg_log("Equipped " + str(tmpl.get("name", "")) + "!", "loot")
 	_update_run_ui()
 

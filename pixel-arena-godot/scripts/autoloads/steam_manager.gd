@@ -35,6 +35,14 @@ func _ready() -> void:
 	# Request current stats/achievements from Steam servers
 	Steam.requestCurrentStats()
 
+	# Connect to GameState signals for automatic achievement checks
+	var gs := get_node_or_null("/root/GameState")
+	if gs and gs.has_signal("dust_changed"):
+		gs.dust_changed.connect(_on_dust_changed)
+
+func _on_dust_changed(amount: int) -> void:
+	check_dust(amount)
+
 func _process(_delta: float) -> void:
 	if is_online:
 		Steam.run_callbacks()
@@ -105,6 +113,72 @@ func is_achieved(ach_key: String) -> bool:
 	if ach_id == "":
 		return false
 	return Steam.getAchievement(ach_id).achieved
+
+# ---- Achievement Helpers ----
+
+## Call after obtaining gear to check rarity/quality achievements.
+func check_gear(gear: Dictionary) -> void:
+	var rarity: String = gear.get("rarity", "")
+	var quality: int = int(gear.get("quality", 0))
+	if rarity == "legendary" or rarity == "mythic":
+		unlock("LEGENDARY_LOOT")
+	if rarity == "mythic":
+		unlock("MYTHIC_DROP")
+	if quality >= 95:
+		unlock("PERFECT_CRAFT")
+
+## Call after obtaining a follower to check follower achievements.
+func check_follower(follower: Dictionary, total_followers: int) -> void:
+	if total_followers >= 1:
+		unlock("FIRST_FOLLOWER")
+	if follower.get("rarity", "") == "legendary":
+		unlock("LEGENDARY_COMPANION")
+
+## Call after equipping gear to check if all 5 slots are legendary+.
+func check_fully_equipped(equipment: Dictionary) -> void:
+	var slots := ["weapon", "helmet", "chest", "boots", "accessory"]
+	for s in slots:
+		var g: Dictionary = equipment.get(s, {})
+		if g.is_empty():
+			return
+		var r: String = g.get("rarity", "")
+		if r != "legendary" and r != "mythic":
+			return
+	unlock("FULLY_EQUIPPED")
+
+## Call after dust changes to check dust hoarder.
+func check_dust(amount: int) -> void:
+	if amount >= 5000:
+		unlock("DUST_HOARDER")
+
+## Call after dungeon clears increment.
+func check_dungeon_clears(clears: int) -> void:
+	if clears >= 1:
+		unlock("FIRST_DESCENT")
+	if clears >= 10:
+		unlock("DUNGEON_MASTER")
+	if clears >= 50:
+		unlock("ABYSS_WALKER")
+
+## Call after ladder wins/best changes.
+func check_ladder(wins: int, best: int) -> void:
+	if wins >= 1:
+		unlock("PROVING_GROUNDS")
+	if wins >= 25:
+		unlock("CHAMPION")
+	if wins >= 100:
+		unlock("LEGEND")
+	if best >= 3:
+		unlock("UNDEFEATED")
+	if best >= 10:
+		unlock("GODLY_STREAK")
+
+## Call after arena rating changes.
+func check_arena_rating(rating: int) -> void:
+	if rating >= 1200:
+		unlock("RISING_STAR")
+	if rating >= 1500:
+		unlock("CHAMPION_TIER")
 
 # ---- Rich Presence ----
 

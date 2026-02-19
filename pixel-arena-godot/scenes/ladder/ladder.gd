@@ -667,8 +667,11 @@ func _handle_battle_result(result: String) -> void:
 				earned_follower = _roll_follower(flr)
 				attempts += 1
 			_gs.followers.append(earned_follower)
+			SteamManager.check_follower(earned_follower, _gs.followers.size())
+		SteamManager.check_ladder(_gs.ladder_wins, _gs.ladder_best)
 	else:
 		_gs.ladder_best = maxi(_gs.ladder_best, int(run.get("wins", 0)))
+		SteamManager.check_ladder(_gs.ladder_wins, _gs.ladder_best)
 
 	_gs._ladder_mode = false
 	_show_intermission(player_won, earned_follower)

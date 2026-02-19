@@ -518,3 +518,4 @@ func _on_arena_tutorial_closed(_idx: int) -> void:
 	_gs.arena_tutorial_completed = true
 	var persistence: Node = get_node("/root/Persistence")
 	persistence.save_game()
+	SteamManager.unlock("ARENA_DEBUT")

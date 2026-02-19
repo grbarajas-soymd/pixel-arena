@@ -642,6 +642,8 @@ func _equip_item(bag_index: int) -> void:
 		if current_gear and not current_gear.is_empty():
 			_gs.gear_bag.append(current_gear)
 		_gs.equipment[slot] = new_gear
+		SteamManager.check_gear(new_gear)
+		SteamManager.check_fully_equipped(_gs.equipment)
 
 	_close_item_picker()
 	_rebuild_all()
@@ -973,6 +975,7 @@ func _craft_follower(rarity: String) -> void:
 	result["ability_desc"] = tmpl.get("ability_desc", "")
 	result["id"] = str(Time.get_unix_time_from_system()) + "_" + str(randi())
 	_gs.followers.append(result)
+	SteamManager.check_follower(result, _gs.followers.size())
 	_persistence.save_game()
 	_build_craft_overlay()
 	_build_center_panel()

@@ -159,6 +159,7 @@ func _show_gear_reward() -> void:
 		return
 
 	_gs.gear_bag.append(_reward_weapon)
+	SteamManager.check_gear(_reward_weapon)
 
 	# Gear icon — centered above panel
 	var icon_tex: Texture2D = IconMap.get_item_icon(_reward_weapon.get("base_key", ""))
@@ -455,6 +456,7 @@ func _show_follower_reward() -> void:
 		}
 		_gs.followers.append(f_instance)
 		_gs.active_follower = _gs.followers.size() - 1
+		SteamManager.check_follower(f_instance, _gs.followers.size())
 
 	var rarity: String = tmpl.get("rarity", "common")
 
@@ -664,6 +666,8 @@ func _show_complete() -> void:
 	_gs.tutorial_completed = true
 	_gs._tutorial_step = 0
 	_persistence.save_game()
+	SteamManager.unlock("TUTORIAL_COMPLETE")
+	SteamManager.check_dust(_gs.dust)
 
 	var header := Label.new()
 	header.text = "TUTORIAL COMPLETE"
@@ -823,6 +827,8 @@ func _execute_skip() -> void:
 	_gs.tutorial_completed = true
 	_gs._tutorial_step = 0
 	_persistence.save_game()
+	SteamManager.unlock("TUTORIAL_COMPLETE")
+	SteamManager.check_dust(_gs.dust)
 	TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
 
 

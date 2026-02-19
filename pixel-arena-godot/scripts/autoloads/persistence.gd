@@ -157,6 +157,7 @@ func create_character_slot(slot_index: int, class_key: String, char_name: String
 	_gs.active_slot = slot_index
 	_load_slot_into_state(slot_index)
 	save_game()
+	SteamManager.unlock("FIRST_CHARACTER")
 
 
 func switch_to_slot(index: int) -> void:
