@@ -429,6 +429,11 @@ export function archiveExpiredBatches() {
     WHERE status = 'active' AND expires_at < datetime('now')`).run();
 }
 
+export function archivePreviousBatches(excludeBatchId) {
+  stmt('archivePrevious', `UPDATE dio_batches SET status = 'archived'
+    WHERE status = 'active' AND id != ?`).run(excludeBatchId);
+}
+
 export function getDBFileSize() {
   var row = db.prepare('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()').get();
   return row ? row.size : 0;

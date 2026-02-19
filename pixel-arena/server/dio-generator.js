@@ -2,7 +2,7 @@
 // Brave Search (trends) → Claude API (generation) → filter → DB store
 import Anthropic from '@anthropic-ai/sdk'
 import { DIO_SYSTEM_PROMPT, buildGenerationPrompt, filterLine, CATEGORIES } from './dio-prompts.js'
-import { insertDioBatch, archiveExpiredBatches, getLatestActiveBatch } from './db.js'
+import { insertDioBatch, archiveExpiredBatches, archivePreviousBatches, getLatestActiveBatch } from './db.js'
 
 var BRAVE_API_KEY = process.env.BRAVE_SEARCH_API_KEY || ''
 var ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || ''
@@ -126,6 +126,11 @@ export async function generateDioBatch() {
   }
 
   var batchId = storeLines(trends, filtered)
+
+  // Archive all previous batches — only the fresh batch stays active
+  archivePreviousBatches(batchId)
+  console.log('[Dio] Archived previous batches — only batch', batchId, 'is now active')
+
   console.log('[Dio] Generation complete — batch', batchId)
   return batchId
 }

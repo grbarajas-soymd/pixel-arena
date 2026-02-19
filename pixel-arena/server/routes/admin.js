@@ -397,13 +397,22 @@ textarea.notes-input{width:100%;background:#0f3460;border:1px solid #444;color:#
 </div>
 
 <script>
-var adminKey='';
+var adminKey=localStorage.getItem('adminKey')||'';
 var SKILL_NAMES=['Chain Lightning','Lightning Bolt','Static Shield',"Hunter's Mark",'Bloodlust','Summon Pet','Shadow Step','Envenom','Smoke Bomb','Charge','War Cry','Frost Nova','Arcane Drain','Rupture','Marked for Death','Lacerate','Riposte','Battle Trance','Thorns'];
 var ULT_NAMES=['Thunderstorm','Rain of Fire','Death Mark','Berserker Rage','Arcane Overload','Primal Fury','Shadow Dance','Last Stand'];
+
+if(adminKey){
+  api('GET','/api/admin/overview').then(function(){
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('content').style.display='block';
+    loadOverview();
+  }).catch(function(){adminKey='';localStorage.removeItem('adminKey')});
+}
 
 function doLogin(){
   adminKey=document.getElementById('keyInput').value;
   api('GET','/api/admin/overview').then(function(){
+    localStorage.setItem('adminKey',adminKey);
     document.getElementById('loginBox').style.display='none';
     document.getElementById('content').style.display='block';
     loadOverview();
