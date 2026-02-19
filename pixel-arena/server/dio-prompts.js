@@ -9,7 +9,7 @@ var __dirname = path.dirname(fileURLToPath(import.meta.url))
 var personalityPath = path.join(__dirname, 'dio-personality.md')
 export var DIO_SYSTEM_PROMPT = fs.readFileSync(personalityPath, 'utf-8')
 
-export var CATEGORIES = ['perfect_gear', 'trash_gear', 'death', 'victory', 'boss_kill']
+export var CATEGORIES = ['perfect_gear', 'trash_gear', 'death', 'victory', 'boss_kill', 'big_hit']
 
 export var LINES_PER_CATEGORY = 10
 
