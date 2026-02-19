@@ -31,6 +31,7 @@ SkillDatabase="*res://scripts/data/skill_database.gd"
 FollowerDatabase="*res://scripts/data/follower_database.gd"
 ThemeManager="*res://scripts/autoloads/theme_manager.gd"
 TransitionManager="*res://scripts/autoloads/transition_manager.gd"
+SteamManager="*res://scripts/autoloads/steam_manager.gd"
 
 [display]
 

@@ -8,6 +8,9 @@ keys.txt
 reference_*.jpg
 reference_*.png
 
+# Steam (dev-only test file, must NOT ship)
+steam_appid.txt
+
 # Build artifacts
 node_modules/
 pixel-arena/dist/

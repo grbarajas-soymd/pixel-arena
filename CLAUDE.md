@@ -532,3 +532,114 @@ Then commit the updated files in `pixel-arena/public/game/` and push to `master`
 
 - **`master`** — Production branch. Railway + GitHub Pages deploy from here.
 - **`feature/*`** — Feature branches for isolated development (e.g., `feature/sprite-engine`)
+
+## Steam Launch
+
+### Status
+
+- [x] Steamworks account — NOT YET REGISTERED ($100 fee, 30-day wait)
+- [x] GodotSteam GDExtension v4.17.1 installed at `addons/godotsteam/`
+- [x] `SteamManager` autoload created with achievement IDs, rich presence, init
+- [x] `steam_appid.txt` (480/Spacewar for testing, gitignored)
+- [ ] Register on Steamworks, get real App ID, update `APP_ID` in `steam_manager.gd`
+- [ ] Wire achievement unlocks into game logic (dungeon, ladder, arena, gear drops)
+- [ ] Configure Steam Cloud (Auto-Cloud for `user://save_data.json` + `user://save_data.sig`)
+- [ ] Create store page assets (capsules, screenshots, trailer)
+- [ ] AI content disclosure (FLUX.1 Dev sprites)
+- [ ] Submit store page for review
+- [ ] Export Windows/Linux builds with SteamPipe depot config
+- [ ] Submit build for review
+- [ ] Set pricing ($4.99-$9.99 range) + launch discount (20%)
+
+### GodotSteam Integration
+
+**Addon**: GodotSteam GDExtension v4.17.1 at `addons/godotsteam/`. Auto-detected by Godot, no enable step needed. Provides `Steam` singleton.
+
+**Autoload**: `SteamManager` (`scripts/autoloads/steam_manager.gd`) handles init, callbacks, achievement tracking, and rich presence. Gracefully degrades to offline mode if Steam isn't running or GodotSteam isn't available.
+
+**Testing**: `steam_appid.txt` with App ID `480` (Valve's Spacewar test app) lives in project root. **Must NOT be shipped** in final builds (gitignored).
+
+**Export requirements**: Include `steam_api64.dll` (from `addons/godotsteam/win64/`) alongside the exported `.exe`. Do not include `steam_appid.txt`.
+
+### Achievement IDs
+
+All IDs defined in `SteamManager.ACH` dictionary. Must match Steamworks admin config. Each needs a 64x64 locked + unlocked icon.
+
+| Key | Steam ID | Trigger |
+|---|---|---|
+| `TUTORIAL_COMPLETE` | `ACH_TUTORIAL_COMPLETE` | Tutorial finished |
+| `FIRST_CHARACTER` | `ACH_FIRST_CHARACTER` | First character created |
+| `FIRST_DESCENT` | `ACH_FIRST_DESCENT` | `dungeon_clears >= 1` |
+| `DUNGEON_MASTER` | `ACH_DUNGEON_MASTER` | `dungeon_clears >= 10` |
+| `ABYSS_WALKER` | `ACH_ABYSS_WALKER` | `dungeon_clears >= 50` |
+| `PROVING_GROUNDS` | `ACH_PROVING_GROUNDS` | `ladder_wins >= 1` |
+| `UNDEFEATED` | `ACH_UNDEFEATED` | `ladder_best >= 3` |
+| `CHAMPION` | `ACH_CHAMPION` | `ladder_wins >= 25` |
+| `LEGEND` | `ACH_LEGEND` | `ladder_wins >= 100` |
+| `GODLY_STREAK` | `ACH_GODLY_STREAK` | `ladder_best >= 10` |
+| `ARENA_DEBUT` | `ACH_ARENA_DEBUT` | Arena tutorial done |
+| `RISING_STAR` | `ACH_RISING_STAR` | `arena_rating >= 1200` |
+| `CHAMPION_TIER` | `ACH_CHAMPION_TIER` | `arena_rating >= 1500` |
+| `LEGENDARY_LOOT` | `ACH_LEGENDARY_LOOT` | Obtain legendary gear |
+| `MYTHIC_DROP` | `ACH_MYTHIC_DROP` | Obtain mythic gear |
+| `PERFECT_CRAFT` | `ACH_PERFECT_CRAFT` | Gear quality >= 95 |
+| `FULLY_EQUIPPED` | `ACH_FULLY_EQUIPPED` | All 5 slots legendary+ |
+| `FIRST_FOLLOWER` | `ACH_FIRST_FOLLOWER` | Obtain any follower |
+| `LEGENDARY_COMPANION` | `ACH_LEGENDARY_COMPANION` | Legendary rarity follower |
+| `DUST_HOARDER` | `ACH_DUST_HOARDER` | `dust >= 5000` |
+| `CLUTCH_SAVE` | `ACH_CLUTCH_SAVE` | Win with < 20% HP (hidden) |
+| `NO_DAMAGE` | `ACH_NO_DAMAGE` | Clear floor with 0 damage taken (hidden) |
+
+**Usage**: `SteamManager.unlock("FIRST_DESCENT")` — checks if already achieved, sets + stores if not.
+
+### Steam Cloud Saves
+
+Save files to sync via Auto-Cloud (configured in Steamworks admin, no code needed):
+
+| File | Purpose |
+|---|---|
+| `user://save_data.json` | All character slots, settings, progression |
+| `user://save_data.sig` | HMAC-SHA256 integrity signature |
+
+### Store Page Assets Required
+
+| Asset | Dimensions | Status |
+|---|---|---|
+| Header Capsule | 920x430 | Not created |
+| Small Capsule | 462x174 | Not created |
+| Main Capsule | 1232x706 | Not created |
+| Vertical Capsule | 748x896 | Not created |
+| Library Capsule | 600x900 | Not created |
+| Library Hero | 3840x1240 | Not created |
+| Library Logo | 1280w, transparent PNG | Not created |
+| Screenshots (min 5) | 1920x1080 | Not created |
+| Trailer | 1920x1080 H.264 | Not created |
+
+**Capsule rules**: Only game logo/title text. No review quotes, marketing copy, or award badges.
+
+### Revenue & Pricing
+
+- Steam takes **30%** (drops to 25% after $10M, 20% after $50M)
+- Launch discount: **20%** for 7-14 days (triggers wishlist email notifications)
+- 28-day cooldown between discounts (seasonal sales exempt)
+- $100 Steamworks fee recouped after $1,000 revenue
+
+### AI Content Disclosure
+
+Must disclose all FLUX.1 Dev generated assets on Steam's Generative AI form:
+- Monster sprites (19), follower sprites (19), gear icons (48), skill icons (27)
+- NPC sprites (12 Dio variants), backgrounds (12), hero bases (4), logo
+- Steam does not ban AI art but requires transparency
+
+### Timeline
+
+| Step | Duration |
+|---|---|
+| Register + pay $100 | 1-3 days |
+| 30-day wait (first app) | 30 days |
+| Store page review | 3-5 business days |
+| "Coming Soon" live minimum | 14 days |
+| Build review | 3-5 business days |
+| **Total minimum** | ~2 months |
+
+**Strategy**: Put up Coming Soon page ASAP to accumulate wishlists. Consider Steam Next Fest demo for visibility.
