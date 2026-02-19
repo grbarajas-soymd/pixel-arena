@@ -367,6 +367,68 @@ export function getWinRateDistribution() {
     GROUP BY bracket ORDER BY bracket`).all();
 }
 
+// -- Dio Lines --
+
+export function createDioBatch(trendsUsed, expiresAt, lineCount) {
+  var result = stmt('createDioBatch', `INSERT INTO dio_batches (trends_used, expires_at, line_count)
+    VALUES (?, ?, ?)`).run(trendsUsed || null, expiresAt, lineCount || 0);
+  return result.lastInsertRowid;
+}
+
+export function insertDioLine(batchId, category, lineText, trendRef) {
+  stmt('insertDioLine', `INSERT INTO dio_lines (batch_id, category, line_text, trend_ref)
+    VALUES (?, ?, ?, ?)`).run(batchId, category, lineText, trendRef || null);
+}
+
+export var insertDioBatch = null;
+
+export function initDioTransaction() {
+  insertDioBatch = db.transaction(function (trendsUsed, expiresAt, lines) {
+    var batchId = createDioBatch(trendsUsed, expiresAt, lines.length);
+    for (var line of lines) {
+      insertDioLine(batchId, line.category, line.text, line.trend_ref || null);
+    }
+    stmt('updateBatchCount', 'UPDATE dio_batches SET line_count = ? WHERE id = ?').run(lines.length, batchId);
+    return batchId;
+  });
+}
+
+export function getActiveDioLines() {
+  return stmt('activeDioLines', `SELECT dl.category, dl.line_text
+    FROM dio_lines dl
+    JOIN dio_batches db ON db.id = dl.batch_id
+    WHERE db.status = 'active' AND dl.flagged = 0
+    AND db.expires_at > datetime('now')
+    ORDER BY dl.batch_id DESC`).all();
+}
+
+export function getLatestActiveBatch() {
+  return stmt('latestBatch', `SELECT * FROM dio_batches WHERE status = 'active'
+    ORDER BY generated_at DESC LIMIT 1`).get();
+}
+
+export function listDioBatches() {
+  return stmt('listDioBatches', `SELECT *, (SELECT COUNT(*) FROM dio_lines WHERE batch_id = dio_batches.id AND flagged = 0) as active_lines
+    FROM dio_batches ORDER BY generated_at DESC LIMIT 20`).all();
+}
+
+export function getDioBatchLines(batchId) {
+  return stmt('batchLines', 'SELECT * FROM dio_lines WHERE batch_id = ? ORDER BY category, id').all(batchId);
+}
+
+export function updateDioBatchStatus(batchId, status) {
+  stmt('updateBatchStatus', 'UPDATE dio_batches SET status = ? WHERE id = ?').run(status, batchId);
+}
+
+export function flagDioLine(lineId, flagged) {
+  stmt('flagLine', 'UPDATE dio_lines SET flagged = ? WHERE id = ?').run(flagged ? 1 : 0, lineId);
+}
+
+export function archiveExpiredBatches() {
+  stmt('archiveExpired', `UPDATE dio_batches SET status = 'archived'
+    WHERE status = 'active' AND expires_at < datetime('now')`).run();
+}
+
 export function getDBFileSize() {
   var row = db.prepare('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()').get();
   return row ? row.size : 0;

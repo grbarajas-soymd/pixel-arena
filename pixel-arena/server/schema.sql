@@ -77,6 +77,25 @@ CREATE TABLE IF NOT EXISTS pending_battles (
   created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Dio AI-generated voice lines
+CREATE TABLE IF NOT EXISTS dio_batches (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  status        TEXT NOT NULL DEFAULT 'active',
+  trends_used   TEXT,
+  generated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at    TEXT NOT NULL,
+  line_count    INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS dio_lines (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id   INTEGER NOT NULL REFERENCES dio_batches(id) ON DELETE CASCADE,
+  category   TEXT NOT NULL,
+  line_text  TEXT NOT NULL,
+  trend_ref  TEXT,
+  flagged    INTEGER NOT NULL DEFAULT 0
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_records_wins ON records(wins DESC);
 CREATE INDEX IF NOT EXISTS idx_stats_ladder ON stats(ladder_best DESC);
@@ -87,3 +106,6 @@ CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON bug_reports(status);
 CREATE INDEX IF NOT EXISTS idx_bug_reports_created ON bug_reports(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pending_battles_token ON pending_battles(token);
 CREATE INDEX IF NOT EXISTS idx_pending_battles_challenger ON pending_battles(challenger_id);
+CREATE INDEX IF NOT EXISTS idx_dio_batches_status ON dio_batches(status);
+CREATE INDEX IF NOT EXISTS idx_dio_lines_batch ON dio_lines(batch_id);
+CREATE INDEX IF NOT EXISTS idx_dio_lines_category ON dio_lines(category);
