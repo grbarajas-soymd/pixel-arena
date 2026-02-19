@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## User Conventions
+
+- **Screenshots**: When the user says "check the latest screenshot" or similar, screenshots are at `C:/Users/grbar/Pictures/Screenshots/`. Read the most recent file by date.
+
 ## Repository Layout
 
 This repo contains two implementations of the same game:
@@ -169,6 +173,78 @@ All interactive HTML buttons use `onclick="functionName()"` attributes. Function
 - **Tick rate is 50ms** (`TK=50` in constants.js), not 17ms. The CLAUDE.md previously stated ~17ms — the actual interval is 50ms (20 ticks/sec).
 - **Server data is gitignored.** `server/data/` contains the SQLite database and is never committed. It's auto-created on first server start.
 
+## Content Creation Workflows
+
+Repeatable checklists for adding new game content. Every workflow ends with validation.
+
+### Content Validator
+
+```bash
+cd pixel-arena
+node src/data/validate.js                    # Validate ALL content
+node src/data/validate.js --type items       # Validate only items
+node src/data/validate.js --type skills      # Validate only skills
+node src/data/validate.js --type classes     # Validate only classes
+node src/data/validate.js --type followers   # Validate only followers
+node src/data/validate.js --type monsters    # Validate only monsters
+node src/data/validate.js --verbose          # Show all checks, not just failures
+```
+
+Exit code 0 = pass, 1 = fail. Warnings (yellow) flag stats near balance bounds. Errors (red) flag out-of-range values.
+
+### Adding a New Item
+
+1. **JS**: Add entry to `ITEMS` in `src/data/items.js` — needs `slot`, `name`, `rarity`, `stats`, `desc`, `visual`. Weapons also need `rangeType`.
+2. **Godot**: Add entry to `pixel-arena-godot/data/items.json` (snake_case keys).
+3. **Godot icon**: Add mapping in `scripts/data/icon_map.gd` if using a custom sprite.
+4. **Sprite**: `python pixel-arena-godot/tools/generate_sprites.py --single <item_key>` (add prompt to `GEAR_ICON_SPRITES` in `generate_sprites.py` first).
+5. **Validate**: `node src/data/validate.js --type items`
+
+**Serialization warning**: Gear is stored as rolled instances (`rollGearInstance()`). New items are automatically available in the drop pool if their rarity is `common`-`legendary`. Mythic items only drop from `rollVictoryGearDrop()`.
+
+### Adding a New Skill
+
+1. **JS**: Add entry to `ALL_SKILLS` (or `ALL_ULTS`) in `src/data/skills.js` — needs `id`, `icon`, `name`, `source`, `desc`, `bcd` (cooldown ms), `cost`, `ai` (function). Ults also need `threshold`.
+2. **JS**: If the skill introduces a new status effect, add it to `src/data/statusEffects.js`.
+3. **JS**: Wire the skill AI into the class dispatcher in `src/combat/buffs.js` (e.g., `wizAI`, `rgrAI`).
+4. **Godot**: Add to `pixel-arena-godot/data/skills.json` and implement AI in `scripts/combat/skill_ai.gd`.
+5. **Godot icon**: Add to `SKILL_ICON_SPRITES` in `generate_sprites.py`, generate with `--single <skill_id>`, add mapping in `icon_map.gd`.
+6. **Validate**: `node src/data/validate.js --type skills`
+
+**Balance ranges**: Cooldown 1500-15000ms, cost 0-50. Valid sources: Mage, Ranger, Rogue, Warrior.
+
+### Adding a New Class
+
+1. **JS**: Add class definition to `CLASSES` in `src/data/classes.js` — needs `icon`, `name`, `desc`, `color`, `hp`, `baseDmg`, `baseAS`, `def`, `evasion`, `moveSpeed`, plus class-specific spell params.
+2. **JS**: Add movement AI to `src/combat/movement.js` (new `if` branch in `moveAI`).
+3. **JS**: Add spell AI to `src/combat/buffs.js` (new dispatcher function + wire into `spellAI`).
+4. **JS**: Add sprite renderer to `src/render/sprites.js` (`drawNewClassPixel`).
+5. **JS**: Add to `STARTER_LOADOUTS` in `src/data/items.js` with default equipment.
+6. **JS**: Add to `LADDER_SEQUENCE` in `src/constants.js`.
+7. **Godot**: Add to `pixel-arena-godot/data/classes.json`, implement matching AI/rendering.
+8. **Sprite**: Add to `HERO_BASES` in `generate_sprites.py`, generate with `--category heroes`.
+9. **Validate**: `node src/data/validate.js --type classes`
+
+**Balance ranges**: HP 3000-7000, DMG 80-280, AS 0.5-1.5, DEF 0-100, evasion 0-0.25, moveSpeed 60-160.
+
+### Adding a New Follower
+
+1. **JS**: Add template to `FOLLOWER_TEMPLATES` in `src/data/followers.js` — needs `name`, `icon`, `rarity`, `buff`, `buffDesc`, `combatHp`, `combatDmg`, `combatAS`, `combatDef`, `combatRange`, `abilityName`, `abilityDesc`, `abilityBcd`, `abilityFn`, `wagerDebuff`.
+2. **Godot**: Add to `pixel-arena-godot/data/followers.json`.
+3. **Sprite**: Add to `FOLLOWER_SPRITES` in `generate_sprites.py`, generate with `--single <follower_key>`.
+4. **Validate**: `node src/data/validate.js --type followers`
+
+**Serialization warning**: `abilityFn` and `onDeath` are stripped during save. The `rehydrateFollowers()` function in `src/persistence.js` restores them by matching `follower.name` to `FOLLOWER_TEMPLATES`. If you add a new follower, rehydration works automatically as long as `name` matches exactly.
+
+### Adding a New Monster
+
+1. **JS**: Add entry to `DG_MONSTERS` in `src/modes/dungeon.js` — needs `name`, `icon`, `hp`, `dmg`, `def`, `tier` (1-4), `monsterType`, `colors` (`{body, accent, eye}`), `specials` (array of special ability keys).
+2. **Godot**: Add to `pixel-arena-godot/data/monsters.json`.
+3. **Sprite**: Add to `MONSTERS` dict in `generate_sprites.py`, generate with `--single <monster_key>`.
+4. **Validate**: `node src/data/validate.js --type monsters`
+
+**Valid monster types**: humanoid, beast, blob, ghost, winged. **Valid specials**: heavyStrike, enrage, heal, warStomp, poisonSpit. **Tier ranges**: T1 HP 200-400 / T2 HP 400-950 / T3 HP 900-1900 / T4 HP 1800-2800.
+
 ## Architecture (pixel-arena-godot/)
 
 Godot 4.6, viewport 640×360 (3x upscale to 1920×1080). Uses autoloads for global systems: `GameState`, `Persistence`, `Network`, `SfxManager`, `ItemDatabase`, `SkillDatabase`, `FollowerDatabase`, `ThemeManager`, `TransitionManager`. Scene-per-mode structure under `scenes/`.
@@ -179,7 +255,7 @@ Combat scripts mirror the JS structure: `combat_engine.gd` ↔ `engine.js`, `her
 
 Scenes: `main_menu`, `character_forge`, `class_select`, `arena`, `battle`, `ladder`, `dungeon`, `dungeon_battle`, `tutorial`.
 
-Assets include `PixelOperator8.ttf` font, tileset sprites (puny_dungeon, buch_dungeon, kenney_roguelike), battle backgrounds, and VFX sprite sheets. Unlike the web version, the Godot port uses image assets for sprites and effects.
+Assets include `somdie_mono.ttf` font (custom 5x7 monospace pixel font), tileset sprites, battle backgrounds, and VFX sprite sheets. Unlike the web version, the Godot port uses image assets for sprites and effects.
 
 ### Icon System (`scripts/data/icon_map.gd`)
 
@@ -195,12 +271,90 @@ Lookup order for skills: generated `{skill_id}.png` → legacy `SKILL_ICONS[skil
 
 ### Font Rendering
 
-Both fonts (`PixelOperator8.ttf`, `alagard.ttf`) must have these `.import` settings for crisp pixel text:
-- `antialiasing=0`
-- `hinting=0`
-- `subpixel_positioning=0`
+The game uses `somdie_mono.ttf` (custom bitmap-grid monospace pixel font, generated by `tools/generate_font.py`). Font metrics: UPM=1000, advance=500, pixel=100, 5-column grid, cap height=700, x-height=500.
 
-These match `project.godot`'s global font rendering settings. If a new font is added, ensure its `.import` file matches.
+**Import settings (`.import` file) — ALL must be 0:**
+- `antialiasing=0` (no smoothing — bitmap font needs sharp pixel edges)
+- `hinting=0` (no hinting — coordinates are already on exact pixel boundaries)
+- `subpixel_positioning=0` (no fractional positioning — prevents gaps between characters)
+
+**DO NOT change these values.** Setting antialiasing or subpixel_positioning above 0 causes visible gaps between narrow characters (i, l, t) at game font sizes. The font is designed as filled rectangles on a pixel grid — it needs crisp, unsmoothed rendering.
+
+### Dio — Arena Master NPC (Godot only)
+
+Dio is the game's narrator, mentor, and primary NPC. He is an **egregore** — an incorporeal fire god who serves as the Arena Master. Dio exists only in the Godot version; the JS web version has no equivalent. His tone is sarcastic, dismissive, and darkly comedic (GLaDOS/Handsome Jack archetype). He treats the player as a disposable champion indebted to him.
+
+#### Visual Identity
+
+Molten orange-gold glowing skin, burning ember eyes, flowing dark robes with fire licking edges, dark horns wreathed in orange flame. Color scheme: primary `#ff7722`, border `#e8b546`, speech bubble bg `rgba(20,10,5,0.92)`.
+
+#### 12 Sprite Variants (`assets/sprites/generated/npcs/`)
+
+| Sprite | Pose/Expression |
+|---|---|
+| `dio_idle` | Arms crossed, confident smirk |
+| `dio_pointing` | Accusatory finger at viewer |
+| `dio_laughing` | Head thrown back, open mouth |
+| `dio_disappointed` | Facepalm, exasperated |
+| `dio_impressed` | Eyebrows raised, clapping |
+| `dio_peeking` | Peeking around corner, sly grin |
+| `dio_lounging` | Reclining on floating fire throne |
+| `dio_dramatic` | Cape flourish, arms wide |
+| `dio_suggestive_lean` | Leaning, hand on hip |
+| `dio_blowing_kiss` | Winking, flame heart floating |
+| `dio_facepalm` | Both hands covering face |
+| `dio_slow_clap` | Sarcastic clapping, deadpan |
+
+#### Key Files
+
+| File | Purpose |
+|---|---|
+| `scripts/data/dio_data.gd` | All dialogue pools, sprite-per-context mappings, entrance animation configs |
+| `scripts/ui/dio_popup.gd` | Non-blocking slide-in popup UI (sprite + speech bubble + typewriter text) |
+| `scenes/tutorial/tutorial.gd` | Tutorial flow where Dio is the exclusive mentor |
+| `scenes/tutorial/tutorial_dialog.gd` | Tutorial dialog component (portrait + RichTextLabel) |
+| `scenes/dungeon/dungeon.gd` | Dungeon pick screen Dio portrait + event-triggered popups |
+
+#### Popup System (`dio_popup.gd`)
+
+- Slides in from screen edges with 5 entrance animations: `slide_left`, `slide_right`, `pop_bottom`, `peek_left`, `peek_right`
+- Auto-dismisses after 3.5 seconds, clickable to dismiss early
+- **45-second cooldown** between appearances (anti-spam)
+- **Probability gates**: 35% on most events, 50% on boss kills, 60% on victory/death
+- Plays one of 3 audio stingers (`assets/audio/sfx/dio-stinger-{1,2,3}.wav`) at -4dB
+
+#### Event Contexts & Dialogue
+
+Each context has associated sprite variants and a pool of ~4-8 lines randomly selected:
+
+| Context | Trigger | Sprite Pool |
+|---|---|---|
+| **Perfect gear** | Quality >= 95 | impressed, dramatic, slow_clap, blowing_kiss |
+| **Trash gear** | Quality <= 10 | disappointed, facepalm, laughing |
+| **Death** | Player dies | disappointed, facepalm, laughing, slow_clap, lounging |
+| **Victory** | Room/floor clear | impressed, dramatic, blowing_kiss, slow_clap |
+| **Boss kill** | Non-final boss defeated | impressed, pointing, dramatic |
+
+Sample lines — Death: *"I'll add you to the memorial wall. It's very full."* Victory: *"I'm genuinely proud. Write that down, it won't happen often."* Perfect gear: *"Even a broken clock gets a perfect roll twice a day."*
+
+#### Tutorial Role
+
+Dio is the exclusive tutorial mentor. He introduces himself, explains gear comparison (green = better), skills (auto-fire because "I don't trust you to press buttons under pressure"), followers, dungeon combat, ladder combat, and signs off with *"Against all odds, you didn't die."* The skip prompt reads "Skip Dio's wisdom?"
+
+Tutorial dialog uses `dio_idle.png` portrait with molten orange border `(0.9, 0.35, 0.1)`.
+
+#### Dungeon Integration
+
+- **Pick screen**: 100x100 `dio_pointing.png` portrait with speech bubble, random quote from 12-line `DIO_DUNGEON_QUOTES` pool (e.g., *"I've placed a small wager against you. Nothing personal."*)
+- **Gear drops**: Triggers popup after 0.6s delay if quality >= 95 or <= 10
+- **Boss kills**: Triggers popup after 0.5s delay
+- **Victory/Death**: Triggers popup after 0.8-1.0s delay
+
+#### Lore & World-Building
+
+Dio references an ecosystem of named NPCs ("Dio's contemporaries") who provide intermission flavor quotes: **Vex** (War Oracle), **Nyx** (Void Shepherd), **Kael** (Blade Mendicant), **Mira** (Guild Registrar), **Ashara** (Bone Whisperer), **Orin** (Doomsayer General), **Theron** (Lorekeeper), **Sable** (Twilight Sage). These suggest a broader underground economy around dungeon exploration that Dio oversees.
+
+Key narrative beats: player is a "champion" in debt to Dio, all loot technically belongs to him, previous champions mostly died, the game itself is entertainment for Dio.
 
 ## Sprite Generation (pixel-arena-godot/tools/generate_sprites.py)
 

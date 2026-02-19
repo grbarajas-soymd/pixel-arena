@@ -133,7 +133,7 @@ func show_dialog(text: String, buttons: Array = ["Continue"], mentor_name: Strin
 		var btn := Button.new()
 		btn.text = buttons[i]
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		ThemeManager.style_button(btn)
+		ThemeManager.style_stone_button(btn)
 		var idx := i
 		btn.pressed.connect(func():
 			if _typewriter_tween and _typewriter_tween.is_running():

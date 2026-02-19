@@ -16,6 +16,9 @@ var _card_container: HBoxContainer
 func _ready() -> void:
 	_gs = get_node("/root/GameState")
 	_persistence = get_node("/root/Persistence")
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("menu")
 	_setup_background()
 	_build_ui()
 
@@ -90,7 +93,7 @@ func _build_ui() -> void:
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(back_btn)
+	ThemeManager.style_stone_button(back_btn)
 	back_btn.pressed.connect(func():
 		TransitionManager.fade_to_scene("res://scenes/main_menu/main_menu.tscn")
 	)
@@ -201,7 +204,7 @@ func _build_slot_card(index: int, slot: Dictionary) -> PanelContainer:
 	play_btn.text = "Play" if not is_active else "Continue"
 	play_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	play_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ThemeManager.style_button(play_btn)
+	ThemeManager.style_stone_button(play_btn)
 	play_btn.pressed.connect(func(): _select_slot(idx))
 	btn_row.add_child(play_btn)
 
@@ -209,7 +212,7 @@ func _build_slot_card(index: int, slot: Dictionary) -> PanelContainer:
 	del_btn.text = "Delete"
 	del_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
 	del_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ThemeManager.style_button(del_btn, ThemeManager.COLOR_HP_RED)
+	ThemeManager.style_stone_button(del_btn, ThemeManager.COLOR_HP_RED)
 	del_btn.pressed.connect(func(): _show_delete_confirmation(idx, char_name))
 	btn_row.add_child(del_btn)
 
@@ -287,8 +290,8 @@ func _show_delete_confirmation(index: int, char_name: String) -> void:
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", ThemeManager.make_panel_style())
-	panel.position = Vector2(170, 120)
-	panel.custom_minimum_size = Vector2(300, 90)
+	panel.position = Vector2(330, 200)
+	panel.custom_minimum_size = Vector2(300, 100)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -317,7 +320,7 @@ func _show_delete_confirmation(index: int, char_name: String) -> void:
 	var del_btn := Button.new()
 	del_btn.text = "Delete"
 	del_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(del_btn, ThemeManager.COLOR_HP_RED)
+	ThemeManager.style_stone_button(del_btn, ThemeManager.COLOR_HP_RED)
 	del_btn.pressed.connect(func():
 		overlay.queue_free()
 		_persistence.delete_slot(index)
@@ -331,7 +334,7 @@ func _show_delete_confirmation(index: int, char_name: String) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(cancel_btn)
+	ThemeManager.style_stone_button(cancel_btn)
 	cancel_btn.pressed.connect(func(): overlay.queue_free())
 	btn_row.add_child(cancel_btn)
 

@@ -309,6 +309,7 @@ textarea.notes-input{width:100%;background:#0f3460;border:1px solid #444;color:#
     <div class="tab" onclick="switchTab('bugs')">Bugs <span id="bugBadge" style="font-size:.65rem;color:#6a9"></span></div>
     <div class="tab" onclick="switchTab('balance')">Balance</div>
     <div class="tab" onclick="switchTab('activity')">Activity</div>
+    <div class="tab" onclick="switchTab('dio')">Dio</div>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -374,6 +375,25 @@ textarea.notes-input{width:100%;background:#0f3460;border:1px solid #444;color:#
     <button class="btn btn-sm" onclick="loadActivity()" style="margin-bottom:12px">Refresh</button>
     <div id="activityCharts"></div>
   </div>
+
+  <!-- DIO TAB -->
+  <div id="tab-dio" class="tab-panel">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn" onclick="dioGenerate()">Force Generate</button>
+      <button class="btn btn-sm" onclick="loadDio()">Refresh</button>
+    </div>
+    <div id="dioStatus" style="margin-bottom:12px"></div>
+    <div class="section">
+      <div class="section-title">Batches</div>
+      <table><thead><tr><th>ID</th><th>Status</th><th>Lines</th><th>Generated</th><th>Expires</th><th>Actions</th></tr></thead>
+      <tbody id="dioBatches"></tbody></table>
+    </div>
+    <div class="section" id="dioLineSection" style="display:none">
+      <div class="section-title">Lines — Batch <span id="dioLineBatchId"></span></div>
+      <table><thead><tr><th>Category</th><th>Line</th><th>Trend</th><th>Actions</th></tr></thead>
+      <tbody id="dioLines"></tbody></table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -398,7 +418,7 @@ function api(method,path,body){
 
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(function(t,i){
-    var tabs=['overview','players','bugs','balance','activity'];
+    var tabs=['overview','players','bugs','balance','activity','dio'];
     t.classList.toggle('active',tabs[i]===name);
   });
   document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
@@ -408,6 +428,7 @@ function switchTab(name){
   if(name==='bugs')loadBugs();
   if(name==='balance')loadBalance();
   if(name==='activity')loadActivity();
+  if(name==='dio')loadDio();
 }
 
 // ===== OVERVIEW =====
@@ -676,6 +697,72 @@ function timeAgo(iso){
   return Math.floor(h/24)+'d ago';
 }
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+
+// ===== DIO =====
+function loadDio(){
+  api('GET','/api/admin/dio/batches').then(function(d){
+    var batches=d.batches||[];
+    var tbody=document.getElementById('dioBatches');
+    if(batches.length===0){
+      tbody.innerHTML='<tr><td colspan="6" class="empty">No batches yet. Click "Force Generate" to create one.</td></tr>';
+      document.getElementById('dioStatus').innerHTML='<span style="color:#888">No ANTHROPIC_API_KEY? Live Dio lines are disabled without it.</span>';
+      return;
+    }
+    document.getElementById('dioStatus').innerHTML='<span style="color:#6a9">'+batches.length+' batch(es)</span>';
+    tbody.innerHTML=batches.map(function(b){
+      var statusCol=b.status==='active'?'#6a9':b.status==='rejected'?'#aa6a5a':'#888';
+      return '<tr><td>'+b.id+'</td>'+
+        '<td><span style="color:'+statusCol+'">'+b.status+'</span></td>'+
+        '<td>'+b.active_lines+'/'+b.line_count+'</td>'+
+        '<td style="font-size:.75rem;color:#888">'+timeAgo(b.generated_at)+'</td>'+
+        '<td style="font-size:.75rem;color:#888">'+timeAgo(b.expires_at)+'</td>'+
+        '<td class="actions">'+
+          '<button class="btn btn-sm" onclick="dioViewBatch('+b.id+')">View</button> '+
+          (b.status==='active'?'<button class="btn btn-sm btn-danger" onclick="dioArchiveBatch('+b.id+')">Archive</button>':
+           b.status!=='active'?'<button class="btn btn-sm" onclick="dioActivateBatch('+b.id+')">Activate</button>':'')+
+        '</td></tr>';
+    }).join('');
+  });
+}
+
+function dioGenerate(){
+  document.getElementById('dioStatus').innerHTML='<span style="color:#c8a848">Generating... (this takes 30-60s)</span>';
+  api('POST','/api/admin/dio/generate').then(function(d){
+    document.getElementById('dioStatus').innerHTML='<span style="color:#6a9">Generated batch #'+d.batchId+'!</span>';
+    loadDio();
+  }).catch(function(e){
+    document.getElementById('dioStatus').innerHTML='<span style="color:#aa6a5a">Generation failed: '+e.message+'</span>';
+  });
+}
+
+function dioViewBatch(id){
+  api('GET','/api/admin/dio/batches/'+id).then(function(d){
+    var lines=d.lines||[];
+    document.getElementById('dioLineSection').style.display='block';
+    document.getElementById('dioLineBatchId').textContent='#'+id;
+    var catColors={perfect_gear:'#6a9',trash_gear:'#aa6a5a',death:'#888',victory:'#c8a848',boss_kill:'#b85a2a'};
+    document.getElementById('dioLines').innerHTML=lines.map(function(l){
+      var cc=catColors[l.category]||'#888';
+      var flagStyle=l.flagged?'text-decoration:line-through;color:#555':'';
+      return '<tr style="'+flagStyle+'"><td><span style="color:'+cc+'">'+esc(l.category)+'</span></td>'+
+        '<td>'+esc(l.line_text)+'</td>'+
+        '<td style="font-size:.75rem;color:#888">'+esc(l.trend_ref||'—')+'</td>'+
+        '<td><button class="btn btn-sm '+(l.flagged?'':'btn-danger')+'" onclick="dioFlagLine('+l.id+','+(!l.flagged)+','+id+')">'+(l.flagged?'Unflag':'Flag')+'</button></td></tr>';
+    }).join('');
+  });
+}
+
+function dioFlagLine(lineId,flag,batchId){
+  api('PUT','/api/admin/dio/lines/'+lineId+'/flag',{flagged:flag}).then(function(){dioViewBatch(batchId)});
+}
+
+function dioArchiveBatch(id){
+  api('PUT','/api/admin/dio/batches/'+id,{status:'archived'}).then(function(){loadDio()});
+}
+
+function dioActivateBatch(id){
+  api('PUT','/api/admin/dio/batches/'+id,{status:'active'}).then(function(){loadDio()});
+}
 </script>
 </body></html>`;
 

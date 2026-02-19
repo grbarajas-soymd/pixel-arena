@@ -74,6 +74,10 @@ func _ready() -> void:
 		TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
 		return
 
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("tutorial")
+
 	_setup_background()
 
 	_content = Control.new()
@@ -125,7 +129,7 @@ func _show_intro() -> void:
 	var hero_sprite := LayeredSprite.new()
 	hero_sprite.set_class(class_key)
 	hero_sprite.scale = Vector2(2.0, 2.0)
-	hero_sprite.position = Vector2(320, 130)
+	hero_sprite.position = Vector2(480, 170)
 	hero_sprite.start_idle_bob(0.5, 2.0)
 	_sprite_layer.add_child(hero_sprite)
 
@@ -165,7 +169,7 @@ func _show_gear_reward() -> void:
 		icon_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon_rect.custom_minimum_size = Vector2(40, 40)
-		icon_rect.position = Vector2(300, 12)
+		icon_rect.position = Vector2(460, 12)
 		_content.add_child(icon_rect)
 
 	var rarity: String = _reward_weapon.get("rarity", "common")
@@ -174,8 +178,8 @@ func _show_gear_reward() -> void:
 	pstyle.border_color = ThemeManager.get_rarity_color(rarity)
 	pstyle.set_border_width_all(2)
 	panel.add_theme_stylebox_override("panel", pstyle)
-	panel.position = Vector2(180, 50)
-	panel.custom_minimum_size = Vector2(280, 100)
+	panel.position = Vector2(340, 55)
+	panel.custom_minimum_size = Vector2(280, 120)
 	_content.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -213,7 +217,7 @@ func _show_gear_reward() -> void:
 	header.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 	header.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.position = Vector2(200, 25)
+	header.position = Vector2(360, 28)
 	header.custom_minimum_size = Vector2(240, 0)
 	_content.add_child(header)
 
@@ -232,31 +236,40 @@ func _show_equip_gear() -> void:
 	var current_weapon: Dictionary = _gs.equipment.get("weapon", {})
 	var old_name: String = current_weapon.get("name", "Starter Weapon")
 	var old_stats: Dictionary = current_weapon.get("stats", {})
+	var old_base_key: String = current_weapon.get("base_key", "rusty_blade")
 	var new_name: String = _reward_weapon.get("name", "New Weapon")
 	var new_stats: Dictionary = _reward_weapon.get("stats", {})
 	var new_rarity: String = _reward_weapon.get("rarity", "common")
+	var new_base_key: String = _reward_weapon.get("base_key", "")
+
+	# Centered wrapper for the whole comparison UI
+	var wrapper := VBoxContainer.new()
+	wrapper.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	wrapper.offset_top = 30
+	wrapper.add_theme_constant_override("separation", 12)
+	_content.add_child(wrapper)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
-	hbox.position = Vector2(120, 50)
-	_content.add_child(hbox)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	wrapper.add_child(hbox)
 
-	hbox.add_child(_make_weapon_panel(old_name, old_stats, "starter", "Current"))
+	hbox.add_child(_make_weapon_panel(old_name, old_stats, "starter", "Current", old_base_key))
 	var arrow := Label.new()
 	arrow.text = ">>"
 	arrow.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 	arrow.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(arrow)
-	hbox.add_child(_make_weapon_panel(new_name, new_stats, new_rarity, "New!"))
+	hbox.add_child(_make_weapon_panel(new_name, new_stats, new_rarity, "New!", new_base_key))
 
 	var equip_btn := Button.new()
 	equip_btn.text = "Equip New Weapon"
 	equip_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(equip_btn, ThemeManager.COLOR_SUCCESS_GREEN)
-	equip_btn.position = Vector2(240, 200)
+	ThemeManager.style_stone_button(equip_btn, ThemeManager.COLOR_SUCCESS_GREEN)
+	equip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	equip_btn.pressed.connect(_do_equip_weapon)
-	_content.add_child(equip_btn)
+	wrapper.add_child(equip_btn)
 
 	_show_dialog(
 		"[color=#44ff88]Green numbers[/color] mean better. I know, shocking. " +
@@ -265,14 +278,16 @@ func _show_equip_gear() -> void:
 	)
 
 
-func _make_weapon_panel(weapon_name: String, stats: Dictionary, rarity: String, label_text: String) -> PanelContainer:
+func _make_weapon_panel(weapon_name: String, stats: Dictionary, rarity: String, label_text: String, base_key: String = "") -> PanelContainer:
 	var panel := PanelContainer.new()
-	var style := ThemeManager.make_panel_style()
+	var style := ThemeManager.make_panel_style(1.0)
 	style.border_color = ThemeManager.get_rarity_color(rarity)
+	style.set_border_width_all(2)
+	style.set_content_margin_all(8)
 	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(150, 120)
+	panel.custom_minimum_size = Vector2(180, 140)
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
+	vbox.add_theme_constant_override("separation", 3)
 	panel.add_child(vbox)
 	var tag := Label.new()
 	tag.text = label_text
@@ -280,6 +295,15 @@ func _make_weapon_panel(weapon_name: String, stats: Dictionary, rarity: String, 
 	tag.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(tag)
+	# Weapon icon
+	var icon_tex: Texture2D = IconMap.get_item_icon(base_key) if not base_key.is_empty() else null
+	if icon_tex:
+		var icon := TextureRect.new()
+		icon.texture = icon_tex
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(32, 32)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(icon)
 	var name_lbl := Label.new()
 	name_lbl.text = weapon_name
 	name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
@@ -291,6 +315,7 @@ func _make_weapon_panel(weapon_name: String, stats: Dictionary, rarity: String, 
 		var val = stats[key]
 		lbl.text = _stat_display_name(key) + ": " + (str(snapped(val, 0.01)) if val is float else str(val))
 		lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+		lbl.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		vbox.add_child(lbl)
 	return panel
 
@@ -320,8 +345,8 @@ func _show_skill_explain() -> void:
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", ThemeManager.make_panel_style())
-	panel.position = Vector2(80, 40)
-	panel.custom_minimum_size = Vector2(480, 140)
+	panel.position = Vector2(240, 40)
+	panel.custom_minimum_size = Vector2(480, 160)
 	_content.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -443,7 +468,7 @@ func _show_follower_reward() -> void:
 		f_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		f_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		f_sprite.custom_minimum_size = Vector2(48, 48)
-		f_sprite.position = Vector2(296, 2)
+		f_sprite.position = Vector2(456, 2)
 		_content.add_child(f_sprite)
 
 	var panel := PanelContainer.new()
@@ -451,8 +476,8 @@ func _show_follower_reward() -> void:
 	pstyle.border_color = ThemeManager.get_rarity_color(rarity)
 	pstyle.set_border_width_all(2)
 	panel.add_theme_stylebox_override("panel", pstyle)
-	panel.position = Vector2(190, 52)
-	panel.custom_minimum_size = Vector2(260, 120)
+	panel.position = Vector2(350, 55)
+	panel.custom_minimum_size = Vector2(260, 130)
 	_content.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -514,7 +539,7 @@ func _show_dungeon_intro() -> void:
 		goblin_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		goblin_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		goblin_sprite.custom_minimum_size = Vector2(80, 80)
-		goblin_sprite.position = Vector2(280, 60)
+		goblin_sprite.position = Vector2(440, 60)
 		_content.add_child(goblin_sprite)
 
 		var goblin_label := Label.new()
@@ -522,7 +547,7 @@ func _show_dungeon_intro() -> void:
 		goblin_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		goblin_label.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		goblin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		goblin_label.position = Vector2(268, 142)
+		goblin_label.position = Vector2(428, 142)
 		goblin_label.custom_minimum_size = Vector2(104, 0)
 		_content.add_child(goblin_label)
 
@@ -645,7 +670,7 @@ func _show_complete() -> void:
 	header.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
 	header.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.position = Vector2(210, 60)
+	header.position = Vector2(210, 25)
 	header.custom_minimum_size = Vector2(540, 0)
 	_content.add_child(header)
 
@@ -653,15 +678,20 @@ func _show_complete() -> void:
 	var hero_sprite := LayeredSprite.new()
 	hero_sprite.set_class(class_key)
 	hero_sprite.scale = Vector2(1.2, 1.2)
-	hero_sprite.position = Vector2(320, 128)
+	hero_sprite.position = Vector2(480, 160)
 	hero_sprite.start_idle_bob(0.5, 2.0)
 	_sprite_layer.add_child(hero_sprite)
 
 	var rewards_panel := PanelContainer.new()
 	rewards_panel.add_theme_stylebox_override("panel", ThemeManager.make_inset_style())
-	rewards_panel.position = Vector2(200, 195)
-	rewards_panel.custom_minimum_size = Vector2(240, 40)
+	rewards_panel.position = Vector2(320, 300)
+	rewards_panel.custom_minimum_size = Vector2(320, 65)
 	_content.add_child(rewards_panel)
+
+	# Fade-in animation on rewards
+	rewards_panel.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(rewards_panel, "modulate:a", 1.0, 0.3).set_delay(0.2)
 
 	var rvbox := VBoxContainer.new()
 	rvbox.add_theme_constant_override("separation", 1)
@@ -729,8 +759,8 @@ func _build_skip_button() -> void:
 	_skip_btn.theme = get_tree().root.theme
 	_skip_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
 	_skip_btn.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
-	ThemeManager.style_button(_skip_btn, ThemeManager.COLOR_BORDER_DIM)
-	_skip_btn.position = Vector2(540, 4)
+	ThemeManager.style_stone_button(_skip_btn, ThemeManager.COLOR_BORDER_DIM)
+	_skip_btn.position = Vector2(860, 4)
 	_skip_btn.pressed.connect(_on_skip_pressed)
 	_skip_layer.add_child(_skip_btn)
 
@@ -745,8 +775,8 @@ func _on_skip_pressed() -> void:
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", ThemeManager.make_panel_style())
-	panel.position = Vector2(170, 120)
-	panel.custom_minimum_size = Vector2(300, 80)
+	panel.position = Vector2(330, 200)
+	panel.custom_minimum_size = Vector2(300, 100)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -774,7 +804,7 @@ func _on_skip_pressed() -> void:
 
 	var skip_confirm := Button.new()
 	skip_confirm.text = "Skip"
-	ThemeManager.style_button(skip_confirm, ThemeManager.COLOR_HP_RED)
+	ThemeManager.style_stone_button(skip_confirm, ThemeManager.COLOR_HP_RED)
 	skip_confirm.pressed.connect(func():
 		overlay.queue_free()
 		_execute_skip()
@@ -783,7 +813,7 @@ func _on_skip_pressed() -> void:
 
 	var cancel := Button.new()
 	cancel.text = "Cancel"
-	ThemeManager.style_button(cancel)
+	ThemeManager.style_stone_button(cancel)
 	cancel.pressed.connect(func(): overlay.queue_free())
 	btn_row.add_child(cancel)
 

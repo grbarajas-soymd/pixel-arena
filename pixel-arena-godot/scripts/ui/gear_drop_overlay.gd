@@ -167,6 +167,7 @@ func _build_ui(gear: Dictionary, tmpl: Dictionary, show_buttons: bool) -> void:
 		equip_btn.text = "Equip"
 		equip_btn.add_theme_font_size_override("font_size", 8)
 		equip_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ThemeManager.style_stone_button(equip_btn, ThemeManager.COLOR_SUCCESS_GREEN)
 		equip_btn.pressed.connect(func():
 			gear_equipped.emit(_current_gear)
 			queue_free()
@@ -177,6 +178,7 @@ func _build_ui(gear: Dictionary, tmpl: Dictionary, show_buttons: bool) -> void:
 		stash_btn.text = "Stash"
 		stash_btn.add_theme_font_size_override("font_size", 8)
 		stash_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ThemeManager.style_stone_button(stash_btn)
 		stash_btn.pressed.connect(func():
 			gear_stashed.emit(_current_gear)
 			queue_free()
@@ -189,6 +191,7 @@ func _build_ui(gear: Dictionary, tmpl: Dictionary, show_buttons: bool) -> void:
 			salv_btn.text = "Salvage (" + str(dust_val) + ")"
 			salv_btn.add_theme_font_size_override("font_size", 8)
 			salv_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			ThemeManager.style_stone_button(salv_btn, ThemeManager.COLOR_ACCENT_TEAL)
 			salv_btn.pressed.connect(func():
 				gear_salvaged.emit(_current_gear, dust_val)
 				queue_free()

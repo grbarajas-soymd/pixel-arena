@@ -36,12 +36,23 @@ func _ready() -> void:
 	_load_data()
 	_setup_background()
 
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("menu")
+
 	back_btn.pressed.connect(_on_back)
+	ThemeManager.style_stone_button(back_btn)
 
 	# Require login for arena
 	if not _net.is_logged_in():
 		_show_login_required()
 		return
+
+	# Stone texture on action buttons
+	ThemeManager.style_stone_button(register_btn)
+	ThemeManager.style_stone_button(upload_btn, ThemeManager.COLOR_ACCENT_TEAL)
+	ThemeManager.style_stone_button(fight_btn, ThemeManager.COLOR_GOLD_BRIGHT)
+	fight_btn.custom_minimum_size = Vector2(140, 28)
 
 	register_btn.pressed.connect(_on_register)
 	upload_btn.pressed.connect(_on_upload)
@@ -198,18 +209,27 @@ func _build_opponent_cards() -> void:
 		card_hbox.add_theme_constant_override("separation", 6)
 		card_panel.add_child(card_hbox)
 
-		# Sprite
+		# Sprite in class-colored border
 		var class_key: String = str(ch.get("class_key", "barbarian"))
 		var safe_key := class_key if not class_key.is_empty() else "barbarian"
 		var tex = load(HERO_SPRITE_PATH + safe_key + "_base.png")
 		if tex:
+			var sprite_border := PanelContainer.new()
+			var sp_sb := StyleBoxFlat.new()
+			sp_sb.bg_color = Color(0.1, 0.1, 0.15)
+			sp_sb.border_color = ThemeManager.get_class_color(safe_key)
+			sp_sb.set_border_width_all(2)
+			sp_sb.set_corner_radius_all(2)
+			sp_sb.set_content_margin_all(2)
+			sprite_border.add_theme_stylebox_override("panel", sp_sb)
 			var tex_rect := TextureRect.new()
 			tex_rect.texture = tex
 			tex_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			tex_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
 			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			tex_rect.custom_minimum_size = Vector2(32, 32)
-			card_hbox.add_child(tex_rect)
+			tex_rect.custom_minimum_size = Vector2(64, 64)
+			sprite_border.add_child(tex_rect)
+			card_hbox.add_child(sprite_border)
 
 		# Info column
 		var info_vbox := VBoxContainer.new()
@@ -240,22 +260,52 @@ func _build_opponent_cards() -> void:
 		rec_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
 		info_vbox.add_child(rec_lbl)
 
-		# Build skill names
-		var skill_names: Array[String] = []
+		# Build skill icons + names row
 		var skills: Array = ch.get("skills", [])
+		var skill_row := HBoxContainer.new()
+		skill_row.add_theme_constant_override("separation", 3)
+		info_vbox.add_child(skill_row)
+
 		for si in skills:
-			if int(si) < _skills_data.size():
-				skill_names.append(str(_skills_data[int(si)].get("name", "?")))
+			var si_int := int(si)
+			if si_int < _skills_data.size():
+				var sk_data: Dictionary = _skills_data[si_int]
+				var sk_id: String = str(sk_data.get("id", ""))
+				var sk_icon: Texture2D = IconMap.get_skill_icon(sk_id) if sk_id != "" else null
+				if sk_icon:
+					var sk_rect := TextureRect.new()
+					sk_rect.texture = sk_icon
+					sk_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+					sk_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+					sk_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+					sk_rect.custom_minimum_size = Vector2(20, 20)
+					skill_row.add_child(sk_rect)
+				else:
+					var sk_name_lbl := Label.new()
+					sk_name_lbl.text = str(sk_data.get("name", "?"))
+					sk_name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+					sk_name_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_ACCENT_TEAL)
+					skill_row.add_child(sk_name_lbl)
+
 		var ult_i = ch.get("ultimate", null)
 		if ult_i != null and int(ult_i) < _ults_data.size():
-			skill_names.append(str(_ults_data[int(ult_i)].get("name", "?")) + " (Ult)")
-		if skill_names.size() > 0:
-			var sk_lbl := Label.new()
-			sk_lbl.text = ", ".join(skill_names)
-			sk_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-			sk_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_ACCENT_TEAL)
-			sk_lbl.clip_text = true
-			info_vbox.add_child(sk_lbl)
+			var ult_data: Dictionary = _ults_data[int(ult_i)]
+			var ult_id: String = str(ult_data.get("id", ""))
+			var ult_icon: Texture2D = IconMap.get_skill_icon(ult_id) if ult_id != "" else null
+			if ult_icon:
+				var ult_rect := TextureRect.new()
+				ult_rect.texture = ult_icon
+				ult_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				ult_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+				ult_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				ult_rect.custom_minimum_size = Vector2(20, 20)
+				skill_row.add_child(ult_rect)
+			else:
+				var ult_name_lbl := Label.new()
+				ult_name_lbl.text = str(ult_data.get("name", "?")) + "(U)"
+				ult_name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+				ult_name_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
+				skill_row.add_child(ult_name_lbl)
 
 		# Make entire card clickable
 		var click_btn := Button.new()
@@ -298,29 +348,80 @@ func _update_follower_ui() -> void:
 
 	for i in range(_gs.followers.size()):
 		var f: Dictionary = _gs.followers[i]
-		var btn := Button.new()
-		btn.text = str(f.get("name", "?"))
-		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		btn.custom_minimum_size = Vector2(80, 20)
 		var rarity_str: String = str(f.get("rarity", "common"))
-		if i == _champion_index:
-			btn.add_theme_color_override("font_color", Color(1.0, 0.5, 0.3))
-			var style := ThemeManager.make_follower_btn_style(Color(1.0, 0.5, 0.3))
-			btn.add_theme_stylebox_override("normal", style)
-			var hover := style.duplicate()
-			hover.bg_color = Color(0.18, 0.14, 0.20)
-			btn.add_theme_stylebox_override("hover", hover)
+		var is_selected: bool = (i == _champion_index)
+		var accent: Color
+		if is_selected:
+			accent = Color(1.0, 0.5, 0.3)
 		else:
 			var rc: String = ThemeManager.RARITY_HEX.get(rarity_str, "#8a8a7a")
-			var rcol := Color.from_string(rc, Color.GRAY)
-			btn.add_theme_color_override("font_color", rcol)
-			var style := ThemeManager.make_follower_btn_style(rcol)
-			btn.add_theme_stylebox_override("normal", style)
-			var hover := style.duplicate()
-			hover.bg_color = Color(0.18, 0.14, 0.20)
-			btn.add_theme_stylebox_override("hover", hover)
-		btn.pressed.connect(_toggle_champion.bind(i))
-		champ_flow.add_child(btn)
+			accent = Color.from_string(rc, Color.GRAY)
+
+		# Card container with rarity-colored border
+		var card := PanelContainer.new()
+		var card_sb := StyleBoxFlat.new()
+		card_sb.bg_color = Color(0.12, 0.10, 0.16)
+		card_sb.border_color = accent
+		card_sb.set_border_width_all(1)
+		card_sb.set_corner_radius_all(2)
+		card_sb.set_content_margin_all(3)
+		card.add_theme_stylebox_override("panel", card_sb)
+		card.custom_minimum_size = Vector2(160, 36)
+
+		var card_hbox := HBoxContainer.new()
+		card_hbox.add_theme_constant_override("separation", 4)
+		card.add_child(card_hbox)
+
+		# Follower mini-icon (24x24)
+		var fname: String = str(f.get("name", "")).to_snake_case()
+		var fpath := "res://assets/sprites/generated/followers/" + fname + ".png"
+		if ResourceLoader.exists(fpath):
+			var ftex = load(fpath)
+			if ftex:
+				var ficon := TextureRect.new()
+				ficon.texture = ftex
+				ficon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				ficon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+				ficon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				ficon.custom_minimum_size = Vector2(24, 24)
+				card_hbox.add_child(ficon)
+
+		# Name + buff summary
+		var info_vbox := VBoxContainer.new()
+		info_vbox.add_theme_constant_override("separation", 0)
+		card_hbox.add_child(info_vbox)
+
+		var name_lbl := Label.new()
+		name_lbl.text = str(f.get("name", "?"))
+		name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		name_lbl.add_theme_color_override("font_color", accent)
+		name_lbl.clip_text = true
+		info_vbox.add_child(name_lbl)
+
+		var buff_text: String = ""
+		var buff: Dictionary = f.get("buff", {})
+		if buff.has("hp"):
+			buff_text += "+" + str(int(buff["hp"])) + "HP"
+		if buff.has("base_dmg"):
+			if buff_text != "":
+				buff_text += " "
+			buff_text += "+" + str(int(buff["base_dmg"])) + "DMG"
+		if buff_text != "":
+			var buff_lbl := Label.new()
+			buff_lbl.text = buff_text
+			buff_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+			buff_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
+			info_vbox.add_child(buff_lbl)
+
+		# Click handler
+		var click_btn := Button.new()
+		click_btn.flat = true
+		click_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		click_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		click_btn.pressed.connect(_toggle_champion.bind(i))
+		card.add_child(click_btn)
+
+		champ_flow.add_child(card)
 
 
 func _toggle_champion(idx: int) -> void:

@@ -65,13 +65,13 @@ max_length = 20
 [node name="RegisterBtn" type="Button" parent="Margin/VBox/OnlineControls"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(80, 20)
+custom_minimum_size = Vector2(120, 24)
 text = "Join Arena"
 
 [node name="UploadBtn" type="Button" parent="Margin/VBox/OnlineControls"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(80, 20)
+custom_minimum_size = Vector2(120, 24)
 text = "Upload Build"
 visible = false
 

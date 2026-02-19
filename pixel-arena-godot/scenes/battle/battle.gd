@@ -97,6 +97,7 @@ const LOSS_QUOTES: Array[String] = [
 var _mode: String = "ladder"  # "ladder", "arena", "dungeon"
 var _combat_result_callback: Callable
 var _last_sfx_time: float = 0.0
+var _pending_destination: String = ""
 
 # SFX preloads
 var _sfx_hit: AudioStream = preload("res://assets/audio/sfx/woosh-1.wav")
@@ -111,10 +112,15 @@ func _ready() -> void:
 	_hero_factory = HeroFactory.new()
 	add_child(_hero_factory)
 
-	# Load compact font
+	# Load compact font and propagate theme into CanvasLayer
 	var tm := get_node_or_null("/root/ThemeManager")
 	if tm:
 		_compact_font = tm.pixel_font
+	var root_theme: Theme = get_tree().root.theme
+	if root_theme:
+		for child in get_node("HUD").get_children():
+			if child is Control:
+				child.theme = root_theme
 
 	_vfx = BattleVFXScript.new()
 	add_child(_vfx)
@@ -140,6 +146,10 @@ func _ready() -> void:
 	engine.spell_cast.connect(_on_spell_cast)
 	engine.melee_attack.connect(_on_melee_attack)
 	engine.ranged_attack.connect(_on_ranged_attack)
+
+	var sfx_mgr_init := get_node_or_null("/root/SfxManager")
+	if sfx_mgr_init:
+		sfx_mgr_init.play_context("battle")
 
 	# Determine mode and setup combatants
 	if _gs.has_active_run() and not _gs.dg_run.get("combat_enemy", {}).is_empty():
@@ -286,23 +296,20 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 	entity_container.add_child(_h1_node)
 	entity_container.add_child(_h2_node)
 
-	# HUD — explicit font override for pixel-crisp rendering
+	# HUD name labels (green=hero, red=enemy — matches dungeon_battle)
 	hero1_name.text = str(h1.get("name", "Hero 1"))
 	hero2_name.text = str(h2.get("name", "Hero 2"))
-	if _compact_font:
-		hero1_name.add_theme_font_override("font", _compact_font)
-		hero2_name.add_theme_font_override("font", _compact_font)
 	hero1_name.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	hero2_name.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	hero1_name.add_theme_color_override("font_color", ThemeManager.COLOR_HP_GREEN)
+	hero2_name.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 	hero1_name.clip_text = true
 	hero2_name.clip_text = true
 
-	# HP number overlays on bars (using compact font)
+	# HP number overlays on bars
 	for bar in [hero1_hp_bar, hero2_hp_bar]:
 		var hp_lbl := Label.new()
 		hp_lbl.name = "HpText"
-		if _compact_font:
-			hp_lbl.add_theme_font_override("font", _compact_font)
 		hp_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		hp_lbl.add_theme_color_override("font_color", Color.WHITE)
 		hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -315,12 +322,10 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 	_style_hp_bar(hero1_hp_bar, ThemeManager.COLOR_HP_GREEN)
 	_style_hp_bar(hero2_hp_bar, ThemeManager.COLOR_HP_RED)
 
-	# Resource bar number overlays (using compact font)
+	# Resource bar number overlays
 	for bar in [hero1_resource, hero2_resource]:
 		var res_lbl := Label.new()
 		res_lbl.name = "ResText"
-		if _compact_font:
-			res_lbl.add_theme_font_override("font", _compact_font)
 		res_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		res_lbl.add_theme_color_override("font_color", Color.WHITE)
 		res_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -333,10 +338,7 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 	_style_resource_bar(hero1_resource, h1)
 	_style_resource_bar(hero2_resource, h2)
 
-	# Stat row labels (compact font)
-	if _compact_font:
-		hero1_stats_lbl.add_theme_font_override("font", _compact_font)
-		hero2_stats_lbl.add_theme_font_override("font", _compact_font)
+	# Stat row labels
 	hero1_stats_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	hero1_stats_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
 	hero2_stats_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
@@ -349,16 +351,16 @@ func _start_battle(h1: Dictionary, h2: Dictionary) -> void:
 func _style_battle_hud() -> void:
 	# Dark strip behind top bar area (HP bars + names + stat row)
 	var top_bg := ColorRect.new()
-	top_bg.color = Color(0.06, 0.06, 0.10, 0.75)
+	top_bg.color = Color(0.06, 0.06, 0.10, 0.80)
 	top_bg.position = Vector2(0, 0)
-	top_bg.size = Vector2(960, 81)
+	top_bg.size = Vector2(960, 62)
 	top_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$HUD.add_child(top_bg)
 	$HUD.move_child(top_bg, 0)
 
 	# Dark strip behind bottom controls
 	var bot_bg := ColorRect.new()
-	bot_bg.color = Color(0.06, 0.06, 0.10, 0.75)
+	bot_bg.color = Color(0.06, 0.06, 0.10, 0.80)
 	bot_bg.position = Vector2(0, 504)
 	bot_bg.size = Vector2(960, 36)
 	bot_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -369,21 +371,15 @@ func _style_battle_hud() -> void:
 	var log_style := ThemeManager.make_inset_style(0.95)
 	log_style.set_content_margin_all(4)
 	combat_log.add_theme_stylebox_override("normal", log_style)
-	if _compact_font:
-		combat_log.add_theme_font_override("normal_font", _compact_font)
 	combat_log.add_theme_font_size_override("normal_font_size", ThemeManager.FONT_SIZES["body"])
 
 	# Style all HUD buttons with ThemeManager
 	for btn in [speed1_btn, speed2_btn, speed3_btn, log_btn]:
 		btn.custom_minimum_size = Vector2(32, 20)
-		ThemeManager.style_button(btn)
-		if _compact_font:
-			btn.add_theme_font_override("font", _compact_font)
+		ThemeManager.style_stone_button(btn)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	back_btn.custom_minimum_size = Vector2(40, 20)
-	ThemeManager.style_button(back_btn, ThemeManager.COLOR_HP_RED.darkened(0.2))
-	if _compact_font:
-		back_btn.add_theme_font_override("font", _compact_font)
+	ThemeManager.style_stone_button(back_btn, ThemeManager.COLOR_HP_RED.darkened(0.2))
 	back_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 
 
@@ -692,17 +688,6 @@ func _style_hp_bar(bar: ProgressBar, fill_color: Color) -> void:
 	bg.set_corner_radius_all(0)
 	bg.set_content_margin_all(0)
 	bar.add_theme_stylebox_override("background", bg)
-	# Frame overlay
-	var frame_tex = load("res://assets/sprites/generated/vfx/vfx_hp_frame.png")
-	if frame_tex:
-		var frame := TextureRect.new()
-		frame.name = "FrameOverlay"
-		frame.texture = frame_tex
-		frame.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		frame.stretch_mode = TextureRect.STRETCH_SCALE
-		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.add_child(frame)
 
 
 func _style_resource_bar(bar: ProgressBar, h: Dictionary) -> void:
@@ -792,8 +777,6 @@ func _update_buffs(h: Dictionary, container: HBoxContainer) -> void:
 				lbl = container.get_child(idx) as Label
 			else:
 				lbl = Label.new()
-				if _compact_font:
-					lbl.add_theme_font_override("font", _compact_font)
 				lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 				container.add_child(lbl)
 			lbl.text = buff_def[1]
@@ -1042,23 +1025,27 @@ func _show_victory_overlay(player_won: bool) -> void:
 	# Top decorative line
 	victory_vbox.add_child(ThemeManager.make_hrule(accent.darkened(0.3)))
 
+	# Ensure victory overlay inherits the global theme
+	victory_overlay.theme = get_tree().root.theme
+
 	# Title
 	var result_label := Label.new()
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
-	if _compact_font:
-		result_label.add_theme_font_override("font", _compact_font)
+	result_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["main_title"])
 
+	var sfx_mgr := get_node_or_null("/root/SfxManager")
 	if player_won:
-		result_label.text = "~ VICTORY ~"
+		result_label.text = "VICTORY"
 		result_label.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 		victory_vbox.add_child(result_label)
-		_play_sfx_throttled(_sfx_victory, 0.0)
+		if sfx_mgr:
+			sfx_mgr.play_sfx_ducked(_sfx_victory, 0.0, 2.0)
 	else:
-		result_label.text = "~ DEFEAT ~"
+		result_label.text = "DEFEAT"
 		result_label.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		victory_vbox.add_child(result_label)
-		_play_sfx_throttled(_sfx_defeat, 0.0)
+		if sfx_mgr:
+			sfx_mgr.play_sfx_ducked(_sfx_defeat, 0.0, 2.0)
 
 	# Separator
 	victory_vbox.add_child(ThemeManager.make_separator(accent.darkened(0.2)))
@@ -1068,10 +1055,8 @@ func _show_victory_overlay(player_won: bool) -> void:
 	var opp_lbl := Label.new()
 	opp_lbl.text = "vs " + opp_name
 	opp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	opp_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	opp_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["heading"])
 	opp_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
-	if _compact_font:
-		opp_lbl.add_theme_font_override("font", _compact_font)
 	victory_vbox.add_child(opp_lbl)
 
 	# Compact stat line — centered
@@ -1086,9 +1071,7 @@ func _show_victory_overlay(player_won: bool) -> void:
 	stat_lbl.text = str(h1_dmg) + " dealt  /  " + str(h2_dmg) + " taken  /  " + str(hp_pct) + "% HP  /  " + str(time_sec) + "s"
 	stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stat_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
-	stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_LIGHT)
-	if _compact_font:
-		stat_lbl.add_theme_font_override("font", _compact_font)
+	stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
 	victory_vbox.add_child(stat_lbl)
 
 	# Mode-specific info
@@ -1104,8 +1087,6 @@ func _show_victory_overlay(player_won: bool) -> void:
 			mode_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 		mode_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		mode_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		if _compact_font:
-			mode_lbl.add_theme_font_override("font", _compact_font)
 		victory_vbox.add_child(mode_lbl)
 	elif _mode == "arena":
 		var mode_lbl := Label.new()
@@ -1113,8 +1094,6 @@ func _show_victory_overlay(player_won: bool) -> void:
 		mode_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		mode_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		mode_lbl.add_theme_color_override("font_color", Color(0.7, 0.5, 1.0))
-		if _compact_font:
-			mode_lbl.add_theme_font_override("font", _compact_font)
 		victory_vbox.add_child(mode_lbl)
 
 	# Flavor quote
@@ -1135,7 +1114,24 @@ func _show_victory_overlay(player_won: bool) -> void:
 	spacer.custom_minimum_size = Vector2(0, 3)
 	victory_vbox.add_child(spacer)
 
+	# Continue button
+	var continue_btn := Button.new()
+	continue_btn.text = ">> Continue"
+	continue_btn.custom_minimum_size = Vector2(180, 34)
+	continue_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["heading"])
+	ThemeManager.style_stone_button(continue_btn, accent)
+	continue_btn.pressed.connect(_on_result_continue)
+	victory_vbox.add_child(continue_btn)
+
+	# Scale+fade entrance animation
 	victory_overlay.visible = true
+	victory_overlay.scale = Vector2(0.92, 0.92)
+	victory_overlay.modulate.a = 0.0
+	victory_overlay.pivot_offset = victory_overlay.size * 0.5
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(victory_overlay, "scale", Vector2.ONE, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(victory_overlay, "modulate:a", 1.0, 0.25).set_ease(Tween.EASE_OUT)
 
 
 func _spawn_screen_flash(color: Color) -> void:
@@ -1217,6 +1213,11 @@ func _on_back() -> void:
 	TransitionManager.fade_to_scene("res://scenes/character_forge/character_forge.tscn")
 
 
+func _on_result_continue() -> void:
+	if not _pending_destination.is_empty():
+		TransitionManager.fade_to_scene(_pending_destination)
+
+
 # ============ RESULT HANDLERS ============
 
 func _handle_dungeon_result(player_won: bool) -> void:
@@ -1241,8 +1242,7 @@ func _handle_dungeon_result(player_won: bool) -> void:
 		r["state"] = "dead"
 		r["hp"] = 0
 
-	var timer := get_tree().create_timer(1.0)
-	timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/dungeon/dungeon.tscn"))
+	_pending_destination = "res://scenes/dungeon/dungeon.tscn"
 
 
 func _handle_ladder_result(player_won: bool) -> void:
@@ -1251,12 +1251,11 @@ func _handle_ladder_result(player_won: bool) -> void:
 	_gs.ladder_run["last_player_hp"] = maxi(0, roundi(float(engine.h1.get("hp", 0))))
 	_gs.ladder_run["last_player_max_hp"] = roundi(float(engine.h1.get("max_hp", 1)))
 	_gs.ladder_run["last_opp_hp"] = maxi(0, roundi(float(engine.h2.get("hp", 0))))
-	var timer := get_tree().create_timer(1.0)
 	if _gs._tutorial_return:
 		_gs._tutorial_return = false
-		timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/tutorial/tutorial.tscn"))
+		_pending_destination = "res://scenes/tutorial/tutorial.tscn"
 	else:
-		timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/ladder/ladder.tscn"))
+		_pending_destination = "res://scenes/ladder/ladder.tscn"
 
 
 func _handle_arena_result(player_won: bool) -> void:
@@ -1279,5 +1278,4 @@ func _handle_arena_result(player_won: bool) -> void:
 	_gs._arena_staked["index"] = -1
 	_gs._arena_fighters = []
 
-	var timer := get_tree().create_timer(1.5)
-	timer.timeout.connect(func(): TransitionManager.fade_to_scene("res://scenes/arena/arena.tscn"))
+	_pending_destination = "res://scenes/arena/arena.tscn"

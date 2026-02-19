@@ -26,6 +26,11 @@ func _ready() -> void:
 	_style_title()
 	_update_account_btn()
 
+	# Stone texture on all menu buttons
+	for btn in [new_game_btn, continue_btn, settings_btn, account_btn, guide_btn]:
+		ThemeManager.style_stone_button(btn)
+		btn.custom_minimum_size = Vector2(260, 36)
+
 	var net := get_node_or_null("/root/Network")
 	if net:
 		net.auth_login_complete.connect(func(_u: String): _update_account_btn())
@@ -34,7 +39,41 @@ func _ready() -> void:
 
 	var sfx := get_node_or_null("/root/SfxManager")
 	if sfx:
-		sfx.start_playlist()
+		sfx.play_context("menu")
+
+	# Dio peeking — slides in from bottom-right after 2s, click to dismiss
+	_spawn_dio_peeking()
+
+
+func _spawn_dio_peeking() -> void:
+	var dio_path := "res://assets/sprites/generated/npcs/dio_peeking.png"
+	if not ResourceLoader.exists(dio_path):
+		return
+	var dio_tex: Texture2D = load(dio_path)
+	if not dio_tex:
+		return
+
+	var dio := TextureRect.new()
+	dio.texture = dio_tex
+	dio.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	dio.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	dio.custom_minimum_size = Vector2(80, 80)
+	dio.position = Vector2(960 - 80, 540)  # Start off-screen below bottom-right
+	dio.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(dio)
+
+	# Click to dismiss
+	dio.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			var tw := create_tween()
+			tw.tween_property(dio, "position:y", 540.0, 0.3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
+			tw.tween_callback(dio.queue_free)
+	)
+
+	# Slide in after 2 seconds
+	var tw := create_tween()
+	tw.tween_interval(2.0)
+	tw.tween_property(dio, "position:y", 540.0 - 80.0, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 
 func _setup_background() -> void:
@@ -78,7 +117,7 @@ func _style_title() -> void:
 		logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		logo.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		logo.custom_minimum_size = Vector2(240, 80)
+		logo.custom_minimum_size = Vector2(320, 107)
 		logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		$VBox.add_child(logo)
 		$VBox.move_child(logo, 0)
@@ -139,9 +178,9 @@ func _show_slots_full_dialog() -> void:
 	add_child(overlay)
 
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", ThemeManager.make_panel_style())
-	panel.position = Vector2(170, 120)
-	panel.custom_minimum_size = Vector2(300, 100)
+	panel.add_theme_stylebox_override("panel", ThemeManager.make_ornate_panel_style())
+	panel.position = Vector2(330, 200)
+	panel.custom_minimum_size = Vector2(300, 120)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -163,7 +202,7 @@ func _show_slots_full_dialog() -> void:
 	var manage_btn := Button.new()
 	manage_btn.text = "Manage Characters"
 	manage_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(manage_btn)
+	ThemeManager.style_stone_button(manage_btn)
 	manage_btn.pressed.connect(func():
 		overlay.queue_free()
 		TransitionManager.fade_to_scene("res://scenes/character_select/character_select.tscn")
@@ -173,7 +212,7 @@ func _show_slots_full_dialog() -> void:
 	var close := Button.new()
 	close.text = "Cancel"
 	close.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(close)
+	ThemeManager.style_stone_button(close)
 	close.pressed.connect(func(): overlay.queue_free())
 	btn_row.add_child(close)
 
@@ -187,8 +226,9 @@ func _on_settings() -> void:
 	add_child(overlay)
 
 	var panel := PanelContainer.new()
-	panel.position = Vector2(92, 38)
-	panel.size = Vector2(200, 140)
+	panel.add_theme_stylebox_override("panel", ThemeManager.make_ornate_panel_style())
+	panel.position = Vector2(330, 150)
+	panel.size = Vector2(300, 220)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -236,9 +276,20 @@ func _on_settings() -> void:
 	sfx_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sfx_row.add_child(sfx_slider)
 
+	var bug_btn := Button.new()
+	bug_btn.text = "Report Bug"
+	bug_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(bug_btn, ThemeManager.COLOR_HP_RED)
+	bug_btn.pressed.connect(func():
+		overlay.queue_free()
+		_open_bug_report()
+	)
+	vbox.add_child(bug_btn)
+
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn)
 	vbox.add_child(close_btn)
 
 	music_check.toggled.connect(func(on: bool):
@@ -290,8 +341,9 @@ func _on_account() -> void:
 	add_child(overlay)
 
 	var panel := PanelContainer.new()
-	panel.position = Vector2(92, 33)
-	panel.size = Vector2(200, 150)
+	panel.add_theme_stylebox_override("panel", ThemeManager.make_ornate_panel_style())
+	panel.position = Vector2(330, 140)
+	panel.size = Vector2(300, 260)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -336,6 +388,7 @@ func _build_logged_in_panel(vbox: VBoxContainer, overlay: ColorRect, net: Node) 
 	var sync_btn := Button.new()
 	sync_btn.text = "Sync Cloud Save"
 	sync_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(sync_btn, ThemeManager.COLOR_ACCENT_TEAL)
 	sync_btn.pressed.connect(func():
 		status_label.text = "Syncing..."
 		var pers := get_node_or_null("/root/Persistence")
@@ -347,6 +400,7 @@ func _build_logged_in_panel(vbox: VBoxContainer, overlay: ColorRect, net: Node) 
 	var logout_btn := Button.new()
 	logout_btn.text = "Logout"
 	logout_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(logout_btn, ThemeManager.COLOR_HP_RED)
 	logout_btn.pressed.connect(func():
 		net.logout()
 		overlay.queue_free()
@@ -356,6 +410,7 @@ func _build_logged_in_panel(vbox: VBoxContainer, overlay: ColorRect, net: Node) 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn)
 	close_btn.pressed.connect(func(): overlay.queue_free())
 	vbox.add_child(close_btn)
 
@@ -400,16 +455,19 @@ func _build_login_panel(vbox: VBoxContainer, overlay: ColorRect, net: Node) -> v
 	var submit_btn := Button.new()
 	submit_btn.text = "Login"
 	submit_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(submit_btn, ThemeManager.COLOR_HP_GREEN)
 	btn_row.add_child(submit_btn)
 
 	var toggle_btn := Button.new()
 	toggle_btn.text = "Sign Up"
 	toggle_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(toggle_btn)
 	btn_row.add_child(toggle_btn)
 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn)
 	btn_row.add_child(close_btn)
 
 	toggle_btn.pressed.connect(func():
@@ -479,8 +537,9 @@ func _on_guide() -> void:
 	add_child(overlay)
 
 	var panel := PanelContainer.new()
-	panel.position = Vector2(20, 10)
-	panel.size = Vector2(600, 340)
+	panel.add_theme_stylebox_override("panel", ThemeManager.make_ornate_panel_style())
+	panel.position = Vector2(40, 20)
+	panel.size = Vector2(880, 500)
 	overlay.add_child(panel)
 
 	var main_vbox := VBoxContainer.new()
@@ -502,6 +561,7 @@ func _on_guide() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "X"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn, ThemeManager.COLOR_HP_RED)
 	close_btn.pressed.connect(func(): overlay.queue_free())
 	header.add_child(close_btn)
 
@@ -550,6 +610,7 @@ func _on_guide() -> void:
 		var btn := Button.new()
 		btn.text = section.get("title", "?")
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+		ThemeManager.style_stone_button(btn)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var idx := i
 		btn.pressed.connect(func():
@@ -569,3 +630,12 @@ func _on_guide() -> void:
 		if first_btn:
 			first_btn.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 			active_btn[0] = first_btn
+
+
+# ============ BUG REPORT ============
+
+func _open_bug_report() -> void:
+	var BugReportOverlay := preload("res://scripts/ui/bug_report_overlay.gd")
+	var overlay := BugReportOverlay.new()
+	add_child(overlay)
+	overlay.show_report()

@@ -112,13 +112,17 @@ func _ready() -> void:
 
 	_setup_background()
 
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("dungeon_explore")
+
 	# Style all dungeon buttons with pseudo-3D look + explicit font
 	var pixel_font: Font = null
 	var tm := get_node_or_null("/root/ThemeManager")
 	if tm:
 		pixel_font = tm.pixel_font
 	for btn in [potion_btn, abandon_btn, descend_btn, pick_back_btn]:
-		ThemeManager.style_button(btn)
+		ThemeManager.style_stone_button(btn)
 		if pixel_font:
 			btn.add_theme_font_override("font", pixel_font)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
@@ -316,8 +320,9 @@ func _update_companion_picker() -> void:
 		var rarity = tmpl.get("rarity", "common")
 		btn.text = name_txt
 		btn.clip_text = true
-		btn.custom_minimum_size = Vector2(110, 20)
+		btn.custom_minimum_size = Vector2(130, 24)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		ThemeManager.style_stone_button(btn)
 		if i == _selected_companion_idx:
 			btn.add_theme_color_override("font_color", Color(0.7, 0.5, 1.0))
 		else:
@@ -392,7 +397,7 @@ func _update_run_ui() -> void:
 
 	hero_info.clear()
 	hero_info.add_text("")
-	hero_info.append_text("[font_size=8]")
+	hero_info.append_text("[font_size=10]")
 	hero_info.append_text("[b]" + str(r.get("hero_name", "Hero")) + "[/b]")
 	hero_info.append_text("  " + hp_col + "HP:" + str(hp) + "/" + str(max_hp) + "[/color]")
 	hero_info.append_text("  DMG:" + str(total_dmg))
@@ -447,7 +452,7 @@ func _refresh_log() -> void:
 	for i in range(start, log_entries.size()):
 		var entry = log_entries[i]
 		var color = _log_color(str(entry.get("type", "info")))
-		dg_log.append_text("[font_size=8][color=" + color + "]" + str(entry.get("msg", "")) + "[/color][/font_size]\n")
+		dg_log.append_text("[font_size=10][color=" + color + "]" + str(entry.get("msg", "")) + "[/color][/font_size]\n")
 
 
 func _log_color(log_type: String) -> String:
@@ -565,23 +570,99 @@ func _clear_room_actions() -> void:
 
 
 const ROOM_SPRITE_PATHS: Dictionary = {
-	"treasure": "res://assets/sprites/generated/gear/event_treasure.png",
-	"trap_spike": "res://assets/sprites/generated/skills/lacerate.png",
-	"trap_poison": "res://assets/sprites/generated/skills/envenom.png",
+	"treasure": "res://assets/sprites/generated/events/event_treasure_lg.png",
+	"treasure_sm": "res://assets/sprites/generated/gear/event_treasure.png",
+	"trap_spike": "res://assets/sprites/generated/gear/event_trap_spike.png",
+	"trap_poison": "res://assets/sprites/generated/gear/event_trap_poison.png",
 	"trap_rocks": "res://assets/sprites/generated/skills/thorns.png",
-	"rest": "res://assets/sprites/generated/gear/event_rest.png",
-	"shrine": "res://assets/sprites/generated/skills/last_stand.png",
-	"merchant": "res://assets/sprites/generated/gear/event_merchant.png",
-	"cage": "res://assets/sprites/generated/gear/event_cage.png",
+	"rest": "res://assets/sprites/generated/events/event_rest_lg.png",
+	"rest_sm": "res://assets/sprites/generated/gear/event_rest.png",
+	"shrine": "res://assets/sprites/generated/events/event_shrine_lg.png",
+	"shrine_sm": "res://assets/sprites/generated/gear/event_shrine.png",
+	"merchant": "res://assets/sprites/generated/events/event_merchant_lg.png",
+	"merchant_sm": "res://assets/sprites/generated/gear/event_merchant.png",
+	"cage": "res://assets/sprites/generated/events/event_cage_lg.png",
+	"cage_sm": "res://assets/sprites/generated/gear/event_cage.png",
 	"gear": "res://assets/sprites/generated/gear/war_axe.png",
-	"victory": "res://assets/sprites/generated/skills/bloodlust.png",
-	"death": "res://assets/sprites/generated/skills/death_mark.png",
+	"victory": "res://assets/sprites/generated/icons/icon_victory.png",
+	"death": "res://assets/sprites/generated/icons/icon_defeat.png",
+}
+
+const ROOM_FLAVOR: Dictionary = {
+	"treasure": [
+		"The chest gleams with an inviting golden light...",
+		"Something stirs within the ancient coffer.",
+		"Fortune favors the bold — or the foolish.",
+		"The lock crumbles at your touch.",
+		"Greed whispers: take it all.",
+	],
+	"trap_spike": [
+		"The floor groans beneath your weight.",
+		"A faint click echoes through the chamber.",
+		"The walls seem closer than before...",
+		"Steel teeth wait beneath the stone.",
+	],
+	"trap_poison": [
+		"A sickly sweet scent fills the air.",
+		"Green mist curls from cracks in the stone.",
+		"Your eyes begin to water.",
+		"The air itself turns against you.",
+	],
+	"trap_rocks": [
+		"Dust rains from the fractured ceiling.",
+		"The ground trembles ominously.",
+		"Cracks spider across the walls above.",
+		"The mountain remembers its fury.",
+	],
+	"rest": [
+		"The crackling flames hold the darkness at bay.",
+		"A rare moment of peace in the depths.",
+		"The warmth seeps into your weary bones.",
+		"Even the shadows seem to rest here.",
+		"Tomorrow's horrors can wait.",
+	],
+	"shrine": [
+		"Ancient power pulses beneath the stone.",
+		"The altar whispers of forgotten gods.",
+		"Blood has stained these steps before.",
+		"Power demands a price. Always.",
+		"The runes glow brighter as you approach.",
+	],
+	"merchant": [
+		"A hooded figure beckons from the shadows.",
+		"Gold speaks louder than swords down here.",
+		"Prices are firm. Complaints are fatal.",
+		"The merchant's eyes glitter with avarice.",
+		"How does one set up shop in a dungeon?",
+	],
+	"cage": [
+		"Something whimpers behind rusted bars.",
+		"A creature watches you with hopeful eyes.",
+		"The lock is old but the cage is strong.",
+		"Freedom is a currency down here.",
+	],
 }
 
 
-func _set_room_sprite(icon_path: String, tint: Color = Color.WHITE) -> void:
-	room_sprite.custom_minimum_size = Vector2(32, 32)
+func _get_flavor(key: String) -> String:
+	var pool: Array = ROOM_FLAVOR.get(key, [])
+	if pool.is_empty():
+		return ""
+	return str(pool[randi() % pool.size()])
+
+
+func _append_flavor(key: String) -> void:
+	var text := _get_flavor(key)
+	if not text.is_empty():
+		var dim_col := ThemeManager.COLOR_TEXT_DIM.to_html(false)
+		room_desc.append_text("\n[font_size=10][i][color=#" + dim_col + "]" + text + "[/color][/i][/font_size]")
+
+
+func _set_room_sprite(icon_path: String, tint: Color = Color.WHITE, sprite_size: int = 32, fallback_path: String = "") -> void:
+	room_sprite.custom_minimum_size = Vector2(sprite_size, sprite_size)
 	var tex = load(icon_path)
+	if not tex and not fallback_path.is_empty():
+		tex = load(fallback_path)
 	if tex:
 		room_sprite.texture = tex
 		room_sprite.modulate = tint
@@ -616,7 +697,7 @@ func _add_room_button(text: String, callback: Callable, color: Color = Color(1, 
 			btn.text = "$+ " + text
 		else:
 			btn.text = text
-	btn.custom_minimum_size = Vector2(120, 24)
+	btn.custom_minimum_size = Vector2(130, 30)
 	var pf: Font = null
 	var tm_node := get_node_or_null("/root/ThemeManager")
 	if tm_node:
@@ -624,7 +705,7 @@ func _add_room_button(text: String, callback: Callable, color: Color = Color(1, 
 	if pf:
 		btn.add_theme_font_override("font", pf)
 	btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-	ThemeManager.style_button(btn)
+	ThemeManager.style_stone_button(btn)
 	btn.pressed.connect(callback)
 	room_actions.add_child(btn)
 	return btn
@@ -705,13 +786,13 @@ func _render_treasure_room() -> void:
 	if randf() < 0.5:
 		treasure_gear = _item_db.roll_gear_drop(floor_num, _gs.dungeon_clears)
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["treasure"], ThemeManager.COLOR_GOLD_BRIGHT)
+	_set_room_sprite(ROOM_SPRITE_PATHS["treasure"], ThemeManager.COLOR_GOLD_BRIGHT, 80, ROOM_SPRITE_PATHS["treasure_sm"])
 	room_title.text = "Treasure!"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]You found a chest containing [color=#ffcc44]" + str(gold_amount) + " gold[/color]!")
+	room_desc.append_text("[font_size=10]You found a chest containing [color=#ffcc44]" + str(gold_amount) + " gold[/color]!")
 	if not run_item.is_empty():
 		room_desc.append_text("\nInside: [color=#ffcc44]" + str(run_item.get("name", "Item")) + "[/color] - " + str(run_item.get("desc", "")))
 	if not treasure_gear.is_empty():
@@ -720,6 +801,7 @@ func _render_treasure_room() -> void:
 			var col = _item_db.get_rarity_color(tmpl.get("rarity", "common"))
 			room_desc.append_text("\nGear: [color=" + col + "]" + str(tmpl.get("name", "Item")) + "[/color]")
 	room_desc.append_text("[/font_size]")
+	_append_flavor("treasure")
 
 	r["_pending_treasure_gold"] = gold_amount
 	r["pending_item"] = run_item
@@ -776,13 +858,14 @@ func _render_trap_room() -> void:
 		trap_icon_key = "trap_poison"
 	elif str(trap["name"]).find("Rock") >= 0:
 		trap_icon_key = "trap_rocks"
-	_set_room_sprite(ROOM_SPRITE_PATHS[trap_icon_key], ThemeManager.COLOR_HP_RED)
+	_set_room_sprite(ROOM_SPRITE_PATHS[trap_icon_key], ThemeManager.COLOR_HP_RED, 64)
 	room_title.text = str(trap["name"]) + "!"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]" + str(trap["desc"]) + "\nPotential damage: [color=#aa5a5a]" + str(trap["dmg"]) + "[/color][/font_size]")
+	room_desc.append_text("[font_size=10]" + str(trap["desc"]) + "\nPotential damage: [color=#aa5a5a]" + str(trap["dmg"]) + "[/color][/font_size]")
+	_append_flavor(trap_icon_key)
 
 	r["_pending_trap_dmg"] = int(trap["dmg"])
 
@@ -798,6 +881,8 @@ func _on_trigger_trap() -> void:
 	var reduced = roundi(float(dmg) * (1.0 - minf(float(total_def) / 300.0, 0.7)))
 	r["hp"] = int(r.get("hp", 0)) - reduced
 	_gs.dg_log("Took " + str(reduced) + " trap damage!", "bad")
+	_screen_shake(2.0, 0.15)
+	_spawn_screen_flash(Color(0.8, 0.0, 0.0, 0.2))
 	_mark_room_cleared()
 	_update_run_ui()
 	if int(r.get("hp", 0)) <= 0:
@@ -828,13 +913,14 @@ func _render_rest_room() -> void:
 	var r = _gs.dg_run
 	var heal_amt = roundi(float(int(r.get("max_hp", 1))) * 0.25)
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["rest"], Color(1.0, 0.7, 0.3))
+	_set_room_sprite(ROOM_SPRITE_PATHS["rest"], Color(1.0, 0.7, 0.3), 64, ROOM_SPRITE_PATHS["rest_sm"])
 	room_title.text = "Rest Site"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_GREEN)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]A safe place to rest and recover.\nHeal: [color=#6a9a6a]" + str(heal_amt) + " HP[/color][/font_size]")
+	room_desc.append_text("[font_size=10]A safe place to rest and recover.\nHeal: [color=#6a9a6a]" + str(heal_amt) + " HP[/color][/font_size]")
+	_append_flavor("rest")
 
 	r["_pending_heal"] = heal_amt
 
@@ -847,6 +933,20 @@ func _on_rest() -> void:
 	var heal = int(r.get("_pending_heal", 0))
 	r["hp"] = mini(int(r.get("max_hp", 1)), int(r.get("hp", 0)) + heal)
 	_gs.dg_log("Rested and healed " + str(heal) + " HP.", "good")
+	# Green heal particles rising from room sprite
+	var sprite_center := room_sprite.global_position + room_sprite.size * 0.5
+	for _i in 8:
+		var particle := ColorRect.new()
+		var sz := randf_range(1.5, 3.0)
+		particle.size = Vector2(sz, sz)
+		particle.color = Color(0.3, 0.85, 0.3).lightened(randf_range(0.0, 0.3))
+		particle.position = sprite_center + Vector2(randf_range(-20, 20), randf_range(-10, 10))
+		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(particle)
+		var tw := create_tween()
+		tw.tween_property(particle, "position:y", particle.position.y - randf_range(20, 50), randf_range(0.8, 1.4))
+		tw.parallel().tween_property(particle, "modulate:a", 0.0, randf_range(0.9, 1.5))
+		tw.tween_callback(particle.queue_free)
 	_mark_room_cleared()
 	_update_run_ui()
 	_delayed_generate_room()
@@ -866,13 +966,14 @@ func _render_shrine_room() -> void:
 	var shrine = shrines[randi() % shrines.size()]
 	var cost = roundi(float(int(r.get("max_hp", 1))) * 0.15)
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["shrine"], Color(0.6, 0.4, 0.8))
+	_set_room_sprite(ROOM_SPRITE_PATHS["shrine"], Color(0.6, 0.4, 0.8), 64, ROOM_SPRITE_PATHS["shrine_sm"])
 	room_title.text = str(shrine["name"])
 	room_title.add_theme_color_override("font_color", Color(0.6, 0.4, 0.8))
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]" + str(shrine["desc"]) + "\nCost: [color=#aa5a5a]" + str(cost) + " HP[/color] (blood offering)[/font_size]")
+	room_desc.append_text("[font_size=10]" + str(shrine["desc"]) + "\nCost: [color=#aa5a5a]" + str(cost) + " HP[/color] (blood offering)[/font_size]")
+	_append_flavor("shrine")
 
 	r["_pending_shrine"] = shrine
 	r["_pending_shrine_cost"] = cost
@@ -912,6 +1013,22 @@ func _on_use_shrine() -> void:
 		items.append({"name": shrine.get("name", "Shrine"), "desc": shrine.get("desc", "")})
 		r["items"] = items
 		r["_pending_shrine"] = {}
+
+		# Purple flash + stat float-up
+		_spawn_screen_flash(Color(0.5, 0.2, 0.8, 0.15))
+		var float_lbl := Label.new()
+		float_lbl.text = str(shrine.get("desc", ""))
+		float_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["heading"])
+		float_lbl.add_theme_color_override("font_color", Color(0.7, 0.5, 1.0))
+		float_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		float_lbl.position = room_sprite.global_position + Vector2(room_sprite.size.x * 0.5 - 40, 0)
+		float_lbl.custom_minimum_size = Vector2(80, 0)
+		float_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(float_lbl)
+		var ftw := create_tween()
+		ftw.tween_property(float_lbl, "position:y", float_lbl.position.y - 40, 1.0)
+		ftw.parallel().tween_property(float_lbl, "modulate:a", 0.0, 1.0)
+		ftw.tween_callback(float_lbl.queue_free)
 
 	_mark_room_cleared()
 	_update_run_ui()
@@ -963,25 +1080,26 @@ func _refresh_merchant() -> void:
 	var r = _gs.dg_run
 	_clear_room_actions()
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["merchant"], ThemeManager.COLOR_ACCENT_TEAL)
+	_set_room_sprite(ROOM_SPRITE_PATHS["merchant"], ThemeManager.COLOR_ACCENT_TEAL, 64, ROOM_SPRITE_PATHS["merchant_sm"])
 	room_title.text = "Wandering Merchant"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_ACCENT_TEAL)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8][color=#ffcc44]Gold: " + str(int(r.get("gold", 0))) + "[/color][/font_size]")
+	room_desc.append_text("[font_size=12][color=#ffcc44]Gold: " + str(int(r.get("gold", 0))) + "[/color][/font_size]")
+	_append_flavor("merchant")
 
 	# Build buy buttons in a ScrollContainer so they don't overflow the screen
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(170, 130)
+	scroll.custom_minimum_size = Vector2(250, 160)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	room_actions.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	room_actions.add_child(scroll)
 
 	var buy_vbox = VBoxContainer.new()
-	buy_vbox.add_theme_constant_override("separation", 2)
+	buy_vbox.add_theme_constant_override("separation", 3)
 	buy_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(buy_vbox)
 
@@ -994,13 +1112,22 @@ func _refresh_merchant() -> void:
 	for i in shop_items.size():
 		var it = shop_items[i]
 		var btn = Button.new()
+		# Add icon for consumables
+		var item_key: String = str(it.get("key", ""))
+		if item_key == "potion":
+			var pot_tex = load("res://assets/sprites/generated/gear/event_potion.png")
+			if pot_tex:
+				btn.icon = pot_tex
 		btn.text = str(it.get("name", "")) + " - " + str(it.get("desc", "")) + " (" + str(it.get("cost", 0)) + "g)"
 		btn.clip_text = true
-		btn.custom_minimum_size = Vector2(160, 16)
+		btn.custom_minimum_size = Vector2(230, 24)
 		if pf:
 			btn.add_theme_font_override("font", pf)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		ThemeManager.style_stone_button(btn)
 		btn.disabled = int(r.get("gold", 0)) < int(it.get("cost", 999))
+		if btn.disabled:
+			btn.modulate = Color(0.5, 0.5, 0.5)
 		btn.pressed.connect(_on_buy_item.bind(i))
 		buy_vbox.add_child(btn)
 
@@ -1009,24 +1136,32 @@ func _refresh_merchant() -> void:
 		var g = shop_gear[i]
 		var tmpl = _item_db.get_template(str(g.get("tmpl_key", "")))
 		var btn = Button.new()
+		# Add gear icon
+		var gear_icon = IconMap.get_item_icon(str(g.get("tmpl_key", "")))
+		if gear_icon:
+			btn.icon = gear_icon
 		btn.text = str(tmpl.get("name", "Gear")) + " (" + str(tmpl.get("slot", "")) + ") " + str(g.get("price", 0)) + "g"
 		btn.clip_text = true
-		btn.custom_minimum_size = Vector2(160, 16)
+		btn.custom_minimum_size = Vector2(230, 24)
 		if pf:
 			btn.add_theme_font_override("font", pf)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		var rarity_c: String = _item_db.get_rarity_color(tmpl.get("rarity", "common"))
 		btn.add_theme_color_override("font_color", Color.from_string(rarity_c, Color.GRAY))
+		ThemeManager.style_stone_button(btn)
 		btn.disabled = int(r.get("gold", 0)) < int(g.get("price", 999))
+		if btn.disabled:
+			btn.modulate = Color(0.4, 0.4, 0.4)
 		btn.pressed.connect(_on_buy_gear.bind(i))
 		buy_vbox.add_child(btn)
 
 	var leave_btn = Button.new()
-	leave_btn.text = "Leave Shop"
-	leave_btn.custom_minimum_size = Vector2(80, 20)
+	leave_btn.text = ">> Leave Shop"
+	leave_btn.custom_minimum_size = Vector2(130, 30)
 	if pf:
 		leave_btn.add_theme_font_override("font", pf)
 	leave_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(leave_btn)
 	leave_btn.pressed.connect(func(): _mark_room_cleared(); _generate_room())
 	buy_vbox.add_child(leave_btn)
 
@@ -1152,19 +1287,20 @@ func _show_follower_capture(f: Dictionary, after_fn: Callable = Callable()) -> v
 	# Restore default panel style and size (intermission may have set ornate/shrink)
 	room_content.add_theme_stylebox_override("panel", ThemeManager.make_inset_style(0.95))
 	room_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# Show the actual follower sprite instead of generic cage icon
+	# Show the actual follower sprite at 96x96 with natural colors in rarity-bordered panel
+	room_sprite.custom_minimum_size = Vector2(96, 96)
 	var f_sprite_name: String = str(f.get("template_name", "")).to_lower().replace(" ", "_")
 	var f_sprite_path := "res://assets/sprites/generated/followers/" + f_sprite_name + ".png"
 	var f_tex = load(f_sprite_path)
 	if f_tex:
 		room_sprite.texture = f_tex
-		room_sprite.modulate = Color(0.7, 0.5, 1.0)
+		room_sprite.modulate = Color.WHITE  # Natural colors, no tint
 		room_sprite.visible = true
 		room_icon.visible = false
 	else:
-		_set_room_sprite(ROOM_SPRITE_PATHS["cage"], Color(0.7, 0.5, 1.0))
+		_set_room_sprite(ROOM_SPRITE_PATHS["cage"], Color(0.7, 0.5, 1.0), 64, ROOM_SPRITE_PATHS["cage_sm"])
 	room_title.text = "FOLLOWER CAPTURED!"
-	room_title.add_theme_color_override("font_color", Color(0.7, 0.5, 1.0))
+	room_title.add_theme_color_override("font_color", Color.from_string(rarity_col, Color(0.7, 0.5, 1.0)))
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	var fname = tmpl.get("name", f.get("template_name", "???"))
@@ -1173,14 +1309,19 @@ func _show_follower_capture(f: Dictionary, after_fn: Callable = Callable()) -> v
 	var ability_desc_txt = tmpl.get("ability_desc", "")
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]")
+	room_desc.append_text("[font_size=10]")
 	room_desc.append_text("[color=" + rarity_col + "][b]" + fname + "[/b] (" + rarity + ")[/color]\n")
+	room_desc.append_text("HP: " + str(f.get("combat_hp", 0)) + "  DMG: " + str(f.get("combat_dmg", 0)) + "  DEF: " + str(f.get("combat_def", 0)) + "\n")
 	if buff_desc != "":
-		room_desc.append_text("Buff: " + buff_desc + "\n")
+		room_desc.append_text("[color=#6ac46a]Buff:[/color] " + buff_desc + "\n")
 	if ability != "":
-		room_desc.append_text("Ability: [b]" + ability + "[/b] - " + ability_desc_txt + "\n")
-	room_desc.append_text("Combat: " + str(f.get("combat_hp", 0)) + "HP / " + str(f.get("combat_dmg", 0)) + "DMG / " + str(f.get("combat_def", 0)) + "DEF")
+		room_desc.append_text("[color=#6ac4da]Ability:[/color] [b]" + ability + "[/b] — " + ability_desc_txt)
+	# Show current follower comparison if player has one
+	var deployed: Dictionary = r.get("deployed_follower", {})
+	if not deployed.is_empty():
+		room_desc.append_text("\n[color=#999999]Current: " + str(deployed.get("template_name", "")) + "[/color]")
 	room_desc.append_text("[/font_size]")
+	_append_flavor("cage")
 
 	# Store after_fn for use after capture decision
 	if after_fn.is_valid():
@@ -1204,6 +1345,23 @@ func _on_keep_follower(after_fn: Callable) -> void:
 	run_followers.append(f)
 	r["followers"] = run_followers
 	_gs.dg_log("Kept " + str(f.get("template_name", "follower")) + "! (" + str(f.get("rarity", "")) + ")", "loot")
+
+	# Rarity-colored sparkles
+	var rarity_str: String = str(f.get("rarity", "common"))
+	var sparkle_color: Color = ThemeManager.get_rarity_color(rarity_str)
+	var sprite_center := room_sprite.global_position + room_sprite.size * 0.5
+	for _i in 6:
+		var sparkle := ColorRect.new()
+		var sz := randf_range(1.5, 3.5)
+		sparkle.size = Vector2(sz, sz)
+		sparkle.color = sparkle_color.lightened(randf_range(0.1, 0.4))
+		sparkle.position = sprite_center + Vector2(randf_range(-28, 28), randf_range(-20, 20))
+		sparkle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sparkle)
+		var tw := create_tween()
+		tw.tween_property(sparkle, "position:y", sparkle.position.y - randf_range(15, 40), randf_range(0.7, 1.3))
+		tw.parallel().tween_property(sparkle, "modulate:a", 0.0, randf_range(0.8, 1.4))
+		tw.tween_callback(sparkle.queue_free)
 
 	# Apply passive buff
 	var buff_desc = _gs.apply_follower_buff_to_run(f)
@@ -1291,7 +1449,7 @@ func _show_gear_drop(gear: Dictionary, after_fn: Callable = Callable()) -> void:
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
 
 	room_desc.clear()
-	room_desc.append_text("[font_size=8]")
+	room_desc.append_text("[font_size=10]")
 	room_desc.append_text("[color=" + rarity_col + "][b]" + str(tmpl.get("name", "Item")) + "[/b] (" + rarity.to_upper() + ")[/color]\n")
 
 	# Quality badge with percentage
@@ -1484,11 +1642,11 @@ func _play_gear_drop_effects(rarity: String) -> void:
 	if sfx_mgr:
 		match rarity:
 			"common", "uncommon":
-				sfx_mgr.play_sfx(_sfx_loot_common)
+				sfx_mgr.play_sfx_ducked(_sfx_loot_common, 0.0, 1.5)
 			"rare":
-				sfx_mgr.play_sfx(_sfx_loot_rare)
+				sfx_mgr.play_sfx_ducked(_sfx_loot_rare, 0.0, 1.5)
 			_:
-				sfx_mgr.play_sfx(_sfx_loot_epic)
+				sfx_mgr.play_sfx_ducked(_sfx_loot_epic, 0.0, 1.5)
 
 	# Screen flash per rarity — more flashes for better loot
 	var flash_color: Color = RARITY_FLASH_COLORS.get(rarity, Color.TRANSPARENT)
@@ -1564,6 +1722,18 @@ func _spawn_screen_flash(color: Color) -> void:
 	tw.tween_callback(flash.queue_free)
 
 
+func _screen_shake(intensity: float, duration: float) -> void:
+	var origin := run_screen.position
+	var tw := create_tween()
+	var steps := 6
+	for i in range(steps):
+		var fade := 1.0 - float(i) / float(steps)
+		var offset_x := randf_range(-intensity, intensity) * fade
+		var offset_y := randf_range(-intensity * 0.5, intensity * 0.5) * fade
+		tw.tween_property(run_screen, "position", origin + Vector2(offset_x, offset_y), duration / float(steps))
+	tw.tween_property(run_screen, "position", origin, 0.02)
+
+
 # ==================== COMBAT VICTORY (called from battle.gd) ====================
 
 func _handle_post_battle() -> void:
@@ -1589,15 +1759,14 @@ func _handle_combat_victory() -> void:
 	var floor_num = int(r.get("floor", 1))
 	var is_boss = room_num == 3
 
-	# Rotating room-clear SFX
+	# Rotating room-clear SFX (ducked)
 	var sfx_mgr := get_node_or_null("/root/SfxManager")
 	if sfx_mgr and not _room_clear_pool.is_empty():
 		var is_final_boss := floor_num >= 8 and room_num == 3
 		if is_final_boss:
-			# Special boss fanfare — louder victory-3
-			sfx_mgr.play_sfx(_room_clear_pool[2], 2.0)
+			sfx_mgr.play_sfx_ducked(_room_clear_pool[2], 2.0, 2.0)
 		else:
-			sfx_mgr.play_sfx(_room_clear_pool[_room_clear_idx])
+			sfx_mgr.play_sfx_ducked(_room_clear_pool[_room_clear_idx], 0.0, 2.0)
 			_room_clear_idx = (_room_clear_idx + 1) % _room_clear_pool.size()
 
 	# Dio boss kill comment (non-final bosses only)
@@ -1648,6 +1817,9 @@ func _handle_combat_victory() -> void:
 	body += "  +" + str(gold_reward) + "g"
 	body += "\nHP: " + str(hp) + "/" + str(max_hp) + " (" + str(hp_pct) + "%)"
 
+	# Monster key for sprite display (strip boss markers)
+	var m_key: String = monster_name.replace("* ", "").replace(" *", "").to_snake_case()
+
 	# Chain drops: gear first, then follower, then check victory/continue
 	var after_all = func():
 		if floor_num >= 8 and room_num == 3:
@@ -1670,7 +1842,7 @@ func _handle_combat_victory() -> void:
 
 		body += "\nSomething shiny drops..."
 
-		_show_intermission(title, title_color, body, "See your loot", show_gear_fn)
+		_show_intermission(title, title_color, body, "See your loot", show_gear_fn, m_key)
 	elif not dropped_follower.is_empty():
 		var f_ref2 = dropped_follower
 		var final2 = after_all
@@ -1679,12 +1851,12 @@ func _handle_combat_victory() -> void:
 
 		body += "\nA creature stirs..."
 
-		_show_intermission(title, title_color, body, "See what you found", show_follower_fn)
+		_show_intermission(title, title_color, body, "See what you found", show_follower_fn, m_key)
 	else:
 		if floor_num >= 8 and room_num == 3:
-			_show_intermission("FINAL BOSS SLAIN!", ThemeManager.COLOR_GOLD_BRIGHT, body, "Claim Victory", func(): _show_victory())
+			_show_intermission("FINAL BOSS SLAIN!", ThemeManager.COLOR_GOLD_BRIGHT, body, "Claim Victory", func(): _show_victory(), m_key)
 		else:
-			_show_intermission(title, title_color, body, "Continue", func(): _generate_room())
+			_show_intermission(title, title_color, body, "Continue", func(): _generate_room(), m_key)
 
 	_update_progress()
 	_update_run_ui()
@@ -1692,7 +1864,7 @@ func _handle_combat_victory() -> void:
 
 # ==================== INTERMISSION SCREEN ====================
 
-func _show_intermission(title: String, title_color: Color, body: String, next_label: String, next_fn: Callable) -> void:
+func _show_intermission(title: String, title_color: Color, body: String, next_label: String, next_fn: Callable, monster_key: String = "") -> void:
 	_clear_room_actions()
 
 	# Ornate panel style for intermission — shrink to content, centered
@@ -1705,8 +1877,22 @@ func _show_intermission(title: String, title_color: Color, body: String, next_la
 	var fade_tw := create_tween()
 	fade_tw.tween_property(room_content, "modulate:a", 1.0, 0.35)
 
-	room_sprite.visible = false
-	room_icon.visible = false
+	# Show defeated monster sprite if available
+	if not monster_key.is_empty():
+		var m_path := "res://assets/sprites/generated/monsters/" + monster_key + ".png"
+		var m_tex = load(m_path)
+		if m_tex:
+			room_sprite.texture = m_tex
+			room_sprite.custom_minimum_size = Vector2(64, 64)
+			room_sprite.modulate = Color.WHITE
+			room_sprite.visible = true
+			room_icon.visible = false
+		else:
+			room_sprite.visible = false
+			room_icon.visible = false
+	else:
+		room_sprite.visible = false
+		room_icon.visible = false
 	room_title.text = "~ " + title + " ~"
 	room_title.add_theme_color_override("font_color", title_color)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
@@ -1717,10 +1903,10 @@ func _show_intermission(title: String, title_color: Color, body: String, next_la
 
 	room_desc.clear()
 	room_desc.append_text("[center]")
-	room_desc.append_text("[font_size=7][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
-	room_desc.append_text("[font_size=8]" + body + "[/font_size]\n")
-	room_desc.append_text("[font_size=7][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
-	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + quote + "[/color][/i][/font_size]")
+	room_desc.append_text("[font_size=9][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=10]" + body + "[/font_size]\n")
+	room_desc.append_text("[font_size=9][color=#" + ThemeManager.COLOR_BORDER_GOLD.to_html(false) + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=10][i][color=#" + dim_col + "]" + quote + "[/color][/i][/font_size]")
 	room_desc.append_text("[/center]")
 
 	_add_room_button(next_label, next_fn)
@@ -1759,18 +1945,30 @@ func _show_victory() -> void:
 	room_content.add_theme_stylebox_override("panel", ornate)
 	room_content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["victory"], ThemeManager.COLOR_GOLD_BRIGHT)
-	room_title.text = "~ DUNGEON CONQUERED ~"
+	_set_room_sprite(ROOM_SPRITE_PATHS["victory"], ThemeManager.COLOR_GOLD_BRIGHT, 80)
+	room_title.text = "DUNGEON CONQUERED"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
+
+	# Scale-in animation on room_content
+	room_content.scale = Vector2(0.85, 0.85)
+	room_content.modulate.a = 0.0
+	room_content.pivot_offset = room_content.size * 0.5
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(room_content, "scale", Vector2.ONE, 0.35).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(room_content, "modulate:a", 1.0, 0.25).set_ease(Tween.EASE_OUT)
+
+	# Gold screen flash
+	_spawn_screen_flash(Color(1.0, 0.85, 0.3, 0.15))
 
 	var next_diff = _gs.dungeon_clears * 15
 	var gold_col := ThemeManager.COLOR_BORDER_GOLD.to_html(false)
 
 	room_desc.clear()
 	room_desc.append_text("[center]")
-	room_desc.append_text("[font_size=7][color=#" + gold_col + "]~  *  ~[/color][/font_size]\n")
-	room_desc.append_text("[font_size=8]")
+	room_desc.append_text("[font_size=9][color=#" + gold_col + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=10]")
 	room_desc.append_text("Clear [b]#" + str(_gs.dungeon_clears) + "[/b] complete!\n\n")
 	room_desc.append_text("Rooms: " + str(_room_history_size()) + "\n")
 	room_desc.append_text("Kills: " + str(int(r.get("total_kills", 0))) + "\n")
@@ -1785,8 +1983,8 @@ func _show_victory() -> void:
 	room_desc.append_text("[/font_size]\n\n")
 	var vq: String = VICTORY_QUOTES[randi() % VICTORY_QUOTES.size()]
 	var dim_col := ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2).to_html(false)
-	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + vq + "[/color][/i][/font_size]\n")
-	room_desc.append_text("[font_size=7][color=#" + gold_col + "]~  *  ~[/color][/font_size]")
+	room_desc.append_text("[font_size=10][i][color=#" + dim_col + "]" + vq + "[/color][/i][/font_size]\n")
+	room_desc.append_text("[font_size=9][color=#" + gold_col + "]~  *  ~[/color][/font_size]")
 	room_desc.append_text("[/center]")
 
 	_add_room_button("Return Victorious", _end_dungeon_run)
@@ -1800,6 +1998,11 @@ func _show_victory() -> void:
 
 func _show_death() -> void:
 	var r = _gs.dg_run
+
+	# Death music
+	var sfx_death := get_node_or_null("/root/SfxManager")
+	if sfx_death:
+		sfx_death.play_context("death")
 
 	# Keep half of captured followers
 	var run_followers: Array = r.get("followers", [])
@@ -1818,17 +2021,25 @@ func _show_death() -> void:
 	room_content.add_theme_stylebox_override("panel", ornate)
 	room_content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	_set_room_sprite(ROOM_SPRITE_PATHS["death"], ThemeManager.COLOR_HP_RED)
-	room_title.text = "~ DEFEATED ~"
+	_set_room_sprite(ROOM_SPRITE_PATHS["death"], ThemeManager.COLOR_HP_RED, 80)
+	room_title.text = "DEFEAT"
 	room_title.add_theme_color_override("font_color", ThemeManager.COLOR_HP_RED)
 	room_title.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["title"])
+
+	# Desaturation on background
+	var bg_node := get_child(0)
+	if bg_node is TextureRect:
+		bg_node.modulate = Color(0.5, 0.5, 0.5)
+
+	# Red screen flash
+	_spawn_screen_flash(Color(0.8, 0.1, 0.1, 0.15))
 
 	var dim_red := ThemeManager.COLOR_HP_RED.darkened(0.3).to_html(false)
 
 	room_desc.clear()
 	room_desc.append_text("[center]")
-	room_desc.append_text("[font_size=7][color=#" + dim_red + "]~  *  ~[/color][/font_size]\n")
-	room_desc.append_text("[font_size=8]")
+	room_desc.append_text("[font_size=9][color=#" + dim_red + "]~  *  ~[/color][/font_size]\n")
+	room_desc.append_text("[font_size=10]")
 	room_desc.append_text("Fell on [b]Floor " + str(int(r.get("floor", 1))) + ", Room " + str(int(r.get("room", 0))) + "[/b]\n\n")
 	room_desc.append_text("Rooms: " + str(_room_history_size()) + "\n")
 	room_desc.append_text("Kills: " + str(int(r.get("total_kills", 0))) + "\n")
@@ -1839,8 +2050,8 @@ func _show_death() -> void:
 	room_desc.append_text("[/font_size]\n\n")
 	var dq: String = DEATH_QUOTES[randi() % DEATH_QUOTES.size()]
 	var dim_col := ThemeManager.COLOR_TEXT_LIGHT.darkened(0.2).to_html(false)
-	room_desc.append_text("[font_size=8][i][color=#" + dim_col + "]" + dq + "[/color][/i][/font_size]\n")
-	room_desc.append_text("[font_size=7][color=#" + dim_red + "]~  *  ~[/color][/font_size]")
+	room_desc.append_text("[font_size=10][i][color=#" + dim_col + "]" + dq + "[/color][/i][/font_size]\n")
+	room_desc.append_text("[font_size=9][color=#" + dim_red + "]~  *  ~[/color][/font_size]")
 	room_desc.append_text("[/center]")
 
 	_add_room_button("Return", _end_dungeon_run)
@@ -2020,10 +2231,11 @@ func _refresh_left_panel() -> void:
 
 			var equip_btn := Button.new()
 			equip_btn.text = "Equip"
-			equip_btn.custom_minimum_size = Vector2(40, 14)
+			equip_btn.custom_minimum_size = Vector2(50, 18)
 			if pf:
 				equip_btn.add_theme_font_override("font", pf)
 			equip_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+			ThemeManager.style_stone_button(equip_btn, ThemeManager.COLOR_SUCCESS_GREEN)
 			equip_btn.pressed.connect(_on_equip_from_bag.bind(i))
 			row.add_child(equip_btn)
 
@@ -2031,10 +2243,11 @@ func _refresh_left_panel() -> void:
 			if dust_val > 0:
 				var salv_btn := Button.new()
 				salv_btn.text = "Salv(" + str(dust_val) + ")"
-				salv_btn.custom_minimum_size = Vector2(50, 14)
+				salv_btn.custom_minimum_size = Vector2(60, 18)
 				if pf:
 					salv_btn.add_theme_font_override("font", pf)
 				salv_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+				ThemeManager.style_stone_button(salv_btn, ThemeManager.COLOR_ACCENT_TEAL)
 				salv_btn.pressed.connect(_on_salvage_from_bag.bind(i))
 				row.add_child(salv_btn)
 
@@ -2143,10 +2356,11 @@ func _refresh_right_panel() -> void:
 		if not is_deployed:
 			var btn := Button.new()
 			btn.text = "Deploy"
-			btn.custom_minimum_size = Vector2(50, 14)
+			btn.custom_minimum_size = Vector2(60, 18)
 			if pf:
 				btn.add_theme_font_override("font", pf)
 			btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+			ThemeManager.style_stone_button(btn, ThemeManager.COLOR_SUCCESS_GREEN)
 			btn.pressed.connect(_on_deploy_follower.bind(i))
 			right_vbox.add_child(btn)
 

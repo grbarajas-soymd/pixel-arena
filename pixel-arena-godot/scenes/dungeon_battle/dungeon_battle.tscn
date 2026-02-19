@@ -22,19 +22,19 @@ color = Color(0.03, 0.03, 0.04, 1)
 layer = 10
 
 [node name="TopBar" type="HBoxContainer" parent="HUD"]
-offset_left = 6.0
-offset_top = 2.0
-offset_right = 634.0
-offset_bottom = 18.0
-theme_override_constants/separation = 6
+offset_left = 8.0
+offset_top = 3.0
+offset_right = 952.0
+offset_bottom = 27.0
+theme_override_constants/separation = 8
 
 [node name="HeroName" type="Label" parent="HUD/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(150, 0)
 
 [node name="HeroHpBar" type="ProgressBar" parent="HUD/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 10)
+custom_minimum_size = Vector2(240, 15)
 size_flags_vertical = 4
 show_percentage = false
 
@@ -43,40 +43,51 @@ size_flags_horizontal = 3
 
 [node name="MonsterHpBar" type="ProgressBar" parent="HUD/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 10)
+custom_minimum_size = Vector2(240, 15)
 size_flags_vertical = 4
 show_percentage = false
 
 [node name="MonsterName" type="Label" parent="HUD/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(150, 0)
 horizontal_alignment = 2
 
 [node name="StatusRow" type="HBoxContainer" parent="HUD"]
-offset_left = 6.0
-offset_top = 20.0
-offset_right = 634.0
-offset_bottom = 28.0
+offset_left = 8.0
+offset_top = 28.0
+offset_right = 952.0
+offset_bottom = 40.0
 theme_override_constants/separation = 4
+
+[node name="HeroResLabel" type="Label" parent="HUD/StatusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(22, 0)
+size_flags_vertical = 4
 
 [node name="HeroResource" type="ProgressBar" parent="HUD/StatusRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 5)
+custom_minimum_size = Vector2(120, 8)
 size_flags_vertical = 4
 show_percentage = false
 
-[node name="Spacer2" type="Control" parent="HUD/StatusRow"]
-size_flags_horizontal = 3
+[node name="CompLabel" type="Label" parent="HUD/StatusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+size_flags_vertical = 4
+visible = false
 
 [node name="CompanionHp" type="ProgressBar" parent="HUD/StatusRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 5)
+custom_minimum_size = Vector2(90, 8)
 size_flags_vertical = 4
 show_percentage = false
 visible = false
 
+[node name="Spacer2" type="Control" parent="HUD/StatusRow"]
+size_flags_horizontal = 3
+
 [node name="BattleArea" type="Node2D" parent="."]
-position = Vector2(0, 30)
+position = Vector2(0, 42)
 
 [node name="FloatContainer" type="Node2D" parent="BattleArea"]
 unique_name_in_owner = true
@@ -84,10 +95,10 @@ unique_name_in_owner = true
 [node name="TelegraphPanel" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 180.0
-offset_top = 80.0
-offset_right = 460.0
-offset_bottom = 110.0
+offset_left = 270.0
+offset_top = 120.0
+offset_right = 690.0
+offset_bottom = 165.0
 
 [node name="TelegraphLabel" type="Label" parent="HUD/TelegraphPanel"]
 unique_name_in_owner = true
@@ -97,10 +108,10 @@ horizontal_alignment = 1
 [node name="HeroStatusPanel" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 4.0
-offset_top = 30.0
-offset_right = 130.0
-offset_bottom = 120.0
+offset_left = 6.0
+offset_top = 45.0
+offset_right = 195.0
+offset_bottom = 180.0
 
 [node name="HeroStatusVBox" type="VBoxContainer" parent="HUD/HeroStatusPanel"]
 unique_name_in_owner = true
@@ -110,10 +121,10 @@ theme_override_constants/separation = 0
 [node name="MonsterStatusPanel" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 510.0
-offset_top = 30.0
-offset_right = 636.0
-offset_bottom = 120.0
+offset_left = 765.0
+offset_top = 45.0
+offset_right = 954.0
+offset_bottom = 180.0
 
 [node name="MonsterStatusVBox" type="VBoxContainer" parent="HUD/MonsterStatusPanel"]
 unique_name_in_owner = true
@@ -121,10 +132,10 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="BuffRow" type="HBoxContainer" parent="HUD"]
-offset_left = 6.0
-offset_top = 122.0
-offset_right = 634.0
-offset_bottom = 132.0
+offset_left = 8.0
+offset_top = 215.0
+offset_right = 952.0
+offset_bottom = 230.0
 theme_override_constants/separation = 1
 
 [node name="HeroBuffs" type="HBoxContainer" parent="HUD/BuffRow"]
@@ -140,11 +151,11 @@ alignment = 2
 
 [node name="StatRow" type="HBoxContainer" parent="HUD"]
 unique_name_in_owner = true
-offset_left = 6.0
-offset_top = 232.0
-offset_right = 634.0
-offset_bottom = 244.0
-theme_override_constants/separation = 6
+offset_left = 8.0
+offset_top = 295.0
+offset_right = 952.0
+offset_bottom = 310.0
+theme_override_constants/separation = 8
 
 [node name="HeroStats" type="Label" parent="HUD/StatRow"]
 unique_name_in_owner = true
@@ -154,103 +165,114 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 size_flags_horizontal = 3
 horizontal_alignment = 2
+clip_text = true
 
 [node name="ActionBar" type="VBoxContainer" parent="HUD"]
-offset_left = 6.0
-offset_top = 246.0
-offset_right = 634.0
-offset_bottom = 288.0
-theme_override_constants/separation = 2
+offset_left = 8.0
+offset_top = 316.0
+offset_right = 952.0
+offset_bottom = 420.0
+theme_override_constants/separation = 3
 
 [node name="ActionRow1" type="HBoxContainer" parent="HUD/ActionBar"]
-theme_override_constants/separation = 2
+theme_override_constants/separation = 3
 
 [node name="AtkBtn" type="Button" parent="HUD/ActionBar/ActionRow1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 20)
+custom_minimum_size = Vector2(90, 44)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="Skill0Btn" type="Button" parent="HUD/ActionBar/ActionRow1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 20)
+custom_minimum_size = Vector2(90, 44)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="Skill1Btn" type="Button" parent="HUD/ActionBar/ActionRow1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 20)
+custom_minimum_size = Vector2(90, 44)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="UltBtn" type="Button" parent="HUD/ActionBar/ActionRow1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 20)
+custom_minimum_size = Vector2(90, 44)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="ActionRow2" type="HBoxContainer" parent="HUD/ActionBar"]
-theme_override_constants/separation = 2
+theme_override_constants/separation = 3
 
 [node name="PotBtn" type="Button" parent="HUD/ActionBar/ActionRow2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 16)
+custom_minimum_size = Vector2(75, 34)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="CompBtn" type="Button" parent="HUD/ActionBar/ActionRow2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 16)
+custom_minimum_size = Vector2(75, 34)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="FleeBtn" type="Button" parent="HUD/ActionBar/ActionRow2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 16)
+custom_minimum_size = Vector2(75, 34)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "Flee"
 
 [node name="AutoBtn" type="Button" parent="HUD/ActionBar/ActionRow2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 16)
+custom_minimum_size = Vector2(75, 34)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "Auto"
 
 [node name="LogBtn" type="Button" parent="HUD/ActionBar/ActionRow2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 16)
+custom_minimum_size = Vector2(60, 34)
 size_flags_horizontal = 3
+size_flags_vertical = 3
 text = "Log"
+visible = false
 
 [node name="SkillInfoLabel" type="Label" parent="HUD"]
 unique_name_in_owner = true
-offset_left = 6.0
-offset_top = 290.0
-offset_right = 634.0
-offset_bottom = 302.0
+offset_left = 8.0
+offset_top = 424.0
+offset_right = 952.0
+offset_bottom = 440.0
 clip_text = true
 
 [node name="TurnLabel" type="Label" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 6.0
-offset_top = 290.0
-offset_right = 634.0
-offset_bottom = 302.0
+offset_left = 8.0
+offset_top = 424.0
+offset_right = 952.0
+offset_bottom = 440.0
 
 [node name="CombatLog" type="RichTextLabel" parent="HUD"]
 unique_name_in_owner = true
-offset_left = 6.0
-offset_top = 304.0
-offset_right = 634.0
-offset_bottom = 358.0
+offset_left = 8.0
+offset_top = 442.0
+offset_right = 952.0
+offset_bottom = 538.0
 bbcode_enabled = true
 scroll_following = true
 
 [node name="ResultOverlay" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-offset_left = 170.0
-offset_top = 60.0
-offset_right = 470.0
-offset_bottom = 220.0
+offset_left = 230.0
+offset_top = 40.0
+offset_right = 730.0
+offset_bottom = 440.0
 
 [node name="ResultVBox" type="VBoxContainer" parent="HUD/ResultOverlay"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 alignment = 1

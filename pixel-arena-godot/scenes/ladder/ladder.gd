@@ -48,9 +48,12 @@ func _ready() -> void:
 
 	_load_data()
 	_setup_background()
-	ThemeManager.style_button(fight_btn, ThemeManager.COLOR_GOLD_BRIGHT)
-	ThemeManager.style_button(back_btn)
+	ThemeManager.style_stone_button(fight_btn, ThemeManager.COLOR_GOLD_BRIGHT)
+	ThemeManager.style_stone_button(back_btn)
 
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("menu")
 
 	# Check if returning from battle
 	var result: String = _gs._ladder_result
@@ -134,7 +137,7 @@ func _show_picker() -> void:
 	wins_label.visible = true
 	opponent_preview.visible = false
 	fight_btn.text = "Start Climb"
-	fight_btn.custom_minimum_size = Vector2(100, 20)
+	fight_btn.custom_minimum_size = Vector2(160, 30)
 	fight_btn.visible = true
 	back_btn.text = "Back"
 	back_btn.visible = true
@@ -188,7 +191,7 @@ func _show_follower_pick() -> void:
 	wins_label.add_theme_color_override("font_color", ThemeManager.COLOR_BORDER_GOLD)
 	wins_label.visible = true
 	fight_btn.text = "FIGHT!"
-	fight_btn.custom_minimum_size = Vector2(100, 20)
+	fight_btn.custom_minimum_size = Vector2(160, 30)
 	fight_btn.visible = true
 	back_btn.text = "Forfeit"
 	back_btn.visible = true
@@ -258,19 +261,28 @@ func _add_opponent_sprite(parent: Node, class_key: String) -> void:
 	var safe_key := class_key if not class_key.is_empty() else "barbarian"
 	var tex = load(HERO_SPRITE_PATH + safe_key + "_base.png")
 	if tex:
+		var border := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.1, 0.1, 0.15)
+		sb.border_color = ThemeManager.get_class_color(safe_key)
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(3)
+		sb.set_content_margin_all(3)
+		border.add_theme_stylebox_override("panel", sb)
 		var tex_rect := TextureRect.new()
 		tex_rect.texture = tex
 		tex_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
 		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex_rect.custom_minimum_size = Vector2(48, 48)
+		tex_rect.custom_minimum_size = Vector2(80, 80)
 		tex_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		parent.add_child(tex_rect)
+		border.add_child(tex_rect)
+		parent.add_child(border)
 
 
 func _add_label(parent: Node, text: String, font_size: int, color: Color) -> void:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", font_size)
+	lbl.add_theme_font_size_override("font_size", maxi(font_size, ThemeManager.FONT_SIZES["small"]))
 	lbl.add_theme_color_override("font_color", color)
 	parent.add_child(lbl)
 
@@ -302,8 +314,56 @@ func _rebuild_follower_ui() -> void:
 
 	for i in range(_gs.followers.size()):
 		var f: Dictionary = _gs.followers[i]
-		var btn := Button.new()
-		# Show name + buff summary
+		var rarity_str: String = str(f.get("rarity", "common"))
+		var is_selected: bool = (i == _companion_index)
+		var accent: Color
+		if is_selected:
+			accent = ThemeManager.COLOR_SUCCESS_GREEN
+		else:
+			var rc: String = ThemeManager.RARITY_HEX.get(rarity_str, "#8a8a7a")
+			accent = Color.from_string(rc, Color.GRAY)
+
+		# Card container with rarity-colored border
+		var card := PanelContainer.new()
+		var card_sb := StyleBoxFlat.new()
+		card_sb.bg_color = Color(0.12, 0.10, 0.16)
+		card_sb.border_color = accent
+		card_sb.set_border_width_all(1)
+		card_sb.set_corner_radius_all(2)
+		card_sb.set_content_margin_all(3)
+		card.add_theme_stylebox_override("panel", card_sb)
+		card.custom_minimum_size = Vector2(160, 36)
+
+		var card_hbox := HBoxContainer.new()
+		card_hbox.add_theme_constant_override("separation", 4)
+		card.add_child(card_hbox)
+
+		# Follower mini-icon (24x24)
+		var fname: String = str(f.get("name", "")).to_snake_case()
+		var fpath := "res://assets/sprites/generated/followers/" + fname + ".png"
+		if ResourceLoader.exists(fpath):
+			var ftex = load(fpath)
+			if ftex:
+				var ficon := TextureRect.new()
+				ficon.texture = ftex
+				ficon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				ficon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+				ficon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				ficon.custom_minimum_size = Vector2(24, 24)
+				card_hbox.add_child(ficon)
+
+		# Name + buff info
+		var info_vbox := VBoxContainer.new()
+		info_vbox.add_theme_constant_override("separation", 0)
+		card_hbox.add_child(info_vbox)
+
+		var name_lbl := Label.new()
+		name_lbl.text = str(f.get("name", "?"))
+		name_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		name_lbl.add_theme_color_override("font_color", accent)
+		name_lbl.clip_text = true
+		info_vbox.add_child(name_lbl)
+
 		var buff_text: String = ""
 		var buff: Dictionary = f.get("buff", {})
 		if buff.has("hp"):
@@ -313,30 +373,21 @@ func _rebuild_follower_ui() -> void:
 				buff_text += " "
 			buff_text += "+" + str(int(buff["base_dmg"])) + "DMG"
 		if buff_text != "":
-			btn.text = str(f.get("name", "?")) + " (" + buff_text + ")"
-		else:
-			btn.text = str(f.get("name", "?"))
-		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		btn.custom_minimum_size = Vector2(80, 20)
-		var rarity_str: String = str(f.get("rarity", "common"))
-		if i == _companion_index:
-			btn.add_theme_color_override("font_color", ThemeManager.COLOR_SUCCESS_GREEN)
-			var style := ThemeManager.make_follower_btn_style(ThemeManager.COLOR_SUCCESS_GREEN)
-			btn.add_theme_stylebox_override("normal", style)
-			var hover := style.duplicate()
-			hover.bg_color = Color(0.18, 0.14, 0.20)
-			btn.add_theme_stylebox_override("hover", hover)
-		else:
-			var rc: String = ThemeManager.RARITY_HEX.get(rarity_str, "#8a8a7a")
-			var rcol := Color.from_string(rc, Color.GRAY)
-			btn.add_theme_color_override("font_color", rcol)
-			var style := ThemeManager.make_follower_btn_style(rcol)
-			btn.add_theme_stylebox_override("normal", style)
-			var hover := style.duplicate()
-			hover.bg_color = Color(0.18, 0.14, 0.20)
-			btn.add_theme_stylebox_override("hover", hover)
-		btn.pressed.connect(_toggle_companion.bind(i))
-		comp_flow.add_child(btn)
+			var buff_lbl := Label.new()
+			buff_lbl.text = buff_text
+			buff_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+			buff_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
+			info_vbox.add_child(buff_lbl)
+
+		# Click handler via invisible button overlay
+		var click_btn := Button.new()
+		click_btn.flat = true
+		click_btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		click_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		click_btn.pressed.connect(_toggle_companion.bind(i))
+		card.add_child(click_btn)
+
+		comp_flow.add_child(card)
 
 
 func _toggle_companion(idx: int) -> void:
@@ -639,7 +690,7 @@ func _show_intermission(won: bool, earned_follower: Dictionary) -> void:
 		wins_label.text = "ROUND " + str(run.get("wins", 0)) + " COMPLETE!"
 		wins_label.add_theme_color_override("font_color", ThemeManager.COLOR_SUCCESS_GREEN)
 		fight_btn.text = "FIGHT NEXT"
-		fight_btn.custom_minimum_size = Vector2(100, 20)
+		fight_btn.custom_minimum_size = Vector2(160, 30)
 		fight_btn.visible = true
 		back_btn.text = "End Run"
 		back_btn.visible = true
@@ -671,15 +722,41 @@ func _show_intermission(won: bool, earned_follower: Dictionary) -> void:
 		else:
 			_add_label(stats_vbox, "LOST vs " + str(last_fight.get("name", "?")), 8, ThemeManager.COLOR_HP_RED)
 
-	# Earned follower card
+	# Earned follower card with sprite
 	if not earned_follower.is_empty():
 		var earn_panel := PanelContainer.new()
-		_dynamic_container.add_child(earn_panel)
-		var earn_vbox := VBoxContainer.new()
-		earn_vbox.add_theme_constant_override("separation", 1)
-		earn_panel.add_child(earn_vbox)
 		var rc: String = ThemeManager.RARITY_HEX.get(earned_follower.get("rarity", "common"), "#aaa")
 		var rcol := Color.from_string(rc, Color.WHITE)
+		var earn_sb := StyleBoxFlat.new()
+		earn_sb.bg_color = Color(0.1, 0.1, 0.15)
+		earn_sb.border_color = rcol
+		earn_sb.set_border_width_all(2)
+		earn_sb.set_corner_radius_all(3)
+		earn_sb.set_content_margin_all(4)
+		earn_panel.add_theme_stylebox_override("panel", earn_sb)
+		_dynamic_container.add_child(earn_panel)
+
+		var earn_hbox := HBoxContainer.new()
+		earn_hbox.add_theme_constant_override("separation", 6)
+		earn_panel.add_child(earn_hbox)
+
+		# Follower sprite (64x64)
+		var fname: String = str(earned_follower.get("name", "")).to_snake_case()
+		var fpath := "res://assets/sprites/generated/followers/" + fname + ".png"
+		if ResourceLoader.exists(fpath):
+			var ftex = load(fpath)
+			if ftex:
+				var ficon := TextureRect.new()
+				ficon.texture = ftex
+				ficon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				ficon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT_PROPORTIONAL
+				ficon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				ficon.custom_minimum_size = Vector2(64, 64)
+				earn_hbox.add_child(ficon)
+
+		var earn_vbox := VBoxContainer.new()
+		earn_vbox.add_theme_constant_override("separation", 1)
+		earn_hbox.add_child(earn_vbox)
 		_add_label(earn_vbox, "NEW FOLLOWER!", 8, ThemeManager.COLOR_GOLD_BRIGHT)
 		_add_label(earn_vbox, str(earned_follower.get("name", "?")) + " (" + str(earned_follower.get("rarity", "?")) + ")", 8, rcol)
 		var buff_desc: String = str(earned_follower.get("buff_desc", ""))

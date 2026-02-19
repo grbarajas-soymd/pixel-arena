@@ -31,8 +31,8 @@ const FONT_SIZES: Dictionary = {
 
 ## Rarity colors — matches items.json _rarity_colors.
 const RARITY_COLORS: Dictionary = {
-	"starter": Color(0.416, 0.416, 0.353),
-	"common": Color(0.541, 0.541, 0.478),
+	"starter": Color(0.65, 0.63, 0.55),
+	"common": Color(0.72, 0.70, 0.62),
 	"uncommon": Color(0.290, 0.541, 0.290),
 	"rare": Color(0.290, 0.416, 0.604),
 	"epic": Color(0.541, 0.290, 0.604),
@@ -42,8 +42,8 @@ const RARITY_COLORS: Dictionary = {
 
 ## Rarity hex strings for BBCode usage.
 const RARITY_HEX: Dictionary = {
-	"starter": "#6a6a5a",
-	"common": "#8a8a7a",
+	"starter": "#a6a18c",
+	"common": "#b8b39e",
 	"uncommon": "#4a8a4a",
 	"rare": "#4a6a9a",
 	"epic": "#8a4a9a",
@@ -245,6 +245,50 @@ static func style_button(btn: Button, border_color: Color = COLOR_BORDER_GOLD) -
 	var disabled := normal.duplicate()
 	disabled.bg_color = Color(0.12, 0.12, 0.20)
 	disabled.border_color = border_color.darkened(0.5)
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
+
+
+## Minecraft-style beveled stone button — lighter face with thick dark shadow on
+## bottom/right edges for a raised 3D look. Pressed inverts the bevel. Tint
+## shifts the stone hue to match context (gold default, red for danger, etc.).
+static func style_stone_button(btn: Button, tint: Color = COLOR_BORDER_GOLD) -> void:
+	var base := Color(0.14, 0.14, 0.25).lerp(tint, 0.08)
+	var face := base.lightened(0.12)
+	var shadow := base.darkened(0.40)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = face
+	normal.border_color = shadow
+	normal.border_width_top = 1
+	normal.border_width_left = 1
+	normal.border_width_bottom = 3
+	normal.border_width_right = 3
+	normal.set_corner_radius_all(1)
+	normal.content_margin_left = 8
+	normal.content_margin_right = 8
+	normal.content_margin_top = 4
+	normal.content_margin_bottom = 6
+
+	var hover := normal.duplicate()
+	hover.bg_color = face.lightened(0.12)
+	hover.border_color = shadow.lightened(0.08)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = base.darkened(0.08)
+	pressed.border_width_top = 3
+	pressed.border_width_left = 3
+	pressed.border_width_bottom = 1
+	pressed.border_width_right = 1
+	pressed.content_margin_top = 6
+	pressed.content_margin_bottom = 4
+
+	var disabled := normal.duplicate()
+	disabled.bg_color = Color(0.14, 0.13, 0.22)
+	disabled.border_color = Color(0.10, 0.09, 0.16)
 
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)

@@ -444,6 +444,7 @@ func _show_sync_dialog(cloud_data: Dictionary) -> void:
 	var use_cloud_btn := Button.new()
 	use_cloud_btn.text = "Use Cloud"
 	use_cloud_btn.add_theme_font_size_override("font_size", 8)
+	ThemeManager.style_stone_button(use_cloud_btn, ThemeManager.COLOR_ACCENT_TEAL)
 	use_cloud_btn.pressed.connect(func():
 		_apply_cloud_save(cloud_data)
 		overlay.queue_free()
@@ -453,6 +454,7 @@ func _show_sync_dialog(cloud_data: Dictionary) -> void:
 	var use_local_btn := Button.new()
 	use_local_btn.text = "Use Local"
 	use_local_btn.add_theme_font_size_override("font_size", 8)
+	ThemeManager.style_stone_button(use_local_btn)
 	use_local_btn.pressed.connect(func():
 		_upload_to_cloud_if_logged_in()
 		overlay.queue_free()
@@ -462,6 +464,7 @@ func _show_sync_dialog(cloud_data: Dictionary) -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.add_theme_font_size_override("font_size", 8)
+	ThemeManager.style_stone_button(cancel_btn, ThemeManager.COLOR_BORDER_DIM)
 	cancel_btn.pressed.connect(func(): overlay.queue_free())
 	btn_row.add_child(cancel_btn)
 

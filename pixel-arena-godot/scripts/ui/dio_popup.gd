@@ -37,6 +37,8 @@ static func spawn(parent: Node, context: String, _quality: int = -1) -> DioPopup
 		chance = 0.5
 	elif context in ["death", "victory"]:
 		chance = 0.6
+	elif context == "big_hit":
+		chance = 0.15
 	if randf() > chance:
 		return null
 	_last_spawn_msec = now
@@ -55,7 +57,7 @@ var _entrance: String = "slide_left"
 func _configure(context: String) -> void:
 	var sprites: Array = DioData.get_sprites(context)
 	_sprite_key = DioData.pick_random(sprites) if not sprites.is_empty() else "dio_idle"
-	var lines: Array = DioData.get_lines(context)
+	var lines: Array = DioData.get_lines_with_live(context)
 	_text = DioData.pick_random(lines) if not lines.is_empty() else "..."
 	var entrances: Array = DioData.get_entrances(context)
 	_entrance = DioData.pick_random(entrances) if not entrances.is_empty() else "slide_left"

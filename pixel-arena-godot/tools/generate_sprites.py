@@ -438,6 +438,12 @@ NPC_SPRITES = {
         f"{DIO_BASE}, slow sarcastic clapping, deadpan expression, "
         "unimpressed stare, golf clap pose, minimal effort"
     ),
+    "merchant_npc": (
+        "hooded mysterious merchant figure, dark cloak, "
+        "lantern hanging from belt, bags of goods and trinkets, "
+        "glowing eyes under hood, shrewd expression, coin purse visible, "
+        "fantasy RPG shopkeeper, warm lantern light"
+    ),
 }
 
 GEAR_ICONS = {
@@ -808,6 +814,60 @@ EVENT_ICONS = {
     "event_potion": (
         "red health potion bottle, glass flask with glowing red liquid, "
         "healing elixir, cork stopper, bubbling"
+    ),
+    "event_shrine": (
+        "glowing ancient altar shrine, mystical purple energy, "
+        "blood offering pedestal, dark stone shrine with magical runes"
+    ),
+    "event_trap_spike": (
+        "sharp metal floor spikes trap, iron spike pit, "
+        "mechanical dungeon hazard, bloody steel points"
+    ),
+    "event_trap_poison": (
+        "green toxic poison gas cloud, bubbling poison flask, "
+        "noxious fumes, glowing green gas trap"
+    ),
+}
+
+# Larger event icons for room overlays (64x64 output)
+EVENT_ICON_SIZE_LG = 64
+
+EVENT_ICONS_LG = {
+    "event_treasure_lg": (
+        "ornate golden treasure chest overflowing with gems and gold coins, "
+        "open lid, sparkle gleam, jewels spilling out, detailed RPG loot chest"
+    ),
+    "event_rest_lg": (
+        "warm campfire with bedroll beside it, safe haven resting spot, "
+        "orange firelight glow, comfortable camp setup, starry atmosphere"
+    ),
+    "event_merchant_lg": (
+        "merchant's market stall with hanging goods, warm lantern light, "
+        "potions and weapons on display, wooden shop counter, fantasy bazaar"
+    ),
+    "event_shrine_lg": (
+        "glowing mystical shrine altar, purple arcane energy swirling, "
+        "ancient stone pedestal with magical runes, dark temple setting"
+    ),
+    "event_cage_lg": (
+        "iron prison cage with glowing padlock, trapped creature silhouette, "
+        "thick metal bars, dungeon floor, flickering torchlight"
+    ),
+}
+
+# Misc icons for overlays (48x48 output, skill-style)
+MISC_ICONS = {
+    "icon_victory": (
+        "golden trophy laurel wreath, victory crown symbol, "
+        "radiant golden light, triumphant achievement emblem"
+    ),
+    "icon_defeat": (
+        "cracked skull on dark ground, death symbol, "
+        "broken bones, dark red glow, defeat and fallen warrior"
+    ),
+    "icon_potion_lg": (
+        "glass health potion bottle, glowing red bubbling liquid, "
+        "cork stopper, detailed fantasy healing elixir, magical shimmer"
     ),
 }
 
@@ -1399,6 +1459,58 @@ def gen_slot_icon(slot_key: str, desc: str, seed: int = -1) -> "Path | None":
     return out_path
 
 
+def gen_event_icon_lg(icon_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate a large event icon (64x64) for room overlays."""
+    out_path = OUTPUT_DIR / "events" / f"{icon_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(icon_key)
+
+    print(f"  Generating event icon: {icon_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_ICON}, {desc}"
+    img = generate_image(prompt, seed=seed)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = downscale_nearest(img, EVENT_ICON_SIZE_LG)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
+def gen_misc_icon(icon_key: str, desc: str, seed: int = -1) -> "Path | None":
+    """Generate a misc overlay icon (48x48, skill-style with bg removal)."""
+    out_path = OUTPUT_DIR / "icons" / f"{icon_key}.png"
+    if out_path.exists() and not CONFIG.get("force"):
+        print(f"  SKIP (exists): {out_path.name}")
+        return out_path
+
+    if seed == -1:
+        seed = _name_seed(icon_key)
+
+    print(f"  Generating misc icon: {icon_key} (seed={seed})...", end=" ", flush=True)
+    prompt = f"{STYLE_SKILL}, {desc}"
+    img = generate_image(prompt, seed=seed)
+    if img is None:
+        print("FAILED")
+        return None
+
+    img = remove_bg(img)
+    img = downscale_nearest(img, SKILL_ICON_SIZE)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+    print(f"OK -> {out_path.name}")
+    return out_path
+
+
 def gen_ui_texture(tex_key: str, desc: str, seed: int = -1) -> "Path | None":
     """Generate a UI texture (64x64 panels, 64x24 buttons). No background removal."""
     out_path = OUTPUT_DIR / "ui" / f"{tex_key}.png"
@@ -1583,6 +1695,32 @@ def generate_event_icons():
     return done
 
 
+def generate_large_event_icons():
+    """Generate large (64x64) event icons for room overlays."""
+    print("\n=== LARGE EVENT ICONS (64x64) ===")
+    total = len(EVENT_ICONS_LG)
+    done = 0
+    for icon_key, desc in EVENT_ICONS_LG.items():
+        result = gen_event_icon_lg(icon_key, desc)
+        if result:
+            done += 1
+    print(f"\nLarge event icons: {done}/{total} completed")
+    return done
+
+
+def generate_misc_icons():
+    """Generate misc overlay icons (victory, defeat, potion)."""
+    print("\n=== MISC ICONS (48x48) ===")
+    total = len(MISC_ICONS)
+    done = 0
+    for icon_key, desc in MISC_ICONS.items():
+        result = gen_misc_icon(icon_key, desc)
+        if result:
+            done += 1
+    print(f"\nMisc icons: {done}/{total} completed")
+    return done
+
+
 def generate_slot_icons():
     """Generate all slot placeholder icons."""
     print("\n=== SLOT ICONS (32x32) ===")
@@ -1704,6 +1842,12 @@ def generate_single(name: str):
     if name in EVENT_ICONS:
         gen_slot_icon(name, EVENT_ICONS[name])
         return
+    if name in EVENT_ICONS_LG:
+        gen_event_icon_lg(name, EVENT_ICONS_LG[name])
+        return
+    if name in MISC_ICONS:
+        gen_misc_icon(name, MISC_ICONS[name])
+        return
 
     print(f"Unknown sprite name: {name}")
     print("Valid names:")
@@ -1714,6 +1858,8 @@ def generate_single(name: str):
     print(f"  Gear: {', '.join(GEAR_ICONS.keys())}")
     print(f"  Slot icons: {', '.join(SLOT_ICONS.keys())}")
     print(f"  Event icons: {', '.join(EVENT_ICONS.keys())}")
+    print(f"  Large event icons: {', '.join(EVENT_ICONS_LG.keys())}")
+    print(f"  Misc icons: {', '.join(MISC_ICONS.keys())}")
     print(f"  NPCs: {', '.join(NPC_SPRITES.keys())}")
     print(f"  Skills: {', '.join(SKILL_ICON_SPRITES.keys())}")
     print(f"  Ultimates: {', '.join(ULT_ICON_SPRITES.keys())}")
@@ -1841,6 +1987,14 @@ def show_status():
     event_total = len(EVENT_ICONS)
     print(f"Event icons (32x32): {event_count}/{event_total}")
 
+    event_lg_count = sum(1 for k in EVENT_ICONS_LG if (OUTPUT_DIR / "events" / f"{k}.png").exists())
+    event_lg_total = len(EVENT_ICONS_LG)
+    print(f"Event icons lg (64x64): {event_lg_count}/{event_lg_total}")
+
+    misc_count = sum(1 for k in MISC_ICONS if (OUTPUT_DIR / "icons" / f"{k}.png").exists())
+    misc_total = len(MISC_ICONS)
+    print(f"Misc icons (48x48): {misc_count}/{misc_total}")
+
     npc_count = count_files(OUTPUT_DIR / "npcs")
     npc_total = len(NPC_SPRITES)
     print(f"NPCs (128x128):      {npc_count}/{npc_total}")
@@ -1871,8 +2025,8 @@ def show_status():
     ui_tex_total = len(UI_TEXTURES)
     print(f"UI textures (64x64/64x24): {ui_tex_count}/{ui_tex_total}")
 
-    total = hero_total + monster_total + follower_total + gear_total + slot_total + event_total + npc_total + skill_total + logo_total + bg_total + vfx_total + spell_vfx_total + ui_tex_total
-    done = hero_count + monster_count + follower_count + gear_count + slot_count + event_count + npc_count + skill_count + logo_count + bg_count + vfx_count + spell_vfx_count + ui_tex_count
+    total = hero_total + monster_total + follower_total + gear_total + slot_total + event_total + event_lg_total + misc_total + npc_total + skill_total + logo_total + bg_total + vfx_total + spell_vfx_total + ui_tex_total
+    done = hero_count + monster_count + follower_count + gear_count + slot_count + event_count + event_lg_count + misc_count + npc_count + skill_count + logo_count + bg_count + vfx_count + spell_vfx_count + ui_tex_count
     print(f"\nTotal:               {done}/{total} assets")
 
     # Check model files
@@ -1902,7 +2056,7 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Show sprite + model status")
     parser.add_argument("--category",
-                        choices=["heroes", "monsters", "followers", "gear", "slot_icons", "event_icons", "npcs", "skills", "logo", "backgrounds", "vfx", "spell_vfx", "ui_textures", "all"],
+                        choices=["heroes", "monsters", "followers", "gear", "slot_icons", "event_icons", "event_icons_lg", "misc_icons", "npcs", "skills", "logo", "backgrounds", "vfx", "spell_vfx", "ui_textures", "all"],
                         help="Generate assets by category")
     parser.add_argument("--single", type=str,
                         help="Generate a single sprite by name")
@@ -1980,6 +2134,10 @@ def main():
             generate_slot_icons()
         if args.category in ("event_icons", "all"):
             generate_event_icons()
+        if args.category in ("event_icons_lg", "all"):
+            generate_large_event_icons()
+        if args.category in ("misc_icons", "all"):
+            generate_misc_icons()
         if args.category in ("npcs", "all"):
             generate_npcs()
         if args.category in ("skills", "all"):

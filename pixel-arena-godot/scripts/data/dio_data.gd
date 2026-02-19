@@ -2,6 +2,8 @@ class_name DioData
 ## Static data for Dio popup appearances — dialogue pools, sprite mappings,
 ## entrance animation configs.  No autoload needed; preloaded by DioPopup.
 
+const _DioLiveLines = preload("res://scripts/data/dio_live_lines.gd")
+
 # ── Sprite variant paths (filename without extension, under npcs/) ────────
 
 const SPRITES_PERFECT_GEAR: Array = [
@@ -19,6 +21,9 @@ const SPRITES_VICTORY: Array = [
 ]
 const SPRITES_BOSS_KILL: Array = [
 	"dio_impressed", "dio_pointing", "dio_dramatic",
+]
+const SPRITES_BIG_HIT: Array = [
+	"dio_impressed", "dio_laughing", "dio_dramatic", "dio_pointing",
 ]
 
 # ── Dialogue pools ────────────────────────────────────────────────────────
@@ -84,12 +89,22 @@ const BOSS_KILL_LINES: Array = [
 	"The boss had a family. Just kidding, it was spawned from void energy.",
 ]
 
+const BIG_HIT_LINES: Array = [
+	"Was that supposed to happen? Because that was MAGNIFICENT.",
+	"Even I felt that one. And I don't have a body.",
+	"That hit had WEIGHT. The crowd goes wild — well, just me.",
+	"Somewhere, a damage chart just caught fire.",
+	"THAT'S what I keep you around for. Do it again.",
+	"The ground shook. Or was that just my excitement?",
+]
+
 # ── Entrance animation preferences per context ────────────────────────────
 
 const ENTRANCES_GEAR: Array = ["peek_left", "peek_right", "pop_bottom"]
 const ENTRANCES_DEATH: Array = ["slide_left", "slide_right", "pop_bottom", "peek_left", "peek_right"]
 const ENTRANCES_VICTORY: Array = ["slide_left", "slide_right", "pop_bottom"]
 const ENTRANCES_BOSS: Array = ["pop_bottom", "slide_right"]
+const ENTRANCES_BIG_HIT: Array = ["peek_left", "peek_right", "pop_bottom"]
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -100,6 +115,7 @@ static func get_sprites(context: String) -> Array:
 		"death":        return SPRITES_DEATH
 		"victory":      return SPRITES_VICTORY
 		"boss_kill":    return SPRITES_BOSS_KILL
+		"big_hit":      return SPRITES_BIG_HIT
 	return ["dio_idle"]
 
 
@@ -110,6 +126,7 @@ static func get_lines(context: String) -> Array:
 		"death":        return DEATH_LINES
 		"victory":      return VICTORY_LINES
 		"boss_kill":    return BOSS_KILL_LINES
+		"big_hit":      return BIG_HIT_LINES
 	return ["..."]
 
 
@@ -119,7 +136,20 @@ static func get_entrances(context: String) -> Array:
 		"death":                      return ENTRANCES_DEATH
 		"victory":                    return ENTRANCES_VICTORY
 		"boss_kill":                  return ENTRANCES_BOSS
+		"big_hit":                    return ENTRANCES_BIG_HIT
 	return ["slide_left", "slide_right"]
+
+
+static func get_lines_with_live(context: String) -> Array:
+	var hardcoded: Array = get_lines(context)
+	var live: Array = _DioLiveLines.get_live(context)
+	if live.is_empty():
+		return hardcoded
+	var merged: Array = hardcoded.duplicate()
+	for line in live:
+		if line is String and not line.is_empty():
+			merged.append(line)
+	return merged
 
 
 static func pick_random(arr: Array):

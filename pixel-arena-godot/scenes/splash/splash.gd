@@ -44,6 +44,11 @@ func _ready() -> void:
 		fallback.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		add_child(fallback)
 
+	# Start music
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("menu")
+
 	# Start splash sequence
 	_logo.modulate.a = 0.0
 	_skip_label.modulate.a = 0.0

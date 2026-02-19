@@ -46,8 +46,17 @@ func _ready() -> void:
 	arena_btn.pressed.connect(_on_arena)
 	craft_btn.pressed.connect(_open_craft_overlay)
 	menu_btn.pressed.connect(func(): TransitionManager.fade_to_scene("res://scenes/main_menu/main_menu.tscn"))
+
+	# Stone texture nav buttons
+	for nav_btn in [dungeon_btn, ladder_btn, arena_btn, craft_btn, menu_btn]:
+		ThemeManager.style_stone_button(nav_btn)
+		nav_btn.custom_minimum_size.y = 30
 	_gs.dust_changed.connect(func(_a): _update_currencies())
 	_gs.gold_changed.connect(func(_a): _update_currencies())
+
+	var sfx := get_node_or_null("/root/SfxManager")
+	if sfx:
+		sfx.play_context("menu")
 
 	_load_skill_data()
 	_setup_background()
@@ -60,6 +69,17 @@ func _ready() -> void:
 	_build_center_panel()
 	_build_right_panel()
 	_update_currencies()
+
+	# Bug report button in header row
+	var header_row := dust_label.get_parent()
+	if header_row:
+		var bug_btn := Button.new()
+		bug_btn.text = "Bug?"
+		bug_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+		bug_btn.custom_minimum_size = Vector2(40, 20)
+		ThemeManager.style_stone_button(bug_btn, ThemeManager.COLOR_HP_RED)
+		bug_btn.pressed.connect(_open_bug_report)
+		header_row.add_child(bug_btn)
 
 
 func _load_skill_data() -> void:
@@ -80,7 +100,7 @@ func _setup_background() -> void:
 		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		bg.modulate = Color(0.15, 0.15, 0.25, 1.0)
+		bg.modulate = Color(0.3, 0.3, 0.4, 1.0)
 		var old_bg = $Background
 		if old_bg:
 			old_bg.queue_free()
@@ -91,6 +111,13 @@ func _setup_background() -> void:
 func _update_currencies() -> void:
 	dust_label.text = "Dust: " + str(_gs.dust)
 	gold_label.text = "Gold: " + str(_gs.gold)
+
+
+func _open_bug_report() -> void:
+	var BugReportOverlay := preload("res://scripts/ui/bug_report_overlay.gd")
+	var overlay := BugReportOverlay.new()
+	add_child(overlay)
+	overlay.show_report()
 
 
 # ============ LEFT PANEL: EQUIPMENT + GEAR BAG ============
@@ -118,19 +145,42 @@ func _build_left_panel() -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.clip_text = true
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(0, 14)
+		btn.custom_minimum_size = Vector2(0, 26)
 		var gear = _gs.equipment.get(slot, {})
 		if gear and not gear.is_empty():
 			var item_name: String = str(gear.get("name", slot.capitalize()))
 			var rarity: String = str(gear.get("rarity", "common"))
-			var affix_count: int = gear.get("affixes", []).size()
-			var affix_tag: String = " [" + str(affix_count) + "A]" if affix_count > 0 else ""
-			btn.text = SLOT_LABELS[slot] + ": " + item_name + affix_tag
+			# Add gear icon
+			var gear_icon := IconMap.get_item_icon(str(gear.get("base_key", "")))
+			if gear_icon:
+				btn.icon = gear_icon
+			# Inline key stat
+			var stat_tag: String = ""
+			var item_stats: Dictionary = gear.get("stats", {})
+			match slot:
+				"weapon":
+					if item_stats.has("baseDmg"):
+						stat_tag = " DMG:" + str(roundi(float(item_stats["baseDmg"])))
+				"helmet", "chest":
+					if item_stats.has("baseDef"):
+						stat_tag = " DEF:" + str(roundi(float(item_stats["baseDef"])))
+				"boots":
+					if item_stats.has("baseSpd"):
+						stat_tag = " SPD:" + str(roundi(float(item_stats["baseSpd"])))
+				"accessory":
+					if item_stats.has("baseHp"):
+						stat_tag = " HP:" + str(roundi(float(item_stats["baseHp"])))
+			btn.text = SLOT_LABELS[slot] + ": " + item_name + stat_tag
 			btn.add_theme_color_override("font_color", ThemeManager.get_rarity_color(rarity))
 		else:
+			# Show slot placeholder icon
+			var slot_icon := IconMap.get_slot_icon(slot)
+			if slot_icon:
+				btn.icon = slot_icon
 			btn.text = SLOT_LABELS[slot] + ": [empty]"
 			btn.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		ThemeManager.style_stone_button(btn)
 		btn.pressed.connect(_open_item_picker.bind(slot))
 		equip_vbox.add_child(btn)
 
@@ -160,6 +210,15 @@ func _build_left_panel() -> void:
 		var item: Dictionary = _gs.gear_bag[i]
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 2)
+		# Gear icon (16x16)
+		var bag_icon := IconMap.get_item_icon(str(item.get("base_key", "")))
+		if bag_icon:
+			var icon_rect := TextureRect.new()
+			icon_rect.texture = bag_icon
+			icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.custom_minimum_size = Vector2(16, 16)
+			row.add_child(icon_rect)
 		var lbl := Label.new()
 		var item_name: String = str(item.get("name", "?"))
 		var rarity: String = str(item.get("rarity", "common"))
@@ -173,7 +232,8 @@ func _build_left_panel() -> void:
 		var dust_btn := Button.new()
 		dust_btn.text = "+" + str(salvage_val)
 		dust_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		dust_btn.custom_minimum_size = Vector2(28, 12)
+		dust_btn.custom_minimum_size = Vector2(40, 22)
+		ThemeManager.style_stone_button(dust_btn, ThemeManager.COLOR_ACCENT_TEAL)
 		dust_btn.pressed.connect(_salvage_gear.bind(i))
 		row.add_child(dust_btn)
 		bag_vbox.add_child(row)
@@ -249,15 +309,53 @@ func _build_center_panel() -> void:
 
 	if _gs.active_follower >= 0 and _gs.active_follower < _gs.followers.size():
 		var fl: Dictionary = _gs.followers[_gs.active_follower]
+		var fl_name: String = str(fl.get("name", fl.get("template_name", "?")))
+		var fl_rarity: String = str(fl.get("rarity", "common"))
+
+		# Follower sprite (48x48) in rarity-bordered panel
+		var f_sprite_name: String = fl_name.to_lower().replace(" ", "_")
+		var f_path := "res://assets/sprites/generated/followers/" + f_sprite_name + ".png"
+		var f_tex = load(f_path)
+		if f_tex:
+			var f_border := PanelContainer.new()
+			var fsb := StyleBoxFlat.new()
+			fsb.bg_color = Color(0.1, 0.1, 0.15)
+			fsb.border_color = ThemeManager.get_rarity_color(fl_rarity)
+			fsb.set_border_width_all(2)
+			fsb.set_corner_radius_all(2)
+			fsb.set_content_margin_all(2)
+			f_border.add_theme_stylebox_override("panel", fsb)
+			f_border.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			var f_icon := TextureRect.new()
+			f_icon.texture = f_tex
+			f_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			f_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			f_icon.custom_minimum_size = Vector2(48, 48)
+			f_border.add_child(f_icon)
+			follower_content.add_child(f_border)
+
 		var fl_label := Label.new()
-		fl_label.text = str(fl.get("name", "?"))
+		fl_label.text = fl_name
 		fl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fl_label.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		fl_label.add_theme_color_override("font_color", ThemeManager.get_rarity_color(fl_rarity))
 		follower_content.add_child(fl_label)
+
+		# Stat line
+		var tmpl = _fdb.get_template(fl.get("template_name", fl_name))
+		if not tmpl.is_empty():
+			var stat_lbl := Label.new()
+			stat_lbl.text = "HP:" + str(int(tmpl.get("combat_hp", 0))) + " DMG:" + str(int(tmpl.get("combat_dmg", 0))) + " DEF:" + str(int(tmpl.get("combat_def", 0)))
+			stat_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			stat_lbl.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["small"])
+			stat_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
+			follower_content.add_child(stat_lbl)
+
 		if _gs.followers.size() > 1:
 			var change_btn := Button.new()
 			change_btn.text = "Change"
 			change_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+			ThemeManager.style_stone_button(change_btn)
 			change_btn.pressed.connect(_cycle_follower)
 			change_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			follower_content.add_child(change_btn)
@@ -265,6 +363,7 @@ func _build_center_panel() -> void:
 		var pick_fl_btn := Button.new()
 		pick_fl_btn.text = "Set Follower"
 		pick_fl_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		ThemeManager.style_stone_button(pick_fl_btn)
 		pick_fl_btn.pressed.connect(_cycle_follower)
 		pick_fl_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		follower_content.add_child(pick_fl_btn)
@@ -360,11 +459,19 @@ func _build_right_panel() -> void:
 	s1_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	s1_btn.clip_text = true
 	s1_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s1_btn.custom_minimum_size = Vector2(0, 32)
 	s1_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(s1_btn)
 	if char_skills.size() > 0 and int(char_skills[0]) < _skills_data.size():
-		s1_btn.text = "S1: " + str(_skills_data[int(char_skills[0])].get("name", "?"))
+		var s1_data: Dictionary = _skills_data[int(char_skills[0])]
+		s1_btn.text = "Skill: " + str(s1_data.get("name", "?"))
+		var s1_icon := IconMap.get_skill_icon(str(s1_data.get("id", "")))
+		if s1_icon:
+			s1_btn.icon = s1_icon
+			s1_btn.expand_icon = true
+			s1_btn.add_theme_constant_override("icon_max_width", 24)
 	else:
-		s1_btn.text = "S1: [pick]"
+		s1_btn.text = "Skill: [pick]"
 	s1_btn.pressed.connect(_open_skill_picker.bind("skill1"))
 	skills_vbox.add_child(s1_btn)
 
@@ -373,11 +480,19 @@ func _build_right_panel() -> void:
 	s2_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	s2_btn.clip_text = true
 	s2_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s2_btn.custom_minimum_size = Vector2(0, 32)
 	s2_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(s2_btn)
 	if char_skills.size() > 1 and int(char_skills[1]) < _skills_data.size():
-		s2_btn.text = "S2: " + str(_skills_data[int(char_skills[1])].get("name", "?"))
+		var s2_data: Dictionary = _skills_data[int(char_skills[1])]
+		s2_btn.text = "Skill: " + str(s2_data.get("name", "?"))
+		var s2_icon := IconMap.get_skill_icon(str(s2_data.get("id", "")))
+		if s2_icon:
+			s2_btn.icon = s2_icon
+			s2_btn.expand_icon = true
+			s2_btn.add_theme_constant_override("icon_max_width", 24)
 	else:
-		s2_btn.text = "S2: [pick]"
+		s2_btn.text = "Skill: [pick]"
 	s2_btn.pressed.connect(_open_skill_picker.bind("skill2"))
 	skills_vbox.add_child(s2_btn)
 
@@ -386,11 +501,19 @@ func _build_right_panel() -> void:
 	ult_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	ult_btn.clip_text = true
 	ult_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ult_btn.custom_minimum_size = Vector2(0, 32)
 	ult_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(ult_btn)
 	if char_ult >= 0 and char_ult < _ults_data.size():
-		ult_btn.text = "ULT: " + str(_ults_data[char_ult].get("name", "?"))
+		var ult_data: Dictionary = _ults_data[char_ult]
+		ult_btn.text = "Ultimate: " + str(ult_data.get("name", "?"))
+		var ult_icon := IconMap.get_skill_icon(str(ult_data.get("id", "")))
+		if ult_icon:
+			ult_btn.icon = ult_icon
+			ult_btn.expand_icon = true
+			ult_btn.add_theme_constant_override("icon_max_width", 24)
 	else:
-		ult_btn.text = "ULT: [pick]"
+		ult_btn.text = "Ultimate: [pick]"
 	ult_btn.pressed.connect(_open_skill_picker.bind("ultimate"))
 	skills_vbox.add_child(ult_btn)
 
@@ -447,6 +570,7 @@ func _open_item_picker(slot: String) -> void:
 		unequip_btn.text = "-- Unequip --"
 		unequip_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		unequip_btn.add_theme_color_override("font_color", ThemeManager.COLOR_ERROR_RED)
+		ThemeManager.style_stone_button(unequip_btn, ThemeManager.COLOR_ERROR_RED)
 		unequip_btn.pressed.connect(_equip_item.bind(-1))
 		list.add_child(unequip_btn)
 
@@ -460,6 +584,10 @@ func _open_item_picker(slot: String) -> void:
 		item_row.add_theme_constant_override("separation", 0)
 		var btn := Button.new()
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# Add gear icon
+		var pick_icon := IconMap.get_item_icon(str(item.get("base_key", "")))
+		if pick_icon:
+			btn.icon = pick_icon
 		var item_name: String = str(item.get("name", "?"))
 		var rarity: String = str(item.get("rarity", "common"))
 		var item_stats: Dictionary = item.get("stats", {})
@@ -469,6 +597,11 @@ func _open_item_picker(slot: String) -> void:
 		btn.text = item_name + " [" + ", ".join(stat_parts) + "]"
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 		btn.add_theme_color_override("font_color", ThemeManager.get_rarity_color(rarity))
+		ThemeManager.style_stone_button(btn)
+		# Highlight currently equipped item
+		if current_gear and not current_gear.is_empty() and str(item.get("id", "")) == str(current_gear.get("id", "_none")):
+			btn.add_theme_color_override("font_color", ThemeManager.COLOR_GOLD_BRIGHT)
+			btn.text = btn.text + " (equipped)"
 		btn.pressed.connect(_equip_item.bind(i))
 		item_row.add_child(btn)
 		# Show affixes if present
@@ -477,7 +610,7 @@ func _open_item_picker(slot: String) -> void:
 			for affix in affixes:
 				var a_lbl := Label.new()
 				a_lbl.text = "  + " + str(affix.get("name", "")) + ": " + str(affix.get("desc", ""))
-				a_lbl.add_theme_font_size_override("font_size", 6)
+				a_lbl.add_theme_font_size_override("font_size", 9)
 				a_lbl.add_theme_color_override("font_color", Color("#ffd700"))
 				item_row.add_child(a_lbl)
 		list.add_child(item_row)
@@ -486,6 +619,7 @@ func _open_item_picker(slot: String) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Cancel"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn, ThemeManager.COLOR_BORDER_DIM)
 	close_btn.pressed.connect(_close_item_picker)
 	item_picker_vbox.add_child(close_btn)
 
@@ -549,17 +683,23 @@ func _open_skill_picker(picker_type: String) -> void:
 		row.add_theme_constant_override("separation", 0)
 		var btn := Button.new()
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# Add skill icon
+		var skill_id: String = str(skill.get("id", ""))
+		var sk_icon := IconMap.get_skill_icon(skill_id)
+		if sk_icon:
+			btn.icon = sk_icon
 		var skill_name: String = str(skill.get("name", "?"))
 		var cd_sec: float = float(skill.get("bcd", 0)) / 1000.0
 		var cost: int = int(skill.get("cost", 0))
 		var label_text: String = skill_name
 		if cd_sec > 0:
-			label_text += " (" + str(cd_sec) + "s"
+			label_text += " (CD:" + str(cd_sec) + "s"
 			if cost > 0:
 				label_text += ", " + str(cost) + " cost"
 			label_text += ")"
 		btn.text = label_text
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+		ThemeManager.style_stone_button(btn)
 		btn.pressed.connect(_select_skill.bind(i))
 		row.add_child(btn)
 		# Show dual descriptions when they differ
@@ -568,13 +708,13 @@ func _open_skill_picker(picker_type: String) -> void:
 		if not d_desc.is_empty() and not a_desc.is_empty():
 			var d_lbl := Label.new()
 			d_lbl.text = "  DG: " + d_desc
-			d_lbl.add_theme_font_size_override("font_size", 6)
+			d_lbl.add_theme_font_size_override("font_size", 9)
 			d_lbl.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 			d_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(d_lbl)
 			var a_lbl := Label.new()
 			a_lbl.text = "  PVP: " + a_desc
-			a_lbl.add_theme_font_size_override("font_size", 6)
+			a_lbl.add_theme_font_size_override("font_size", 9)
 			a_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.7))
 			a_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(a_lbl)
@@ -583,7 +723,7 @@ func _open_skill_picker(picker_type: String) -> void:
 			if not desc.is_empty():
 				var desc_lbl := Label.new()
 				desc_lbl.text = "  " + desc
-				desc_lbl.add_theme_font_size_override("font_size", 6)
+				desc_lbl.add_theme_font_size_override("font_size", 9)
 				desc_lbl.add_theme_color_override("font_color", ThemeManager.COLOR_TEXT_DIM)
 				desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 				row.add_child(desc_lbl)
@@ -592,6 +732,7 @@ func _open_skill_picker(picker_type: String) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Cancel"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
+	ThemeManager.style_stone_button(close_btn, ThemeManager.COLOR_BORDER_DIM)
 	close_btn.pressed.connect(_close_skill_picker)
 	skill_picker_vbox.add_child(close_btn)
 
@@ -711,8 +852,9 @@ func _build_craft_overlay() -> void:
 		var btn := Button.new()
 		btn.text = rarity_labels[i] + " (" + str(cost) + ")"
 		btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		btn.custom_minimum_size = Vector2(68, 20)
+		btn.custom_minimum_size = Vector2(80, 24)
 		btn.add_theme_color_override("font_color", ThemeManager.get_rarity_color(rarity))
+		ThemeManager.style_stone_button(btn, ThemeManager.get_rarity_color(rarity))
 		if _gs.dust < cost:
 			btn.disabled = true
 		btn.pressed.connect(_craft_follower.bind(rarity))
@@ -747,6 +889,19 @@ func _build_craft_overlay() -> void:
 		var f_row := HBoxContainer.new()
 		f_row.add_theme_constant_override("separation", 3)
 
+		# 24x24 follower thumbnail
+		var f_key: String = str(f.get("template_name", f.get("name", ""))).to_snake_case().replace(" ", "_")
+		var f_tex_path := "res://assets/sprites/generated/followers/" + f_key + ".png"
+		if ResourceLoader.exists(f_tex_path):
+			var f_tex: Texture2D = load(f_tex_path)
+			if f_tex:
+				var f_icon := TextureRect.new()
+				f_icon.texture = f_tex
+				f_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				f_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				f_icon.custom_minimum_size = Vector2(24, 24)
+				f_row.add_child(f_icon)
+
 		# Info label
 		var rarity: String = str(f.get("rarity", "common"))
 		var upgrades: int = int(f.get("upgrades", 0))
@@ -768,7 +923,8 @@ func _build_craft_overlay() -> void:
 		var up_btn := Button.new()
 		up_btn.text = "Up(" + str(up_cost) + ")"
 		up_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		up_btn.custom_minimum_size = Vector2(40, 16)
+		up_btn.custom_minimum_size = Vector2(50, 20)
+		ThemeManager.style_stone_button(up_btn, ThemeManager.COLOR_SUCCESS_GREEN)
 		if upgrades >= max_up or _gs.dust < up_cost:
 			up_btn.disabled = true
 		up_btn.pressed.connect(_upgrade_follower.bind(i))
@@ -779,7 +935,8 @@ func _build_craft_overlay() -> void:
 		var dust_btn := Button.new()
 		dust_btn.text = "+" + str(dust_val)
 		dust_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
-		dust_btn.custom_minimum_size = Vector2(30, 16)
+		dust_btn.custom_minimum_size = Vector2(40, 20)
+		ThemeManager.style_stone_button(dust_btn, ThemeManager.COLOR_ACCENT_TEAL)
 		dust_btn.pressed.connect(_dust_follower.bind(i))
 		f_row.add_child(dust_btn)
 
@@ -797,6 +954,7 @@ func _build_craft_overlay() -> void:
 	close_btn.text = "Close"
 	close_btn.add_theme_font_size_override("font_size", ThemeManager.FONT_SIZES["body"])
 	close_btn.custom_minimum_size = Vector2(60, 20)
+	ThemeManager.style_stone_button(close_btn, ThemeManager.COLOR_BORDER_DIM)
 	close_btn.pressed.connect(_close_craft_overlay)
 	craft_vbox.add_child(close_btn)
 
