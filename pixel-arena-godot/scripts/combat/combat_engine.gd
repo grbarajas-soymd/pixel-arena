@@ -3,13 +3,11 @@ extends Node
 ## Runs at 50ms tick intervals using _process accumulator.
 class_name CombatEngine
 
-signal combat_started
 signal combat_ended(winner: Dictionary)
 signal damage_dealt(attacker: Dictionary, target: Dictionary, amount: float, info: Dictionary)
 signal melee_attack(attacker: Dictionary, target: Dictionary, weapon_type: String)
 signal ranged_attack(attacker: Dictionary, weapon_type: String)
 signal spell_cast(caster: Dictionary, spell_name: String)
-signal projectile_spawned(proj: Dictionary)
 signal float_spawned(x: float, y: float, text: String, color: String)
 signal log_added(time_sec: float, text: String, log_type: String)
 
@@ -48,7 +46,6 @@ func setup(hero1: Dictionary, hero2: Dictionary) -> void:
 
 
 func start() -> void:
-	combat_started.emit()
 	set_process(true)
 
 
@@ -453,7 +450,6 @@ func _do_attack(h: Dictionary, t: int) -> bool:
 			"attacker": h, "target_info": tg, "hit_time": t, "hit_dist": d,
 		}
 		projectiles.append(proj)
-		projectile_spawned.emit(proj)
 		ranged_attack.emit(h, w_type)
 
 	# Break stealth on attack (unless shadow dance)

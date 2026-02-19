@@ -2,3 +2,16 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+
+# Secrets & reference files
+keys.txt
+reference_*.jpg
+reference_*.png
+
+# Build artifacts
+node_modules/
+pixel-arena/dist/
+*.db
+
+# Server data (SQLite, auto-created)
+server/data/
